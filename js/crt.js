@@ -1,5 +1,11 @@
 (()=>{
 const rain = RainApp.state;
+// Stretch the middle more than the top/bottom: straight vertical lanes bow
+// outward on convex glass. A positive edge overscan keeps all corners filled.
+const stripOverscan = (w,h,y) => {
+  const v=(y/h-.5)*2;
+  return w*(.018-.013*v*v);
+};
 // ─── CRT VIDEO OUTPUT ────────────────────────────────────────────────────
 // A genuine radial barrel distortion via a fragment shader. This does NOT
 // modify glyph placement or the collision-free rain scheduler; it only bends
@@ -48,10 +54,10 @@ window.CRTDisplay = class CRTDisplay {
       void main() {
         vec2 uv = gl_FragCoord.xy/u_size;
         vec2 p = uv*2.-1.;
-        // The screen is pinched in at all four edges, not merely masked.
-        // Much milder glass curve; fitted back into the same full frame.
-        // Unlike the old model it doesn't create a conspicuous black bezel.
-        vec2 lookup = mix(uv, p*(1. + .08*dot(p,p))*.43+.5, u_curve);
+        // Fit the largest radial displacement (at the corners) into the
+        // source image. Mild overscan crops the edge centres, filling every
+        // output pixel without a curved black border or clamped edge smear.
+        vec2 lookup = mix(uv, p*(1. + .08*dot(p,p))*(.5/1.16)+.5, u_curve);
         if (lookup.x<0. || lookup.x>1. || lookup.y<0. || lookup.y>1.) {
           gl_FragColor = vec4(.001,.006,.003,1.);
           return;
@@ -110,14 +116,14 @@ window.CRTDisplay = class CRTDisplay {
     if(this.mode!=='glass')return {x,y};
     const w=this.source.width,h=this.source.height;
     if(!this.gl) {
-      // Canvas2D fallback squeezes each three-pixel raster strip inwards.
+      // The fallback stretches each strip past the viewport edges. Follow
+      // the same crop as drawImage so pointer effects stay under the finger.
       const stripY=Math.floor(y/3)*3;
-      const v=(stripY/h-.5)*2;
-      const inset=w*(.005+.013*v*v);
-      return {x:(x-inset)*w/(w-2*inset),y};
+      const overscan=stripOverscan(w,h,stripY);
+      return {x:(x+overscan)*w/(w+2*overscan),y};
     }
     const px=2*x/w-1,py=2*y/h-1;
-    const factor=.43*(1+.08*(px*px+py*py));
+    const factor=(.5/1.16)*(1+.08*(px*px+py*py));
     return {x:(.5+px*factor)*w,y:(.5+py*factor)*h};
   }
   setMode(mode) {
@@ -148,9 +154,8 @@ window.CRTDisplay = class CRTDisplay {
       if(this.mode==='glass') {
         for (let y=0;y<h;y+=3) {
           const row=Math.min(3,h-y);
-          const v=(y/h-.5)*2;
-          const inset=w*(.005+.013*v*v);
-          ctx.drawImage(source,0,y,w,row,inset,y,w-2*inset,row);
+          const overscan=stripOverscan(w,h,y);
+          ctx.drawImage(source,0,y,w,row,-overscan,y,w+2*overscan,row);
         }
       } else ctx.drawImage(source,0,0,w,h);
       ctx.restore();

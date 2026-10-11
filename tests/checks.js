@@ -142,6 +142,19 @@ check('Canvas CRT pointer conversion agrees with actual strip draw destinations'
   const h=harness();h.run('setup(); displayEngine.setMode("glass"); displayEngine.present(drawingContext.canvas)');
   const strips=h.canvasCalls.filter(c=>c.args.length===9 && c.args[0]===h.sandbox.drawingContext.canvas);
   assert.ok(strips.length>10);
+  let coveredY=0;
+  for(const strip of strips) {
+    const [source,sx,sy,sw,sh,dx,dy,dw,dh]=strip.args;
+    assert.equal(dy,coveredY,'strips leave no vertical gaps');
+    assert.ok(dx<=0&&dx+dw>=640,'curved strip covers both viewport edges');
+    coveredY+=dh;
+  }
+  assert.equal(coveredY,360,'curved image reaches bottom corners');
+  // A source lane right of centre must bow outward at the vertical midpoint,
+  // not at the corners. Coverage alone missed the previous concave regression.
+  const laneOutputX=strip=>strip.args[5]+strip.args[7]*.75;
+  assert.ok(laneOutputX(strips[Math.floor(strips.length/2)])>laneOutputX(strips[0]),
+    'Canvas glass bows vertical source lanes outward at the middle');
   for(const strip of [strips[0],strips[Math.floor(strips.length/2)],strips.at(-1)]){
     const [source,sx,sy,sw,sh,dx,dy,dw]=strip.args;
     for(const fraction of [0,.1,.5,.9,1]){
@@ -151,7 +164,17 @@ check('Canvas CRT pointer conversion agrees with actual strip draw destinations'
       assert.equal(result.y,sy);
     }
   }
-  h.run('displayEngine.gl={}; displayEngine.setMode("glass")');
+  for(const webgl of [false,true]) {
+    h.run(`displayEngine.gl=${webgl?'{}':'null'}; displayEngine.setMode("glass")`);
+    const middle=h.run('displayEngine.screenToSource(width*.75,height*.5)');
+    const top=h.run('displayEngine.screenToSource(width*.75,0)');
+    assert.ok(middle.x<top.x,'convex inverse mapping samples nearer centre at mid-height');
+    for(let y=0;y<=360;y+=18)for(let x=0;x<=640;x+=32) {
+      const source=h.run(`displayEngine.screenToSource(${x},${y})`);
+      assert.ok(source.x>=-1e-7&&source.x<=640+1e-7&&source.y>=-1e-7&&source.y<=360+1e-7,
+        'every output edge/corner samples inside the source image');
+    }
+  }
   const center=h.run('displayEngine.screenToSource(width/2,height/2)');
   assert.equal(center.x,320);assert.equal(center.y,180);
   // Shader path symmetry/finite checks; this is not a GPU-rendered alignment test.
@@ -287,6 +310,74 @@ check('overlapping ripples handle each cell once and bound ownership to active p
   h.run('testLane.x=worldWidth*2;testCell.nextChange=-1;testCell.nextTwinkle=-1');
   const hidden=h.run('JSON.stringify(testCell)');h.run('testPlane.updateCells(simulationTime+100)');
   assert.equal(h.run('JSON.stringify(testCell)'),hidden,'offscreen cells retain viewport update culling');
+});
+
+check('resize retains camera centre, simulation and existing lane/stream/cell identities', () => {
+  for(const coarse of [false,true]) {
+    const h=harness({coarse});h.run(`setup();updateSimulation(.055);setRainOption('zoom',2);setCameraPan(80);
+      setRainOption('paused',true);addPulse(width/2,height/2);
+      const retainedPlanes=[...planes],retainedAtlases=planes.map(p=>p.atlas);
+      const retainedLanes=planes.flatMap(p=>p.lanes);
+      const retainedStreams=retainedLanes.flatMap(l=>l.streams);
+      const retainedCells=retainedStreams.flatMap(s=>[...s.cells].map(([row,cell])=>({s,row,cell,state:JSON.stringify(cell)})));
+      const laneState=retainedLanes.map(l=>JSON.stringify([l.x,l.speed,l.progress,l.phase,l.rhythm,l.nextGap,l.active]));
+      const streamState=retainedStreams.map(s=>JSON.stringify([s.head,s.length,s.whiteHead,s.glow]));
+      const origin=screenToWorld(width/2,height/2),clock=simulationTime,frame=frameNumber;
+      const beforeVignette=vignette;`);
+    const verify=()=>assert.ok(h.run(`planes.every((p,i)=>p===retainedPlanes[i]&&p.atlas===retainedAtlases[i]) &&
+      retainedLanes.every((l,i)=>planes.includes(l.plane)&&l.plane.lanes.includes(l)&&
+        JSON.stringify([l.x,l.speed,l.progress,l.phase,l.rhythm,l.nextGap,l.active])===laneState[i]) &&
+      retainedStreams.every((s,i)=>s.plane.lanes.some(l=>l.streams.includes(s))&&
+        JSON.stringify([s.head,s.length,s.whiteHead,s.glow])===streamState[i]) &&
+      retainedCells.every(({s,row,cell,state})=>s.cells.get(row)===cell&&JSON.stringify(cell)===state) &&
+      simulationTime===clock&&frameNumber===frame&&cameraPanX===80 &&
+      Math.abs(screenToWorld(width/2,height/2).x-origin.x)<1e-7&&
+      Math.abs(screenToWorld(width/2,height/2).y-origin.y)<1e-7 &&
+      planes.every(p=>p.lanes.every(l=>l.streams.every((s,i)=>!i||l.streams[i-1].head-l.streams[i-1].length-s.head>=2)))`));
+    for(const [w,y] of [[1200,800],[480,240],[1600,1000],[640,360],[1600,1000]]) {
+      if(w===1600)h.run('setRainOption("zoom",.65)');
+      h.sandbox.innerWidth=w;h.sandbox.innerHeight=y;
+      h.run('windowResized();draw()');verify();
+      assert.ok(h.run(`(()=>{const view=worldViewport();return view.minX>=worldMinX&&view.maxX<=worldMinX+worldWidth&&
+        view.minY>=worldMinY&&view.maxY<=worldMinY+worldHeight;})()`),'resized camera stays covered');
+      assert.ok(h.run('new Set(planes.flatMap(p=>p.lanes.map(l=>l.x))).size===planes.reduce((n,p)=>n+p.lanes.length,0)'), 'new columns retain exclusive ownership');
+    }
+    assert.ok(h.run('vignette!==beforeVignette'),'viewport lighting is resized');
+    const calls=h.randomCalls;
+    h.sandbox.innerWidth=800;h.sandbox.innerHeight=600;h.run('windowResized()');
+    h.sandbox.innerWidth=1600;h.sandbox.innerHeight=1000;h.run('windowResized()');
+    assert.equal(h.randomCalls,calls,'revisited viewport sizes never reseed');
+    verify();
+    h.run('setRainOption("density",1.65);setRainOption("paused",false)');
+    for(let i=0;i<240;i++)h.run('updateSimulation(.055)');
+    assert.ok(h.run(`planes.every(p=>p.lanes.every(l=>l.streams.every((s,i)=>!i||l.streams[i-1].head-l.streams[i-1].length-s.head>=2)))`),'grown schedulers preserve dark gaps');
+  }
+});
+
+check('paused pointers cannot disturb rain or emit ripple audio, while camera gestures still work', () => {
+  const silent=harness({reduced:true});silent.run('setup();addPulse(100,100)');
+  assert.equal(silent.run('soundEngine.ctx'),null,'ignored ripple does not activate audio');
+  const h=harness();h.run(`setup();soundEngine.setMode('effects');hover={x:12,y:34,at:simulationTime};
+    setRainOption('paused',true);draw();`);
+  const mount=h.elements.get('rain');
+  const fire=(type,id,x,y,pointerType='mouse',extra={})=>mount.dispatchEvent({type,pointerId:id,clientX:x,clientY:y,pointerType,
+    target:h.sandbox.drawingContext.canvas,button:0,preventDefault(){},...extra});
+  const before=h.snapshot(),renders=h.renders,engine=h.run('soundEngine'),voices=engine.ctx.createdNodes.length;
+  fire('pointermove',99,200,100);fire('pointerleave',99,200,100);
+  fire('pointerdown',99,200,100);fire('pointerdown',99,200,100,'mouse',{shiftKey:true});
+  fire('pointerdown',1,100,100,'touch');fire('pointerup',1,100,100,'touch');
+  h.run('addPulse(100,100,3.25)');h.advance(1000);h.run('draw()');
+  assert.equal(h.snapshot(),before);assert.equal(h.renders,renders,'paused pointers do not invalidate a frame');
+  assert.equal(engine.ctx.createdNodes.length,voices,'no ripple or activation voice');
+  fire('wheel',0,100,100,'mouse',{deltaY:-200,deltaMode:0});
+  assert.ok(h.run('rain.zoom>1'),'wheel zoom stays available');
+  fire('pointerdown',1,100,100,'touch');fire('pointermove',1,180,100,'touch');fire('pointerup',1,180,100,'touch');
+  assert.notEqual(h.run('cameraPanX'),0,'touch pan stays available');
+  fire('pointerdown',1,100,100,'touch');fire('pointerdown',2,200,100,'touch');
+  fire('pointermove',2,260,100,'touch');fire('pointerup',2,260,100,'touch');fire('pointerup',1,100,100,'touch');
+  assert.equal(h.snapshot(),before);assert.equal(engine.ctx.createdNodes.length,voices);
+  h.run('signalBurst()');assert.equal(h.run('rain.paused'),false,'explicit surge resumes');
+  h.run('setRainOption("paused",true);systemBreach()');assert.equal(h.run('rain.paused'),false,'explicit breach resumes');
 });
 
 check('native gestures map hover and taps, suppress pinch/pan taps and recover cancellation', () => {

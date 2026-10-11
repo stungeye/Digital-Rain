@@ -59,12 +59,15 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   const $=id=>document.getElementById(id);
   const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
   const fsButton=$('fullscreen-toggle');
+  const touchControls=window.matchMedia?.('(pointer: coarse)');
+  const phoneLayout=window.matchMedia?.('(max-width: 560px)');
+  const useTouchHelp=()=>touchControls?.matches||phoneLayout?.matches;
   const updateFullscreenButton=()=>{
     const active=!!document.fullscreenElement;
     fsButton.classList.toggle('is-fullscreen',active);
     fsButton.setAttribute('aria-pressed',String(active));
     fsButton.setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');
-    fsButton.title=active?'Exit fullscreen (F)':'Enter fullscreen (F)';
+    fsButton.title=(active?'Exit fullscreen':'Enter fullscreen')+(useTouchHelp()?'':' (F)');
   };
   window.toggleRainFullscreen=async()=>{
     try{
@@ -82,6 +85,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     window.signalSound()?.interfaceSound('select');
   });
   document.addEventListener('fullscreenchange',updateFullscreenButton);
+  touchControls?.addEventListener?.('change',updateFullscreenButton);
+  phoneLayout?.addEventListener?.('change',updateFullscreenButton);
   updateFullscreenButton();
   const notify=s=>notice.textContent=s;
   // Browser autoplay policy: do not create or resume WebAudio on page load.
@@ -153,7 +158,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       anomaly:'Anomaly: a corrupted transmission, crimson tails and magenta-white leading glyphs.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
-      glass:'Subtle barrel curve with minimal edge padding, and pronounced scanlines.'},
+      glass:'Subtle barrel curve with a full-screen crop, and pronounced scanlines.'},
     audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
       effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',

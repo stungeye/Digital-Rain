@@ -182,6 +182,10 @@ let pulseSeq = 0;
 let signalAt = -Infinity;
 let viewport = null;
 let worldWidth = 0, worldHeight = 0;
+let worldMinX = 0, worldMinY = 0;
+const LANE_PITCH = Math.max(22.5, Math.ceil(19 * 1.16) + 1);
+const worldCenterX = () => worldMinX + worldWidth/2;
+const worldCenterY = () => worldMinY + worldHeight/2;
 let cameraPanX = 0; // World-space horizontal camera displacement, bounded to the simulated field.
 let renderDirty = true;
 function invalidateRender() { renderDirty = true; }
@@ -216,21 +220,21 @@ function zoomRain(value) {
 }
 function worldViewport() {
   const f=rain.zoom;
-  const centerX=worldWidth/2+cameraPanX;
+  const centerX=worldCenterX()+cameraPanX;
   return {
     minX:centerX - width/2/f, maxX:centerX + width/2/f,
-    minY:worldHeight/2 - height/2/f, maxY:worldHeight/2 + height/2/f,
+    minY:worldCenterY() - height/2/f, maxY:worldCenterY() + height/2/f,
   };
 }
 function screenToWorld(x,y) {
-  return { x:worldWidth/2+cameraPanX+(x-width/2)/rain.zoom,
-           y:worldHeight/2+(y-height/2)/rain.zoom };
+  return { x:worldCenterX()+cameraPanX+(x-width/2)/rain.zoom,
+           y:worldCenterY()+(y-height/2)/rain.zoom };
 }
 // Pulses propagate in VIEWPORT pixels, not world cells. This is critical:
 // zoom must change glyph magnification, NOT ripple radius or velocity.
 function worldToScreen(x,y) {
-  return {x:width*.5+(x-worldWidth*.5-cameraPanX)*rain.zoom,
-          y:height*.5+(y-worldHeight*.5)*rain.zoom};
+  return {x:width*.5+(x-worldCenterX()-cameraPanX)*rain.zoom,
+          y:height*.5+(y-worldCenterY())*rain.zoom};
 }
 
 
@@ -258,7 +262,7 @@ function installRainGestures(target) {
   target.style.touchAction='none';
   target.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse') {
-      if(e.button!==0)return;
+      if(e.button!==0 || rain.paused)return;
       const pt=point(e);
       if(pt.x>=0&&pt.x<=width&&pt.y>=0&&pt.y<=height)
         addPulse(pt.x,pt.y,e.shiftKey?3.25:1);
@@ -276,6 +280,7 @@ function installRainGestures(target) {
   },{passive:false});
   target.addEventListener('pointermove',e=>{
     if(e.pointerType==='mouse' && !active.has(e.pointerId)) {
+      if(rain.paused)return;
       const pt=point(e);
       if(pt.x>=0&&pt.x<=width&&pt.y>=0&&pt.y<=height) {
         const source=visibleToSource(pt.x,pt.y);
@@ -299,7 +304,7 @@ function installRainGestures(target) {
       zoomRain(next);
       // Keep the code under the midpoint of the fingers stationary in X.
       const source=visibleToSource(midX,(a.y+b.y)/2);
-      setCameraPan(pinch.anchorX-worldWidth/2-(source.x-width/2)/rain.zoom);
+      setCameraPan(pinch.anchorX-worldCenterX()-(source.x-width/2)/rain.zoom);
     }else if(drag&&drag.id===e.pointerId){
       if(!current.moved)return;
       suppressTap=true;
@@ -328,7 +333,7 @@ function installRainGestures(target) {
     }
   };
   target.addEventListener('pointerleave',e=>{
-    if(e.pointerType==='mouse'){hover={x:-999,y:-999,at:-Infinity};invalidateRender();}
+    if(e.pointerType==='mouse' && !rain.paused){hover={x:-999,y:-999,at:-Infinity};invalidateRender();}
   });
   target.addEventListener('pointerup',e=>finish(e,false),{passive:false});
   target.addEventListener('pointercancel',e=>finish(e,true),{passive:false});
@@ -379,9 +384,10 @@ function buildScene() {
   // retains the smaller overscan and its established performance profile.
   worldWidth = Math.ceil(width * (mobileInput()?2.70:1/ZOOM_MIN));
   worldHeight = Math.ceil(height / ZOOM_MIN);
+  worldMinX=0;worldMinY=0;
   cameraPanX=0;
   invalidateRender();
-  const lanePitch = Math.max(22.5, Math.ceil(19 * 1.16) + 1);
+  const lanePitch = LANE_PITCH;
   const laneCount = Math.ceil(worldWidth / lanePitch) + 2;
   const columns = DEPTHS.map(() => []);
   for (let col = -1; col < laneCount; col++) {
@@ -431,7 +437,7 @@ function renderScene() {
   // Camera zoom is centred in both axes, with no random realignment.
   ctx.translate(width*.5, height*.5);
   ctx.scale(rain.zoom, rain.zoom);
-  ctx.translate(-worldWidth*.5-cameraPanX, -worldHeight*.5);
+  ctx.translate(-worldCenterX()-cameraPanX, -worldCenterY());
   if (rain.bloom && rain.glow > 0) {
     for (const plane of planes) plane.drawBloom(ctx, t);
   }
@@ -490,6 +496,7 @@ class CodePlane {
     this.depth = depth;
     this.lineHeight = Math.round(config.size * 1.19);
     this.rows = Math.ceil(worldHeight / this.lineHeight) + 2;
+    this.minRow = 0;
     this.buildAtlas();
     this.lanes = columns.map(column => new CodeLane(this, column, pitch));
   }
@@ -548,7 +555,7 @@ class CodePlane {
       for(const stream of lane.streams)for(const [row,cell] of stream.cells) {
         const age=stream.head-row;
         const y=(row+.5)*this.lineHeight;
-        if(age<0||age>=stream.length||row<0||row>=this.rows)continue;
+        if(age<0||age>=stream.length||row<this.minRow||row>=this.rows)continue;
         if(y<view.minY-this.tileH||y>view.maxY+this.tileH)continue;
         if(cell.blank&&age>4)continue;
         if(now>=cell.nextChange) {
@@ -599,7 +606,7 @@ class CodePlane {
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       for (const stream of lane.streams) {
-        if (!stream.whiteHead || stream.head < 0 || stream.head >= this.rows) continue;
+        if (!stream.whiteHead || stream.head < this.minRow || stream.head >= this.rows) continue;
         const x = lane.x;
         const y = (stream.head + .5) * this.lineHeight;
         if (x < viewport.minX-50 || x > viewport.maxX+50 ||
@@ -645,7 +652,7 @@ class CodePlane {
       for (const stream of lane.streams) {
         for (const [row, cell] of stream.cells) {
           const age = stream.head - row;
-          if (age < 0 || age >= stream.length || row < 0 || row >= this.rows) continue;
+          if (age < 0 || age >= stream.length || row < this.minRow || row >= this.rows) continue;
           const y = (row + .5)*lineHeight;
           if (y < viewport.minY-th || y > viewport.maxY+th) continue;
           if (cell.blank && age > 4) continue;
@@ -726,6 +733,7 @@ function laneDensity() {
 class CodeLane {
   constructor(plane, column, pitch) {
     this.plane = plane;
+    this.column = column;
     this.x = (column+.5)*pitch;
     this.lottery = Math.random();
     this.active = this.lottery < laneDensity();
@@ -748,15 +756,15 @@ class CodeLane {
     this.streams.length = 0;
     this.progress = Math.random();
     if (fill) {
-      let head = Math.floor(between(this.plane.rows*.3,
+      let head = Math.floor(between(this.plane.minRow+(this.plane.rows-this.plane.minRow)*.3,
                                   this.plane.rows + this.plane.config.lengthMax*.8));
-      while (head > -this.plane.config.lengthMax && this.streams.length < 15) {
+      while (head > this.plane.minRow-this.plane.config.lengthMax && this.streams.length < 15) {
         const stream = new CodeStream(this.plane, head);
         this.streams.push(stream); // Bottommost stream first.
         head -= stream.length + this.randomGap();
       }
     } else {
-      this.streams.push(new CodeStream(this.plane, -1));
+      this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
     }
     this.nextGap = this.randomGap();
   }
@@ -788,12 +796,12 @@ class CodeLane {
         this.streams.shift();
       }
       if (!this.streams.length) {
-        this.streams.push(new CodeStream(this.plane, -1));
+        this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
         this.nextGap = this.randomGap();
       }
       const top = this.streams[this.streams.length - 1];
-      if (top.head-top.length-this.nextGap >= -1) {
-        this.streams.push(new CodeStream(this.plane, -1));
+      if (top.head-top.length-this.nextGap >= this.plane.minRow-1) {
+        this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
         this.nextGap = this.randomGap();
       }
     }
@@ -810,7 +818,7 @@ class CodeStream {
     this.glow = between(.6, 1);
     this.cells = new Map();
     for (let row=head-this.length+1; row<=head; row++) {
-      if (row>=0 && row<plane.rows) this.cells.set(row, this.makeCell());
+      if (row>=plane.minRow && row<plane.rows) this.cells.set(row, this.makeCell());
     }
   }
 
@@ -826,7 +834,7 @@ class CodeStream {
 
   advanceRow() {
     this.head++;
-    if (this.head>=0 && this.head<this.plane.rows)
+    if (this.head>=this.plane.minRow && this.head<this.plane.rows)
       this.cells.set(this.head, this.makeCell());
     this.cells.delete(this.head-this.length);
   }
@@ -984,6 +992,7 @@ function activateRainAudio() {
 }
 function visibleToSource(x,y) { return displayEngine?.screenToSource(x,y) ?? {x,y}; }
 function addPulse(x,y,power=1) {
+  if(rain.paused)return;
   activateRainAudio();
   const realNow=millis();
   if (realNow - lastClickTime < 65) return;
@@ -997,6 +1006,49 @@ function addPulse(x,y,power=1) {
   if (pulses.length>4) pulses.shift();
   invalidateRender();
 }
+function extendSceneForViewport() {
+  // Grow around the original world centre and retain every existing object.
+  // Shrinking only crops the camera; repeated resize never rerolls the field.
+  const centerX=worldCenterX(),centerY=worldCenterY();
+  const nextWidth=Math.max(worldWidth,Math.ceil(width*(mobileInput()?2.70:1/ZOOM_MIN)),
+    Math.ceil(width/ZOOM_MIN+2*Math.abs(cameraPanX)));
+  const nextHeight=Math.max(worldHeight,Math.ceil(height/ZOOM_MIN));
+  worldWidth=nextWidth;worldHeight=nextHeight;
+  worldMinX=centerX-worldWidth/2;worldMinY=centerY-worldHeight/2;
+  for(const plane of planes) {
+    const minRow=Math.floor(worldMinY/plane.lineHeight);
+    const maxRow=Math.ceil((worldMinY+worldHeight)/plane.lineHeight)+2;
+    if(minRow===plane.minRow && maxRow===plane.rows)continue;
+    plane.minRow=minRow;plane.rows=maxRow;
+    for(const lane of plane.lanes) {
+      // Previously clipped parts of a retained stream acquire only new cells.
+      for(const stream of lane.streams) {
+        for(let row=Math.max(minRow,stream.head-stream.length+1);row<=Math.min(maxRow-1,stream.head);row++)
+          if(!stream.cells.has(row))stream.cells.set(row,stream.makeCell());
+      }
+      // Populate newly exposed territory above the old scheduler origin, with
+      // the same lane velocity and the same minimum separation as normal births.
+      let top=lane.streams.at(-1);
+      let head=top ? top.head-top.length-lane.nextGap : minRow-1;
+      while(head>=minRow) {
+        top=new CodeStream(plane,head);
+        lane.streams.push(top);
+        head-=top.length+lane.randomGap();
+      }
+    }
+  }
+  const owned=new Set(planes.flatMap(plane=>plane.lanes.map(lane=>lane.column)));
+  const first=Math.floor(worldMinX/LANE_PITCH)-1;
+  const last=Math.ceil((worldMinX+worldWidth)/LANE_PITCH)+1;
+  for(let column=first;column<=last;column++) {
+    if(owned.has(column))continue;
+    const roll=Math.random();
+    const plane=planes[roll<.21?0:roll<.74?1:2];
+    plane.lanes.push(new CodeLane(plane,column,LANE_PITCH));
+  }
+  for(const plane of planes)plane.lanes.sort((a,b)=>a.x-b.x);
+  viewport=worldViewport();
+}
 function windowResized() {
   // Mobile browser chrome and orientation changes can produce transient zero
   // sizes. Resize to the actual CSS viewport rather than stale p5 globals.
@@ -1004,7 +1056,11 @@ function windowResized() {
   const h = Math.max(1, innerHeight || document.documentElement.clientHeight);
   if (Math.abs(width-w)<2 && Math.abs(height-h)<2) return;
   resizeCanvas(w,h);
-  buildScene();
+  extendSceneForViewport();
+  vignette?.remove?.();
+  vignette=buildVignette();
+  filmPattern=drawingContext.createPattern(filmTile,'repeat');
+  invalidateRender();
   displayEngine?.resize();
 }
 

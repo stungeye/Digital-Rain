@@ -92,6 +92,11 @@ kbd{font:inherit;color:var(--ui-text)}
 #beat-leds{height:13px;display:flex;justify-content:flex-end;align-items:flex-end;gap:4px;margin-top:5px}
 #beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
 .note{font-size:9px;color:var(--ui-muted);line-height:1.6;margin:12px 0 0}
+/* Phones and coarse-pointer devices keep touch guidance, without advertising
+   shortcuts that require a physical keyboard. */
+@media(max-width:560px),(pointer:coarse){
+ .keyhelp,.keyboard-only{display:none}
+}
 @media(max-width:560px){
  #panel{max-height:min(77dvh,calc(100dvh - 100px));padding:19px 16px 17px}
  .hud{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}

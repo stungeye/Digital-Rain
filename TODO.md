@@ -2,17 +2,28 @@
 
 ## Implementation checkpoint — 2026-10-11
 
-Implementation for tasks 1–8 and the accessibility portion of task 10 is present in the six target app files. The final integration review found and fixed repeated cell mutations when ripple fronts overlap: cells now remember each active pulse independently. Ten regression groups in `tests/checks.js` pass, including adapter startup through `DOMContentLoaded`, settings/reset/mute synchronization, frozen rendering, collision spacing over 1,800 updates, effect ownership and viewport culling, native gestures, shortcut exclusions/first audio activation, scheduled audio routing, and reduced-motion preference handling. All four app scripts and the test file pass Node syntax checks.
+Implementation for tasks 1–8 and the accessibility portion of task 10 is present in the six target app files. The final integration review found and fixed repeated cell mutations when ripple fronts overlap: cells now remember each active pulse independently. Twelve regression groups in `tests/checks.js` pass, including resize identity/spacing, paused-pointer suppression, CRT full-viewport coverage, adapter startup through `DOMContentLoaded`, settings/reset/mute synchronization, frozen rendering, collision spacing over 1,800 updates, effect ownership and viewport culling, native gestures, shortcut exclusions/first audio activation, scheduled audio routing, and reduced-motion preference handling. All four app scripts and the test file pass Node syntax checks.
 
 Live-server browser checks observed the Canvas adapter at a 1280×720 viewport, all four profiles, all three display modes, paused appearance changes, 65%/200% zoom, bloom/grain toggles, focused Space, mute/default controls, Escape panel closing with focus restoration, and manual surge/breach resuming animation. No warnings or errors were observed during these checks. These are component checks, not a matched runtime comparison or an audible evaluation.
 
-Tasks 2 and 6 have acceptance evidence below. Other task checkboxes remain open where their full retained-behavior criteria include unperformed checks. Task 9 retains a provisional keep-both-runtimes recommendation in `RUNTIME_EVALUATION.md`. Desktop p5/direct-open/offline startup, live delayed-font arrival/resize, curved-edge visual alignment, real-device gestures, reduced-motion browser behavior, audible full-LFO-cycle silence/Foley calibration, and performance comparisons remain unverified. No runtime replacement, publication, deployment, or commit has occurred.
+Implementation is complete for tasks 1–8 and 10. Separate acceptance boxes below remain open where the full criteria include unperformed checks; tasks 2, 5 and 6 have full acceptance evidence. Checked integrated items identify their verification basis. Task 9 retains a provisional keep-both-runtimes recommendation in `RUNTIME_EVALUATION.md`. Desktop p5/direct-open/offline startup, live delayed-font arrival and updated resize appearance, updated curved-edge visual alignment, reduced-motion browser behavior, matched runtime performance comparisons remain unverified. User audio, phone gesture and maximum-density checks subsequently passed (see manual verification below). No runtime replacement, publication, deployment, or commit has occurred.
 
 ## Goal and authorized scope
 
+### User manual verification — 2026-10-11
+
+- Resize produced no errors, but continual reseeding during window dragging was reported as a visual problem. Follow-up implementation preserves existing lanes/streams/cells and grows coverage around the fixed camera centre; identity and spacing regression checks pass.
+- Paused appearance controls passed. Hover and click/Shift-click disturbances while paused were reported as unwanted; follow-up implementation ignores these rain interactions while paused, preserving camera controls and explicit surge/breach actions. Regression checks confirm no ripple effects/audio while paused.
+- Audio verification passed, including the requested SFX Only, hum/score, mute, pause and Foley checks.
+- Curved CRT click disturbances passed. The user requested rendering into all four corners rather than uncovered curved margins. Follow-up Canvas overscan and fitted WebGL sampling fill the viewport; full-grid bounds and strip coverage checks pass. Updated browser appearance remains pending.
+- The user reported concave curvature after the full-viewport change. Corrected Canvas strip overscan to stretch the centre more than the top/bottom, restoring convex outward bowing. Direction, coverage and pointer-mapping regression checks pass. The corrected curved frame was inspected through Live Server without warnings/errors; user visual confirmation remains pending.
+- Phone gesture tests passed on an actual device. Follow-up UI hides unavailable keyboard shortcut help, E/B prefixes and desktop keyboard hints on phones/coarse-pointer devices. Updated phone appearance remains pending.
+- Accessibility/reduced-motion verification remains untested by the user.
+- Maximum-density performance verification passed on the user's tested setup. Matched p5/Canvas timing and resource measurements for task 9 remain separate and unperformed.
+
 Simplify Digital Rain and move it from one HTML file into a small set of maintainable files. The user explicitly wants to remove Story Director and all image/video export features. Preserve the remaining visual style, sound design, interactions, and mobile resilience.
 
-This document is a plan for future implementation. Creating it does not implement or verify the changes below. Tasks 1–5 are the first priority; tasks 6–10 are subsequent cleanup. Task 9 is an evaluation, not authorization to replace the rendering runtime without considering its results.
+This document tracks implemented work and remaining acceptance checks. Implementation and acceptance completion are recorded separately. Tasks 1–5 are the first priority; tasks 6–10 are subsequent cleanup. Task 9 is an evaluation, not authorization to replace the rendering runtime without considering its results.
 
 The future coordinating agent may delegate these tasks to sub-agents. Assign explicit file ownership and acceptance checks, and integrate their work before considering a task complete.
 
@@ -29,11 +40,11 @@ The future coordinating agent may delegate these tasks to sub-agents. Assign exp
 - Keep streams collision-free: one depth per horizontal lane, shared stream velocity within each lane, and at least two dark rows between streams.
 - Keep all four profiles, their existing internal keys (`cinema`, `abyss`, `voltage`, `anomaly`), and readable opaque controls.
 - Keep flat, scanline, and curved CRT modes, including a Canvas fallback and brightness compensation.
-- Keep camera zoom (65–200%) and mobile horizontal pan without reseeding the world. Resize and explicit reseed may rebuild it.
+- Keep camera zoom (65–200%) and mobile horizontal pan without reseeding the world. Resize preserves existing streams and adds coverage as needed; explicit reseed may rebuild it.
 - Keep ripples anchored in viewport pixels and pointer coordinates consistent with CRT sampling.
 - Keep manual surge and breach, fullscreen, pause, reseed, restore defaults, and the controls panel.
 - Keep SFX Only, Code Hum, Score + SFX, mute restoration, and the established mechanical UI Foley and volume calibration.
-- Pause freezes rain and score; ambient hum and interaction sounds may continue. Muted silences everything.
+- Pause freezes rain and score and ignores rain hover/click/tap effects; ambient hum and UI sounds may continue. Muted silences everything.
 - Keep first-gesture audio activation, single ownership of keyboard shortcuts, mobile responsiveness, cached glyph/halo assets, and delayed font loading without reseeding.
 - Avoid a framework, bundler, or excessive file fragmentation solely to perform this refactor.
 
@@ -86,7 +97,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 1. Remove Story Director
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Source removal and shortcut exclusions verified; retained surge/breach audio remains unaudited.
 - **Owner:** Feature-removal owner, before splitting files.
 - **Reason:** The user no longer wants automatic cinematic sequencing. Removal also eliminates its wall-clock pause issue and override/restoration complexity.
 - **Scope:** Remove the Director toggle and copy, `director-hud` markup/styles, D shortcut, `DIRECTOR_SCENES`, `DIRECTOR_SECONDS`, `updateDirector`, timing/scene/saved-setting variables, `directorSettingGrade`, Director option/default, events (`rain-director`, `rain-director-toggle`), `getDirectorChapter`, and UI listeners. Remove Director-specific parameters and branches such as `fromDirector` in `addPulse` after checking their remaining callers. Remove manual-setting logic that exits or restores Director.
@@ -95,7 +108,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 2. Remove still-image and video export
 
-- [x] Complete
+- [x] Implementation complete
+- [x] Acceptance complete
+- **Verification status:** Removal, unused-resource checks, shortcut exclusions, retained controls and CRT browser checks passed.
 - **Owner:** Feature-removal owner; coordinate with task 1.
 - **Reason:** The user no longer needs either export feature.
 - **Scope:** Remove Save Frame/Record buttons, S/V shortcuts and help, recording label/styles, `captureRain`, `recordRain`, recorder state/timers, Blob/download/object-URL code, `getVisibleRainCanvas` if unused, Canvas adapter `saveCanvas`, `SignalAudio.attachRecording`, and all export documentation. Search for callers before deleting shared helpers.
@@ -105,7 +120,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 3. Split the app into six files
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Six-file extraction and Canvas startup verified; live desktop p5 and direct-open/offline startup remain unverified.
 - **Owner:** Integration owner, after tasks 1–2.
 - **Reason:** Reduce navigation and editing friction without creating a large project structure.
 - **Scope:** Extract CSS and the existing functional sections into the target layout. Establish a clear startup sequence and a small shared API. Preserve `setRainOption`/state synchronization behavior while later tasks improve their implementation. Move keyboard dispatch into `ui.js` with one owner for key events. Keep the loader/adapter compatible with the selected script-loading approach.
@@ -113,7 +130,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 4. Redraw appearance changes while paused
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Frozen-state regression checks and live paused appearance/zoom checks passed; live delayed-font arrival remains unverified.
 - **Owner:** Simulation/state owner; coordinate with tasks 6–7.
 - **Reason:** `draw` returns when paused unless `cameraDirty` is set. Profile, bloom, grain, and other appearance changes do not consistently request redraws; zoom does, and CRT has separate handling.
 - **Scope:** Introduce a general render-invalidation mechanism. Use it for relevant visual settings, asset/font changes, reseed, resize, and camera changes. Distinguish requesting a new frame from advancing simulation. Preserve pause and audio semantics.
@@ -122,7 +141,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 5. Silence ambient audio reliably in SFX Only
 
-- [ ] Complete
+- [x] Implementation complete
+- [x] Acceptance complete
+- **Verification status:** Ambient routing, modulation isolation, scheduled voices, pause and mute checks passed; user manual audio verification passed.
 - **Owner:** Audio owner; can run independently after the split.
 - **Reason:** SFX Only sets drone/air base gains to zero, but active LFOs remain connected to those gain parameters. Their modulation can produce a nonzero signal despite the zero base value.
 - **Scope:** Add a reliable ambient-group gain or equivalent routing control that silences ambient sources in SFX Only independently of modulation. Preserve drone/air movement in Code Hum and Score + SFX, separate score/UI/cinematic routing, first-gesture activation, and mute restoration. Avoid retuning the soundtrack or Foley as part of this fix.
@@ -131,7 +152,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 6. Centralize settings and validation
 
-- [x] Complete
+- [x] Implementation complete
+- [x] Acceptance complete
+- **Verification status:** Settings bounds/types, zoom/world preservation, reset, mute and UI synchronization checks passed.
 - **Owner:** Simulation/state owner with UI coordination.
 - **Reason:** Defaults, slider limits, accepted values, and formatting are repeated across HTML and JavaScript. Most numeric settings are not validated at the public setter boundary. `fontSize` actually means camera zoom.
 - **Scope:** Define defaults, bounds/types, allowed choices, and useful display formatting in one compact structure within an existing JS file. Validate finite numeric values, clamp ranges consistently, and handle booleans/enums deliberately. Rename `fontSize` to `zoom` across state, controls, labels/output IDs, camera math, and documentation. Check whether public callers need a compatibility alias; do not retain obsolete editor compatibility without a reason.
@@ -139,7 +162,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 7. Separate updates from drawing
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Pure rendering, overlapping-effect ownership, culling and stream-spacing checks passed; representative desktop/mobile performance remains unmeasured.
 - **Owner:** Simulation owner, coordinated with tasks 4 and 6.
 - **Reason:** `CodePlane.drawGlyphs` changes glyphs, twinkles, and effect markers during rendering. This couples rendering frequency/visibility to simulation behavior and complicates paused redraws.
 - **Scope:** Move mutation and effect bookkeeping into an explicit update phase. Keep drawing responsible for displaying current state. Preserve collision-free lane scheduling, once-per-effect-cell handling, viewport culling, and the existing appearance. Avoid a large unrelated engine rewrite.
@@ -148,7 +173,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 8. Unify native pointer behavior and CRT coordinates
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Native mapping, gesture suppression/cancellation and Canvas CRT sampling checks passed; live p5 parity and updated full-bleed curved-edge visual alignment remain unverified; user curved CRT clicks and actual-device phone gestures passed before the follow-up changes.
 - **Owner:** Input/display owner; coordinate edits to `rain.js` with its owner.
 - **Reason:** The Canvas adapter updates pointer coordinates but never calls `mouseMoved`, so its hover disturbance differs from p5. Hover also bypasses the CRT correction used by ripple clicks.
 - **Scope:** Use a single native pointer path for relevant hover and gestures. Apply the proper visible-screen to source-canvas to world mapping for hover. Preserve viewport-space ripples, gesture thresholds, pointer capture/cancellation, and suppression of taps after pinch/pan. Restrict hover to the rain area rather than panel interactions. Share conversion helpers where appropriate.
@@ -165,7 +192,9 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 ### 10. Improve accessibility, verification, and documentation
 
-- [ ] Complete
+- [x] Implementation complete
+- [ ] Acceptance complete
+- **Verification status:** Accessibility behavior, documentation and regression checks implemented; browser reduced-motion and other open retained-behavior checks remain pending; user audio and actual-device gesture verification passed.
 - **Owner:** UI/verification owner with final integration review.
 - **Reason:** Reduced-motion CSS stops transitions but not rain or flashes. The project needs focused regression checks and accurate documentation after feature removal.
 - **Scope:** Consider starting paused when reduced-motion is requested, with an explicit way to start animation; define behavior for preference changes without unexpectedly overriding a user's choice. Check keyboard-only controls, labels, focus, and readable themes. Director live-region/countdown issues disappear with task 1 and must not be recreated. Add a small set of meaningful automated checks for settings validation, frozen-time rendering, collision-free spacing, coordinate conversions, and audio routing where practical. Use browser checks for appearance/audio/input. Avoid a large test/tooling framework solely for extraction.
@@ -176,14 +205,14 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 - [ ] Supported direct-open/local-server startup and optional font loading.
 - [ ] Desktop renderer and forced Canvas fallback; mobile Canvas path.
-- [ ] All four profiles, readable controls, bloom/grain settings, and all CRT modes.
-- [ ] Maximum density without stream collisions or unacceptable performance.
-- [ ] Zoom/pan preserve the world; resize/reseed rebuild intentionally.
+- [x] All four profiles, readable controls, bloom/grain settings, and all CRT modes. Verified in the live Canvas browser.
+- [x] Maximum density without stream collisions or unacceptable performance. Automated spacing checks and user manual performance check passed.
+- [ ] Zoom/pan/resize preserve the world; reseed rebuilds intentionally.
 - [ ] CRT edge clicks/hover align at minimum and maximum zoom.
-- [ ] Tap, pinch, pan, pointer cancellation, and panel interactions.
-- [ ] One action per shortcut, including when controls have focus; removed D/S/V shortcuts do nothing.
-- [ ] Pause freezes simulation/score; visual controls redraw appropriately.
-- [ ] First-gesture audio, SFX Only silence between effects, Code Hum, score, mute restoration, and UI Foley calibration.
+- [x] Tap, pinch, pan, pointer cancellation, and panel interactions. Regression checks and actual-device phone tests passed; paused tap suppression is a subsequent requested behavior change.
+- [x] One action per shortcut, including when controls have focus; removed D/S/V shortcuts do nothing. Verified by regression checks and focused keyboard browser checks.
+- [x] Pause freezes simulation/score; visual controls redraw appropriately. Frozen simulation and score scheduling verified by regression checks; appearance redraw verified in the live Canvas browser. User audio verification passed. Paused rain-pointer suppression is a subsequent requested change.
+- [x] First-gesture audio, SFX Only silence between effects, Code Hum, score, mute restoration, and UI Foley calibration. User manual audio verification passed, supplementing automated routing checks.
 - [ ] Manual ripple, surge, breach, fullscreen, defaults, and reseed.
 - [ ] Reduced-motion and keyboard accessibility, according to the chosen behavior.
 - [x] No Director/export remnants; README, help text, and metadata match the integrated app.
