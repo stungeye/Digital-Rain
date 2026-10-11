@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 04</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 05</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -64,7 +64,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 04<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 05<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad" role="group" aria-label="Color profiles">
@@ -90,7 +90,7 @@ kbd{font:inherit;color:#e3ffe6}
    <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
   </div>
   <p class="dsc" id="crt-help">Clean digital signal, with no CRT processing.</p>
-  <div class="control"><div class="control-head"><label for="scanStrength">SCANLINE CONTRAST</label><output id="scanStrength-value"></output></div><input id="scanStrength" type="range" min="0.15" max="1" step="0.05" value="0.62"></div>
+  <div class="control"><div class="control-head"><label for="scanStrength">SCANLINE CONTRAST</label><output id="scanStrength-value"></output></div><input id="scanStrength" type="range" min="0.15" max="1" step="0.05" value="0.75"></div>
   <div class="switch"><label for="texture">ANALOG FILM GRAIN / DUST</label><input id="texture" type="checkbox" checked></div>
   <div class="control"><div class="control-head"><label for="grain">FILM TEXTURE STRENGTH</label><output id="grain-value"></output></div><input id="grain" type="range" min="0.1" max="1.5" step="0.05" value="0.75"></div>
   <div class="rule"></div>
@@ -101,25 +101,31 @@ kbd{font:inherit;color:#e3ffe6}
    <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
   </div>
   <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
+  <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <div class="control"><div class="control-head"><label for="volume">MASTER VOLUME</label><output id="volume-value"></output></div><input id="volume" type="range" min="0" max="1" step="0.05" value="0.5"></div>
   <div class="rule"></div>
-  <p class="tag">05 / SIGNAL INTERVENTION</p>
+  <p class="tag">05 / CINEMATIC MOVEMENT</p>
+  <div class="switch"><label for="director">AUTO DIRECTOR / 112s MOVEMENT</label><input id="director" type="checkbox"></div>
+  <p class="dsc">Optional slow-build sequence: quiet rain, gathering code, a more intense downpour, a single surge, and a subdued return. Turn off to control density and speed manually.</p>
+  <p class="tag">06 / SIGNAL INTERVENTION</p>
   <div class="buttons">
    <button id="surge-btn">E / ELECTRIC SURGE</button>
    <button id="breach-btn">B / SYSTEM BREACH</button>
+   <button id="dilate-btn" style="grid-column:1/-1">Q / TIME DILATION</button>
    <button id="pause-btn">PAUSE SIGNAL</button>
    <button id="reseed-btn">RESEED FIELD</button>
    <button id="snapshot-btn">SAVE FRAME</button>
    <button id="record-btn">RECORD 8s</button>
    <button id="defaults-btn" style="grid-column:1/-1">RESTORE DEFAULTS</button>
   </div>
-  <p class="dsc">Surge = one narrow travelling scan. Breach = blackout, white-code takeover, and cascading recovery. Click the rain for local ripples.</p>
+  <p class="dsc">Surge = a charged, accelerated wave through the existing code. Breach = blackout and signal relock. Time Dilation = a brief slow-motion descent. Click the rain for local ripples.</p>
   <p id="notify" role="status" aria-live="polite"></p>
   <div class="rule"></div>
   <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
-   <kbd>E</kbd> surge · <kbd>B</kbd> breach · <kbd>M</kbd> mute<br>
+   <kbd>E</kbd> surge · <kbd>B</kbd> breach · <kbd>Q</kbd> slow motion · <kbd>D</kbd> director<br>
+   <kbd>M</kbd> audio · <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen<br>
    <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
-   <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen · <kbd>H</kbd> panel<br>
+   <kbd>H</kbd> panel<br>
    <kbd>R</kbd> reseed · <kbd>G</kbd> glow · <kbd>S</kbd> frame · <kbd>V</kbd> video</p>
   <p class="note">Pure WebAudio generative composition. Audio begins only on activation; video exports include audio when it is enabled. Best enjoyed with headphones.</p>
  </section>
@@ -130,7 +136,7 @@ kbd{font:inherit;color:#e3ffe6}
 <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v4
+  DIGITAL RAIN // SIGNAL ENGINE v5
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
@@ -190,7 +196,7 @@ const DEPTHS = [
 const defaults = {
   density: 1.05, speed: 1, glow: 1, persistence: 1,
   mutation: 1, texture: true, grain: .75, grade: 'cinema', bloom: true, paused: false,
-  fontSize: 1, crt: 'off', scanStrength: .62, audio: 'off', volume: .5,
+  fontSize: 1, crt: 'off', scanStrength: .75, audio: 'off', volume: .5, director: false, beatReactive: true,
 };
 const rain = { ...defaults };
 let planes = [];
@@ -201,6 +207,10 @@ let filmPattern;
 let pulses = [];
 let pulseSeq = 0;
 let signalAt = -Infinity;
+let dilationAt = -Infinity;
+let directorAt = 0;
+let directorScene = -1;
+let directorSyncAt = 0;
 let hover = { x: -999, y: -999, at: -Infinity };
 let simulationTime = 0;
 let lastRealTime = 0;
@@ -265,7 +275,9 @@ function draw() {
     // CRT display retains the last complete frame while paused.
     return;
   }
-  simulationTime += dt * 1000;
+  const factor = dilationFactor(now);
+  simulationTime += dt * factor * 1000;
+  updateDirector(now);
   frameNumber++;
   if (rain.texture && frameNumber >= nextGrainFrame) {
     buildFilmTile(filmTile);
@@ -276,7 +288,7 @@ function draw() {
   background(...grade.bg);
   const ctx = drawingContext;
   pulses = pulses.filter(p => t - p.at < 1550);
-  for (const plane of planes) plane.update(dt, t);
+  for (const plane of planes) plane.update(dt * factor, t);
 
   if (rain.bloom && rain.glow > 0) {
     for (const plane of planes) plane.drawBloom(ctx, t);
@@ -352,7 +364,10 @@ class CodePlane {
   drawBloom(ctx, now) {
     const c = this.config;
     const scale = c.size;
-    const strength = rain.glow * c.bloom * GRADES[rain.grade].blooms;
+    const beat = rain.beatReactive ? soundEngine?.beatEnergy() || 0 : 0;
+    const strength = rain.glow * c.bloom * GRADES[rain.grade].blooms * (1 + beat*.13);
+    const surgeAge = now - signalAt;
+    const surgeOn = surgeAge>=0 && surgeAge<1950;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       for (const stream of lane.streams) {
@@ -361,10 +376,11 @@ class CodePlane {
         const y = (stream.head + .5) * this.lineHeight;
         if (x < -40 || x > width+40 || y < -40 || y > height+40) continue;
         const haloR = scale * 3.1;
-        ctx.globalAlpha = Math.min(1, strength * stream.glow);
+        const charge = surgeOn ? Math.max(0,1-Math.abs(y-surgeFront(x,surgeAge))/210) : 0;
+        ctx.globalAlpha = Math.min(1, strength * stream.glow * (1+.65*charge));
         ctx.drawImage(glows.halo.canvas,
           x - haloR, y - haloR, haloR*2, haloR*2);
-        ctx.globalAlpha = Math.min(1, strength * .63 * stream.glow);
+        ctx.globalAlpha = Math.min(1, strength * .63 * stream.glow * (1+.9*charge));
         ctx.drawImage(glows.column.canvas,
           x - scale*.79, y - scale*6.7, scale*1.58, scale*7.2);
       }
@@ -382,8 +398,8 @@ class CodePlane {
     const lineHeight = this.lineHeight;
     const pulseCount = pulses.length;
     const surgeAge = now - signalAt;
-    const surgeY = surgeAge * .8 - 170;
-    const surgeOn = surgeAge >= 0 && surgeAge < (height + 500)/.8;
+    const surgeOn = surgeAge >= 0 && surgeAge < 1950;
+    const beat = rain.beatReactive ? soundEngine?.beatEnergy() || 0 : 0;
     const hoverAge = now - hover.at;
     const hoverOn = hoverAge < 950;
     const grade = GRADES[rain.grade];
@@ -467,11 +483,26 @@ class CodePlane {
               tone += Math.ceil(2.1 * (1-Math.sqrt(distance2)/125) * (1-hoverAge/950));
             }
           }
-          // A rare user-triggered electrical scan through the live code.
+          // A propagating, irregular wavefront ionizes existing characters.
+          // Front lines are staggered across lanes, and leave a hot afterglow.
+          // No glyphs are created outside the stream's owned cells.
           if (surgeOn) {
-            const dy = Math.abs(y - surgeY);
-            if (dy < 130) tone += Math.ceil(4 * (1-dy/130));
+            const front = surgeFront(x, surgeAge);
+            const dy = y-front;
+            const crest = Math.max(0, 1-Math.abs(dy)/54);
+            const corona = Math.max(0, 1-Math.abs(dy)/150);
+            const afterglow = dy < 0 ? Math.max(0, 1+dy/355) : 0;
+            if (crest>0) tone = Math.max(tone,Math.round(7+3*crest));
+            else tone += Math.round(4*corona+3*afterglow);
+            if (Math.abs(dy)<21 && cell.lastSurge!==signalAt) {
+              cell.lastSurge=signalAt;
+              if (Math.random()<.89) cell.glyph=randomGlyph();
+              cell.twinkleUntil=now+380;
+            }
           }
+          // Kick/snare energy modulates the brightness of EXISTING live code,
+          // never its occupancy. In silence the entire coupling is inactive.
+          if (beat > 0 && age <= 2) tone += Math.ceil(beat*2);
           tone = Math.max(0, Math.min(c.ink, tone));
 
           ctx.drawImage(src, cell.glyph*sw, tone*sh, sw, sh,
@@ -537,7 +568,14 @@ class CodeLane {
   update(dt, now) {
     if (!this.active) return;
     const cadence = 1 + .075*Math.sin(now*.00085*this.rhythm + this.phase);
-    this.progress += dt*this.speed*rain.speed*cadence;
+    const surgeAge = now-signalAt;
+    let chargeBoost = 1;
+    if (surgeAge >= 0 && surgeAge < 1950) {
+      const front = surgeFront(this.x,surgeAge);
+      const lead = this.streams.length ? this.streams[this.streams.length-1].head * this.plane.lineHeight : 0;
+      chargeBoost += 1.65 * Math.max(0,1-Math.abs(lead-front)/360);
+    }
+    this.progress += dt*this.speed*rain.speed*cadence*chargeBoost;
     const steps = Math.min(12, Math.floor(this.progress));
     this.progress -= steps;
     for (let i=0; i<steps; i++) {
@@ -579,7 +617,7 @@ class CodeStream {
       blank: Math.random()<.055,
       nextChange: simulationTime + between(160, 3500)/rain.mutation,
       nextTwinkle: simulationTime + between(600, 5400),
-      twinkleUntil: -Infinity, lastPulse: -1, lastBreach: -1,
+      twinkleUntil: -Infinity, lastPulse: -1, lastBreach: -1, lastSurge: -1,
     };
   }
 
@@ -662,6 +700,43 @@ function buildFilmTile(tile) {
   return tile;
 }
 
+// Deterministic per-column phase jitter creates an uneven surge front.
+function surgeFront(x, age) {
+  const sweep = -120 + (age/1580)*(height+310);
+  const crooked = 30*Math.sin(x*.021+age*.008) + 14*Math.sin(x*.053-age*.011);
+  const laneJitter = 31*Math.sin(Math.floor(x/26)*12.9898);
+  return sweep + crooked + laneJitter;
+}
+function dilationFactor(realTime) {
+  const age = realTime - dilationAt;
+  if (age<0 || age>4400) return 1;
+  if (age<520) return 1-.9*(age/520);
+  if (age<2550) return .10;
+  const fraction=(age-2550)/1850;
+  return .10+.90*(fraction*fraction*(3-2*fraction));
+}
+// An optional 96-second, restrained director's cut. Changes only lane
+// occupancy/speed, and occasionally invokes one of the existing interactions.
+function updateDirector(realTime) {
+  if(!rain.director) return;
+  const cues=[[0,.77,.76],[18,1.05,.98],[42,1.56,1.34],
+    [62,1.22,1.17],[77,.70,.67],[94,1.05,1]];
+  const phase=((realTime-directorAt)/1000)%112;
+  let scene=0;
+  for(let i=0;i<cues.length;i++) if(phase>=cues[i][0])scene=i;
+  if(scene!==directorScene){
+    directorScene=scene;
+    if(scene===2)signalBurst();
+    if(scene===4)timeDilation(false);
+  }
+  const target=cues[scene];
+  rain.speed += (target[2]-rain.speed)*.009;
+  const before=rain.density;
+  rain.density+=(target[1]-rain.density)*.008;
+  if(Math.abs(before-rain.density)>.0002 && frameNumber%7===0)
+    for(const plane of planes)plane.updateDensity();
+  if(realTime-directorSyncAt>1700){directorSyncAt=realTime;emitState();}
+}
 function randomGlyph() { return Math.floor(Math.random()*GLYPHS.length); }
 function between(a,b) { return a + Math.random()*(b-a); }
 function setRainOption(name, value) {
@@ -671,6 +746,8 @@ function setRainOption(name, value) {
   if (name === 'audio' && !['off','ambience','score'].includes(value)) return;
   const old = rain[name];
   rain[name] = value;
+  if (name === 'director') { directorAt=millis();directorScene=-1; }
+  if ((name==='density'||name==='speed') && rain.director) rain.director=false;
   if (name === 'density') for (const plane of planes) plane.updateDensity();
   if (name === 'fontSize' && old !== value) buildScene();
   if (name === 'audio') soundEngine?.setMode(value);
@@ -679,6 +756,7 @@ function setRainOption(name, value) {
     displayEngine?.setMode(value);
     if (rain.paused) displayEngine?.present(drawingContext.canvas);
   }
+  if(name==='scanStrength' && rain.paused)displayEngine?.present(drawingContext.canvas);
   if (name === 'grade' && old !== value) {
     // Preserve stream positions while recoloring the entire signal.
     for (const g of Object.values(glows)) g.remove?.();
@@ -693,6 +771,7 @@ function emitState() {
 function resetRain() {
   for (const key of Object.keys(defaults)) rain[key] = defaults[key];
   buildScene();
+  directorAt=millis();directorScene=-1;dilationAt=-Infinity;
   displayEngine?.setMode(rain.crt);
   soundEngine?.setMode('off');
   soundEngine?.setVolume(rain.volume);
@@ -703,14 +782,20 @@ function signalBurst() {
   signalAt = simulationTime;
   soundEngine?.surge();
 }
+function timeDilation(playSound=true) {
+  if(rain.paused)setRainOption('paused',false);
+  dilationAt=millis();
+  if(playSound)soundEngine?.timeDilation();
+}
 function systemBreach() {
   if (rain.paused) setRainOption('paused',false);
   breachAt = simulationTime;
   soundEngine?.breach();
 }
 function addPulse(x,y,power=1) {
-  if (simulationTime - lastClickTime < 180) return;
-  lastClickTime = simulationTime;
+  const realNow=millis();
+  if (realNow - lastClickTime < 180) return;
+  lastClickTime = realNow;
   pulses.push({x,y,at:simulationTime,id:++pulseSeq,power});
   soundEngine?.ripple(x/Math.max(width,1), power);
   if (pulses.length>4) pulses.shift();
@@ -738,6 +823,8 @@ function keyPressed() {
   if (k === 'r') buildScene();
   if (k === 'e') signalBurst();
   if (k === 'b') systemBreach();
+  if (k === 'q') timeDilation();
+  if (k === 'd') setRainOption('director',!rain.director);
   if (k === 'm') setRainOption('audio', rain.audio==='off'?'ambience':'off');
   if (k === '1') setRainOption('crt','off');
   if (k === '2') setRainOption('crt','scan');
@@ -763,6 +850,7 @@ window.reseedRain = buildScene;
 window.signalRain = signalBurst;
 
 window.breachRain = systemBreach;
+window.dilateRain = timeDilation;
 window.getVisibleRainCanvas = () => displayEngine && displayEngine.mode!=='off'
   ? displayEngine.output : drawingContext.canvas;
 
@@ -813,19 +901,20 @@ class CRTDisplay {
         vec2 uv = gl_FragCoord.xy/u_size;
         vec2 p = uv*2.-1.;
         // The screen is pinched in at all four edges, not merely masked.
-        vec2 curveP = p*(1. + .20*u_curve*dot(p,p));
-        vec2 lookup = curveP*.5+.5;
+        // Much milder glass curve; fitted back into the same full frame.
+        // Unlike the old model it doesn't create a conspicuous black bezel.
+        vec2 lookup = mix(uv, p*(1. + .08*dot(p,p))*.43+.5, u_curve);
         if (lookup.x<0. || lookup.x>1. || lookup.y<0. || lookup.y>1.) {
           gl_FragColor = vec4(.001,.006,.003,1.);
           return;
         }
         vec3 rgb = texture2D(u_image,lookup).rgb;
-        float scan = .5+.5*cos(6.2831853*gl_FragCoord.y/3.0);
-        rgb *= 1. - u_scan*(.48*(1.-scan));
+        float scan = pow(.5+.5*cos(6.2831853*gl_FragCoord.y/3.0), 1.45);
+        rgb *= 1. - u_scan*(.88*(1.-scan));
         // Very subtle RGB grille / horizontal phosphor spread.
         float grille=.96+.04*cos(gl_FragCoord.x*2.0944);
         rgb *= 1.-.11*u_scan*(1.-grille);
-        float vignette = 1.-(.30*u_curve)*pow(max(abs(p.x),abs(p.y)),2.1);
+        float vignette = 1.-(.11*u_curve)*pow(max(abs(p.x),abs(p.y)),2.1);
         rgb *= vignette;
         if (u_curve>.5) {
           float glass = exp(-pow((p.x+.60)/.24,2.)-pow((p.y+.80)/.20,2.));
@@ -889,12 +978,14 @@ class CRTDisplay {
         for (let y=0;y<h;y+=3) {
           const row=Math.min(3,h-y);
           const v=(y/h-.5)*2;
-          const inset=w*(.012+.052*v*v);
-          ctx.drawImage(source,0,y,w,row,inset,y+2,w-2*inset,row);
+          const inset=w*(.005+.013*v*v);
+          ctx.drawImage(source,0,y,w,row,inset,y,w-2*inset,row);
         }
       } else ctx.drawImage(source,0,0,w,h);
-      ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.34})`;
+      ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.82})`;
       for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);
+      ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.17})`;
+      for(let y=1;y<h;y+=3)ctx.fillRect(0,y,w,1);
     }
   }
 }
@@ -904,196 +995,272 @@ class CRTDisplay {
 // assets. Starts only after an explicit user gesture; OFF is the default.
 // Arrangement: low minor drone; granular electrical rain; spacious, sparse
 // industrial/trip-hop percussion and an original minor ostinato.
+// ─── SIGNAL ENGINE AUDIO / ORIGINAL PROCEDURAL SCORE ─────────────────────
+// No recordings, samples or third-party sound libraries. A 132 BPM breakbeat
+// with 32-bar arrangement, continuously varying drones, and restrained Foley.
 class SignalAudio {
   constructor() {
-    this.ctx=null;this.mode='off';this.volume=rain.volume;
-    this.step=0;this.nextStep=0;this.timer=null;this.nodes=[];
+    this.ctx = null; this.mode = 'off'; this.volume = rain.volume;
+    this.step = 0; this.nextStep = 0; this.nextAmbient = 0;
+    this.timer = null; this.nodes = []; this.recentHits = [];
   }
   init() {
-    const AudioContext=window.AudioContext||window.webkitAudioContext;
-    if(!AudioContext)return false;
-    try {this.ctx=new AudioContext();} catch {return false;}
-    const ac=this.ctx;
-    this.compressor=ac.createDynamicsCompressor();
-    this.compressor.threshold.value=-19;this.compressor.knee.value=20;
-    this.compressor.ratio.value=3;this.compressor.attack.value=.01;
-    this.compressor.release.value=.22;
-    this.master=ac.createGain();this.master.gain.value=0;
-    this.master.connect(this.compressor);this.compressor.connect(ac.destination);
-    this.noise=this.noiseBuffer(2.5);
-    this.droneGain=ac.createGain();this.droneGain.gain.value=.13;
-    this.droneLP=ac.createBiquadFilter();this.droneLP.type='lowpass';this.droneLP.frequency.value=180;
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) return false;
+    try { this.ctx = new Context(); } catch { return false; }
+    const ac = this.ctx;
+    this.compressor = ac.createDynamicsCompressor();
+    this.compressor.threshold.value = -17;
+    this.compressor.knee.value = 17;
+    this.compressor.ratio.value = 3;
+    this.compressor.attack.value = .009;
+    this.compressor.release.value = .2;
+    this.master = ac.createGain(); this.master.gain.value = 0;
+    this.master.connect(this.compressor); this.compressor.connect(ac.destination);
+    this.noise = this.noiseBuffer(27.7);
+    // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
+    this.droneGain = ac.createGain(); this.droneGain.gain.value = .135;
+    this.droneLP = ac.createBiquadFilter(); this.droneLP.type = 'lowpass';
+    this.droneLP.frequency.value = 180;
     this.droneGain.connect(this.droneLP).connect(this.master);
-    for(const [f,type,g] of [[65.41,'sine',.52],[98.0,'triangle',.22],[130.81,'sawtooth',.14]]) {
-      const osc=ac.createOscillator();osc.type=type;osc.frequency.value=f;
-      const gain=ac.createGain();gain.gain.value=g;
-      osc.connect(gain).connect(this.droneGain);osc.start();this.nodes.push(osc);
+    for (const [f, type, amp] of [[41.203, 'sine', .54], [82.407, 'triangle', .22],
+                                 [123.47, 'sawtooth', .095], [83.1, 'sine', .075]]) {
+      const osc = ac.createOscillator(), g = ac.createGain();
+      osc.type = type; osc.frequency.value = f; g.gain.value = amp;
+      osc.connect(g).connect(this.droneGain); osc.start(); this.nodes.push(osc);
     }
-    this.lfo=ac.createOscillator();this.lfo.frequency.value=.105;
-    const mod=ac.createGain();mod.gain.value=54;
-    this.lfo.connect(mod).connect(this.droneLP.frequency);this.lfo.start();this.nodes.push(this.lfo);
-    this.airGain=ac.createGain();this.airGain.gain.value=.035;
-    const airLP=ac.createBiquadFilter();airLP.type='bandpass';airLP.frequency.value=1100;airLP.Q.value=.35;
-    const air=ac.createBufferSource();air.buffer=this.noise;air.loop=true;
-    air.connect(airLP).connect(this.airGain).connect(this.master);
-    air.start();this.nodes.push(air);
+    this.airGain = ac.createGain(); this.airGain.gain.value = .042;
+    this.airLP = ac.createBiquadFilter(); this.airLP.type = 'bandpass';
+    this.airLP.frequency.value = 760; this.airLP.Q.value = .37;
+    const air = ac.createBufferSource(); air.buffer = this.noise; air.loop = true;
+    air.connect(this.airLP).connect(this.airGain).connect(this.master);
+    air.start(0, 3.71); this.nodes.push(air);
+    this.underGain = ac.createGain(); this.underGain.gain.value = .019;
+    const underFilter = ac.createBiquadFilter(); underFilter.type = 'lowpass';
+    underFilter.frequency.value = 220;
+    const under = ac.createBufferSource(); under.buffer = this.noise; under.loop = true;
+    under.connect(underFilter).connect(this.underGain).connect(this.master);
+    under.start(0, 13.17); this.nodes.push(under);
+    const lfo = (rate, amount, target) => {
+      const osc = ac.createOscillator(), g = ac.createGain();
+      osc.type = 'sine'; osc.frequency.value = rate; g.gain.value = amount;
+      osc.connect(g).connect(target); osc.start(); this.nodes.push(osc);
+    };
+    lfo(.0173, 76, this.droneLP.frequency); // ~58 seconds
+    lfo(.0119, 335, this.airLP.frequency); // ~84 seconds
+    lfo(.0371, .011, this.airGain.gain); // ~27 seconds
+    lfo(.0233, .026, this.droneGain.gain); // ~43 seconds
     this.setVolume(this.volume);
     return true;
   }
   noiseBuffer(seconds) {
-    const ac=this.ctx;
-    const length=Math.floor(ac.sampleRate*seconds);
-    const b=ac.createBuffer(1,length,ac.sampleRate);
-    const a=b.getChannelData(0);
-    // Brown-ish granularity: blended noise and a continuously leaked state.
-    let brown=0;
-    for(let i=0;i<length;i++) {
-      const w=Math.random()*2-1;
-      brown=(brown+.025*w)/1.025;
-      a[i]=w*.65+brown*1.1;
+    const ac = this.ctx, length = Math.floor(ac.sampleRate * seconds);
+    const b = ac.createBuffer(1, length, ac.sampleRate);
+    const samples = b.getChannelData(0);
+    let brown = 0;
+    for (let i = 0; i < length; i++) {
+      const v = Math.random() * 2 - 1;
+      brown = (brown + .032 * v) / 1.032;
+      samples[i] = v * .72 + brown * 1.18;
+    }
+    // Match both ends of the long air bed so the seam itself is inaudible.
+    const fade = Math.min(8192, Math.floor(length * .03));
+    for (let i = 0; i < fade; i++) {
+      const a = i / fade, end = length - fade + i;
+      samples[end] = samples[end] * (1 - a) + samples[0] * a;
     }
     return b;
   }
-  setVolume(v) {
-    this.volume=Number(v);
-    if (this.ctx) this.master.gain.setTargetAtTime(this.mode==='off'?0:this.volume*.45,this.ctx.currentTime,.055);
+  setVolume(value) {
+    this.volume = Number(value);
+    if (this.ctx) this.master.gain.setTargetAtTime(this.mode === 'off' ? 0 : this.volume * .52,
+      this.ctx.currentTime, .07);
   }
   async setMode(mode) {
-    if(mode!=='off'&&!this.ctx&&!this.init()){this.mode='off';return;}
-    this.mode=mode;
-    if(!this.ctx)return;
-    try {await this.ctx.resume();}catch{return;}
-    const ac=this.ctx,active=mode!=='off';
-    this.master.gain.setTargetAtTime(active?this.volume*.45:0,ac.currentTime,.11);
-    this.droneGain.gain.setTargetAtTime(mode==='score'?.12:.13,ac.currentTime,.15);
-    this.airGain.gain.setTargetAtTime(mode==='score'?.028:.042,ac.currentTime,.2);
+    if (mode !== 'off' && !this.ctx && !this.init()) { this.mode = 'off'; return; }
+    this.mode = mode;
+    if (!this.ctx) return;
+    try { await this.ctx.resume(); } catch { return; }
+    const ac = this.ctx, active = mode !== 'off';
+    this.master.gain.setTargetAtTime(active ? this.volume * .52 : 0, ac.currentTime, .15);
+    this.droneGain.gain.setTargetAtTime(mode === 'score' ? .072 : .135, ac.currentTime, .25);
+    this.airGain.gain.setTargetAtTime(mode === 'score' ? .019 : .043, ac.currentTime, .35);
     if (active && !this.timer) {
-      this.nextStep=ac.currentTime+.07;
-      this.timer=setInterval(()=>this.schedule(),45);
+      this.nextStep = ac.currentTime + .07;
+      this.nextAmbient = ac.currentTime + 3;
+      this.timer = setInterval(() => this.schedule(), 35);
     }
-    if (!active && this.timer) {clearInterval(this.timer);this.timer=null;}
+    if (!active && this.timer) { clearInterval(this.timer); this.timer = null; }
   }
   schedule() {
-    if(this.mode==='off'||!this.ctx||this.ctx.state!=='running')return;
-    const ac=this.ctx,duration=60/98/4;
-    if(this.nextStep<ac.currentTime-.3)this.nextStep=ac.currentTime+.02;
-    let cycles=0;
-    while(this.nextStep<ac.currentTime+.15 && cycles++<8) {
-      const t=this.nextStep,step=this.step%16;
-      if(this.mode==='score')this.scoreStep(t,step);
-      else if(step%4===1 && Math.random()<.38) this.digit(t,.02);
-      this.nextStep+=duration;
-      this.step++;
+    if (!this.ctx || this.mode === 'off' || this.ctx.state !== 'running') return;
+    const ac = this.ctx, beat = 60 / 132 / 4;
+    if (this.nextStep < ac.currentTime - .35) this.nextStep = ac.currentTime + .02;
+    let n = 0;
+    while (this.nextStep < ac.currentTime + .17 && n++ < 10) {
+      if (this.mode === 'score') this.scoreStep(this.nextStep, this.step);
+      this.nextStep += beat; this.step++;
     }
-    const wobble=130+70*(.5+.5*Math.sin(ac.currentTime*.27));
-    this.droneLP.frequency.setTargetAtTime(wobble,ac.currentTime,.13);
-  }
-  envelope(g,t,peak,attack,release) {
-    g.gain.setValueAtTime(.0001,t);
-    g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+attack);
-    g.gain.exponentialRampToValueAtTime(.0001,t+attack+release);
-  }
-  tone(t,freq,dur,shape='sine',amp=.12,toFreq=null,filterHz=null,pan=0) {
-    if(!this.ctx||this.mode==='off')return;
-    const ac=this.ctx;
-    const osc=ac.createOscillator();osc.type=shape;
-    osc.frequency.setValueAtTime(freq,t);
-    if(toFreq)osc.frequency.exponentialRampToValueAtTime(toFreq,t+dur);
-    const g=ac.createGain();this.envelope(g,t,amp,.007,Math.max(.03,dur-.007));
-    let end=osc;
-    if(filterHz){const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=filterHz;end.connect(f);end=f;}
-    if(typeof ac.createStereoPanner==='function') {
-      const p=ac.createStereoPanner();p.pan.value=pan;
-      end.connect(g);g.connect(p).connect(this.master);
-    } else end.connect(g).connect(this.master);
-    osc.start(t);osc.stop(t+dur+.04);
-  }
-  burstNoise(t,dur,amp,freq=1800,q=.5,pan=0) {
-    if(!this.ctx||this.mode==='off')return;
-    const ac=this.ctx;
-    const src=ac.createBufferSource();src.buffer=this.noise;
-    const filter=ac.createBiquadFilter();filter.type='bandpass';filter.frequency.value=freq;filter.Q.value=q;
-    const g=ac.createGain();this.envelope(g,t,amp,.008,Math.max(.027,dur-.008));
-    src.connect(filter).connect(g);
-    if(typeof ac.createStereoPanner==='function') {
-      const p=ac.createStereoPanner();p.pan.value=pan;g.connect(p).connect(this.master);
-    } else g.connect(this.master);
-    src.start(t,Math.random()*(this.noise.duration-1));src.stop(t+dur+.025);
-  }
-  scoreStep(t,s) {
-    // Four original, slowly changing minor-key harmonic regions: a real
-    // evolving arrangement rather than a short sample or canned 1-bar loop.
-    const bar=Math.floor(this.step/16);
-    const root=[65.406,51.913,58.270,43.654][Math.floor(bar/4)%4];
-    const restless=bar%8===7;
-    if([0,6,9].includes(s) || (restless&&s===14)) {
-      this.tone(t,112,.22,'sine',s===0?.65:.40,40,220);
-      this.burstNoise(t,.075,.052,110,.5);
+    // Incommensurate, randomized quiet events, not a repeating one-bar chirp.
+    if (ac.currentTime + .17 >= this.nextAmbient) {
+      if (this.mode === 'ambience') {
+        this.filteredNoise(this.nextAmbient, .4 + Math.random() * .65,
+          .010 + Math.random() * .012, 260 + Math.random() * 1400, .28,
+          Math.random() * 1.4 - .7);
+      }
+      this.nextAmbient += 8 + Math.random() * 19;
     }
-    if(s===4||s===12){
-      this.burstNoise(t,.17,.22,1900,.9);
-      this.tone(t,178,.1,'triangle',.11,110);
-    }
-    if(s%2===0 || (restless&&s===15)){
-      this.burstNoise(t,.046,s%4===2?.069:.034,6700,1.1,(s%4===2?.38:-.38));
-    }
-    if([0,3,7,10,14].includes(s)) {
-      const bass={0:root,3:root,7:root*1.19,10:root*.89,14:root*.75};
-      this.tone(t,bass[s],.33,'sawtooth',.18,bass[s]*.93,240,-.12);
-    }
-    if(s===0) {
-      const chord=[root*2,root*2*1.19,root*3,root*4.48];
-      for(let i=0;i<chord.length;i++)
-        this.tone(t,chord[i],1.75,'triangle',.012+(.006/(i+1)),null,840);
-    }
-    if([2,11].includes(s)||(restless&&s===15))this.digit(t,.028);
-    if(s===15 && bar%4===3) this.burstNoise(t,.13,.08,2800,1.4,.5);
   }
-
-  digit(t,level=.035) {
-    this.tone(t,420+Math.random()*450,.065,'sine',level,220+Math.random()*180,2400,Math.random()*1.4-.7);
+  env(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak), t + attack);
+    g.gain.exponentialRampToValueAtTime(.0001, t + attack + decay);
   }
-  ripple(x,power=1) {
-    if(this.mode==='off'||!this.ctx)return;
-    const t=this.ctx.currentTime+.01,pan=Math.max(-.9,Math.min(.9,x*2-1));
-    this.burstNoise(t,.24,.16*power,970,.45,pan);
-    this.tone(t,650,.3,'sine',.09*power,135,null,pan);
-    this.digit(t+.12,.055);
+  connectVoice(node, gain, pan = 0) {
+    node.connect(gain);
+    if (this.ctx.createStereoPanner) {
+      const p = this.ctx.createStereoPanner(); p.pan.value = pan;
+      gain.connect(p).connect(this.master);
+    } else gain.connect(this.master);
+  }
+  tone(t, freq, dur, type = 'sine', amp = .12, endFreq = null, lowpass = 0, pan = 0) {
+    if (!this.ctx || this.mode === 'off') return;
+    const ac = this.ctx, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(Math.max(1, freq), t);
+    if (endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(1,endFreq),t+dur);
+    this.env(g,t,amp,.006,Math.max(.035,dur-.006));
+    if (lowpass) {
+      const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lowpass;
+      o.connect(f); this.connectVoice(f,g,pan);
+    } else this.connectVoice(o,g,pan);
+    o.start(t); o.stop(t+dur+.06);
+  }
+  filteredNoise(t, dur, amp, hz = 1900, Q = .6, pan = 0, highpass = false) {
+    if (!this.ctx || this.mode === 'off') return;
+    const ac = this.ctx, s = ac.createBufferSource(), f = ac.createBiquadFilter(),
+      g = ac.createGain();
+    s.buffer = this.noise;
+    f.type = highpass ? 'highpass' : 'bandpass';
+    f.frequency.value = hz; f.Q.value = Q;
+    this.env(g,t,amp,.008,Math.max(.025,dur-.008));
+    s.connect(f); this.connectVoice(f,g,pan);
+    s.start(t, Math.random() * (this.noise.duration - dur - .15));
+    s.stop(t+dur+.04);
+  }
+  kick(t, velocity = 1) {
+    this.recentHits.push({t, energy: .76*velocity});
+    if(this.recentHits.length>20)this.recentHits.shift();
+    this.tone(t, 142, .28, 'sine', .63 * velocity, 43, 0, 0);
+    this.filteredNoise(t, .046, .14 * velocity, 125, .68);
+  }
+  snare(t, velocity = 1) {
+    this.recentHits.push({t, energy: .55*velocity});
+    if(this.recentHits.length>20)this.recentHits.shift();
+    this.filteredNoise(t, .17, .30 * velocity, 1880, .60, .04);
+    this.filteredNoise(t+.013, .105, .115 * velocity, 640, .65, -.08);
+    this.tone(t, 188, .105, 'triangle', .075 * velocity, 128, 490);
+  }
+  hat(t, accent = 1, pan = 0) {
+    this.filteredNoise(t,.040 + accent*.015,.105*accent,6600,.72,pan,true);
+  }
+  bass(t, root, step, strength = 1) {
+    const note = root * Math.pow(2,step/12);
+    this.tone(t,note,.235,'sawtooth',.145*strength,note*.992,310,-.06);
+    this.tone(t,note/2,.28,'sine',.125*strength,null,0,-.06);
+  }
+  stab(t, root, emphasis = 1) {
+    // Short, dissonant synthetic stabs: tension without copying a film cue.
+    for (const [mult, strength] of [[2,.027],[2.378,.016],[3.565,.012]]) {
+      this.tone(t,root*mult,.23,'sawtooth',strength*emphasis,null,720,.22);
+    }
+  }
+  scoreStep(t, tick) {
+    const s = tick % 16, bar = Math.floor(tick/16);
+    const phrase = bar % 32, section = Math.floor(phrase/8);
+    const roots = [82.407,65.406,73.416,61.735];
+    const root = roots[section];
+    const fill = bar%8===7, breakBar = phrase === 15 || phrase === 31;
+    const energy = breakBar ? .50 : (section === 2 ? 1.10 : 1);
+    // Grounded four-on-floor pulse plus snare backbeats; purposeful syncopation.
+    if ([0,4,8,12].includes(s) && !(breakBar && s === 8))
+      this.kick(t, energy * (s===0?1.06:.79));
+    if (s===14 && (bar%4===3) && !breakBar) this.kick(t,.37);
+    if (s===4 || s===12) this.snare(t,energy*(s===12?1.0:.88));
+    if ((s===3 && bar%2===1) || (fill && (s===11 || s===15))) this.snare(t,.22);
+    if (s%2===0) this.hat(t,(s%4===2?.84:.48)*energy,s%4===2?.3:-.25);
+    if ((s===7 || s===15) && section>=1) this.hat(t,.26,.4);
+    if (fill && [13,14,15].includes(s)) this.hat(t,.34+(s-13)*.1,-.1);
+    const bassSteps = {0:0, 3:0, 6:7, 7:0, 10:-2, 12:0, 14:-5};
+    if (s in bassSteps && !(breakBar && s >= 10))
+      this.bass(t,root,bassSteps[s],energy*(s===0?1.18:.86));
+    if ((s===2 || s===10) && bar%2===1) this.stab(t,root,section===2?1.16:.84);
+    if (s===0 && bar%8===0) this.tone(t,root*2,.92,'triangle',.035,null,460);
+    if (fill && s===15) this.filteredNoise(t,.33,.085,3100,.42,.45);
+    if (breakBar && s===12) this.filteredNoise(t,.48,.065,970,.31);
+  }
+  beatEnergy() {
+    if(this.mode!=='score'||!this.ctx)return 0;
+    const now=this.ctx.currentTime;
+    let energy=0;
+    for(const hit of this.recentHits) {
+      const elapsed=now-hit.t;
+      if(elapsed>=0 && elapsed<.34)energy+=hit.energy*Math.exp(-elapsed*12);
+    }
+    return Math.min(1,energy);
+  }
+  ripple(x, power = 1) {
+    if (this.mode==='off'||!this.ctx) return;
+    const t = this.ctx.currentTime+.015, p = Math.max(-.85, Math.min(.85,x*2-1));
+    this.filteredNoise(t,.19,.085*Math.min(power,2),740,.38,p);
+    this.tone(t,102,.19,'sine',.077*Math.min(power,2),57,0,p);
   }
   surge() {
-    if(this.mode==='off'||!this.ctx)return;
-    const t=this.ctx.currentTime+.01;
-    this.burstNoise(t,.92,.3,650,.45);
-    this.tone(t,85,.95,'sawtooth',.18,340,900);
-    this.tone(t+.15,480,.7,'sine',.065,94);
+    if (this.mode==='off'||!this.ctx) return;
+    const ac=this.ctx, t=ac.currentTime+.015;
+    // A broad electrical pressure wave, NOT a rising laser or arcade chirp.
+    const source=ac.createBufferSource(); source.buffer=this.noise;
+    const filter=ac.createBiquadFilter();filter.type='bandpass';
+    filter.frequency.setValueAtTime(140,t);
+    filter.frequency.exponentialRampToValueAtTime(2100,t+1.05);
+    filter.frequency.exponentialRampToValueAtTime(280,t+1.75);
+    filter.Q.value=.48;
+    const g=ac.createGain();
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(.21,t+.09);
+    g.gain.setValueAtTime(.21,t+.8);
+    g.gain.exponentialRampToValueAtTime(.0001,t+1.78);
+    source.connect(filter).connect(g).connect(this.master);
+    source.start(t,Math.random()*(this.noise.duration-2)); source.stop(t+1.81);
+    this.tone(t,57,1.25,'sine',.24,43);
+    for(let i=0;i<6;i++)
+      this.filteredNoise(t+.18+i*.21,.07,.06,1300+i*340,.72, i%2?.45:-.45);
   }
   breach() {
-    if(this.mode==='off'||!this.ctx)return;
+    if (this.mode==='off'||!this.ctx) return;
     const t=this.ctx.currentTime+.01;
-    this.tone(t,74,1.35,'sine',.83,28);
-    this.burstNoise(t+.17,.85,.35,280,.32);
-    for(let i=0;i<11;i++) {
-      const at=t+.22+i*.11;
-      this.tone(at,70+Math.random()*950,.11,'triangle',.044,120+Math.random()*90,null,Math.random()*1.4-.7);
-    }
-    this.tone(t+1.55,260,.8,'sine',.17,76);
+    this.tone(t,67,1.24,'sine',.53,26);
+    this.filteredNoise(t+.13,.99,.24,290,.25);
+    for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
+    this.filteredNoise(t+1.52,.64,.095,580,.27);
   }
-  attachRecording() {
-    if(!this.ctx || this.mode==='off') return null;
-    const destination=this.ctx.createMediaStreamDestination();
-    this.compressor.connect(destination);
-    return {
-      tracks:destination.stream.getAudioTracks(),
-      release:()=>{
-        try {this.compressor.disconnect(destination);}catch{}
-        for(const track of destination.stream.getTracks())track.stop();
-      }
-    };
+  timeDilation() {
+    if(this.mode==='off'||!this.ctx)return;
+    const t=this.ctx.currentTime+.015;
+    this.tone(t,84,.9,'sine',.16,41);
+    this.filteredNoise(t,.54,.06,240,.35);
   }
   ui() {
-    if(this.mode==='off'||!this.ctx)return;
-    const t=this.ctx.currentTime+.01;
-    this.tone(t,700,.09,'sine',.052,440);
+    if (this.mode==='off'||!this.ctx)return;
+    this.filteredNoise(this.ctx.currentTime+.008,.031,.023,2350,.8);
+  }
+  attachRecording() {
+    if(!this.ctx||this.mode==='off')return null;
+    const dest=this.ctx.createMediaStreamDestination();
+    this.compressor.connect(dest);
+    return {tracks:dest.stream.getAudioTracks(),release:()=>{
+      try{this.compressor.disconnect(dest);}catch{}
+      dest.stream.getTracks().forEach(t=>t.stop());
+    }};
   }
 }
 window.signalSound = () => soundEngine;
@@ -1114,7 +1281,7 @@ window.signalSound = () => soundEngine;
   for(const name of ranges){
     $(name).addEventListener('input',()=>setRainOption(name,Number($(name).value)));
   }
-  for(const name of ['bloom','texture'])
+  for(const name of ['bloom','texture','director','beatReactive'])
     $(name).addEventListener('change',()=>{setRainOption(name,$(name).checked);window.signalSound()?.ui();});
   for(const selector of ['grade','crt','audio']){
     document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
@@ -1127,11 +1294,11 @@ window.signalSound = () => soundEngine;
       abyss:'A submerged monitor feed: dark blue-green code, low glow and distant cyan heads.',
       voltage:'An overdriven lime CRT: hot chartreuse code, bright tails and intense bloom.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
-      scan:'Real-time dark raster lines and a restrained phosphor aperture pattern.',
-      glass:'True shader-driven barrel distortion, glass-edge shadow, and scanlines.'},
+      scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
+      glass:'Subtle barrel curve with minimal edge padding, and pronounced scanlines.'},
     audio:{off:'Silent until you explicitly enable it. No film audio is used.',
-      ambience:'Sub-bass drone, electronically textured air, intermittent signal chirps, and interactive effects.',
-      score:'Original 98-BPM trip-hop / industrial score with syncopated beats, minor bass and processed signal FX.'}
+      ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
+      score:'Original driving 132-BPM industrial breakbeat: firm kick, snare, rolling hats, syncopated bass and evolving 32-bar arrangement.'}
   };
   function sync(){
     const st=getRainOptions();
@@ -1139,7 +1306,7 @@ window.signalSound = () => soundEngine;
       $(name).value=st[name];
       $(name+'-value').textContent=Math.round(st[name]*100)+'%';
     }
-    for(const name of ['bloom','texture'])$(name).checked=st[name];
+    for(const name of ['bloom','texture','director','beatReactive'])$(name).checked=st[name];
     for(const key of ['grade','crt','audio']){
       document.querySelectorAll(`[data-${key}]`).forEach(b=>{
         const active=b.dataset[key]===st[key];
@@ -1153,10 +1320,12 @@ window.signalSound = () => soundEngine;
       st.audio==='score'?'AUDIO // SCORE + SFX':'AUDIO // CODE HUM';
     $('scanStrength').disabled=st.crt==='off';
     $('grain').disabled=!st.texture;
+    $('beatReactive').disabled=st.audio!=='score';
   }
   window.addEventListener('rain-state',sync);sync();
   $('surge-btn').addEventListener('click',()=>{signalBurst();notify('ELECTRICAL SCAN PROPAGATING');});
   $('breach-btn').addEventListener('click',()=>{systemBreach();notify('REALITY BREACH / SIGNAL RELOCK IN PROGRESS');});
+  $('dilate-btn').addEventListener('click',()=>{timeDilation();notify('TIME DILATION / CONTROLLED FALL');});
   $('pause-btn').addEventListener('click',()=>setRainOption('paused',!getRainOptions().paused));
   $('reseed-btn').addEventListener('click',()=>{reseedRain();window.signalSound()?.ui();notify('SIGNAL FIELD RESEEDED');});
   $('defaults-btn').addEventListener('click',()=>{resetRain();notify('ORIGINAL SIGNAL CONFIG RESTORED');});
@@ -1166,7 +1335,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-04-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-05-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -1191,7 +1360,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-04-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-05-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
