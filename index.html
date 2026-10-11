@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 07</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 08</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 07<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 08<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -116,6 +116,9 @@ kbd{font:inherit;color:#e3ffe6}
    <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
   </div>
   <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
+  <div class="switch"><label for="interfaceSounds">INTERFACE FEEDBACK SFX</label><input id="interfaceSounds" type="checkbox" checked></div>
+  <div class="control"><div class="control-head"><label for="interfaceLevel">UI FEEDBACK LEVEL</label><output id="interfaceLevel-value"></output></div><input id="interfaceLevel" type="range" min="0" max="1" step="0.05" value="0.75"></div>
+  <p class="dsc">Short, tactile sounds for controls. Independent of rain ripples, surges and breach effects; no sound in Muted mode.</p>
   <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in either audio-enabled mode.</p>
   <div class="control"><div class="control-head"><label for="beatStrength">BEAT IMPACT</label><output id="beatStrength-value"></output></div><input id="beatStrength" type="range" min="0" max="2" step="0.05" value="0.75"></div>
@@ -158,7 +161,7 @@ kbd{font:inherit;color:#e3ffe6}
 <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v7
+  DIGITAL RAIN // SIGNAL ENGINE v8
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
@@ -224,7 +227,7 @@ const DEPTHS = [
 const defaults = {
   density: 1.05, speed: 1, glow: 1, persistence: 1,
   mutation: 1, texture: true, grain: .75, grade: 'cinema', bloom: true, paused: false,
-  fontSize: 1, crt: 'off', scanStrength: .75, scanBrightness: 1, audio: 'off', volume: .5, director: false, beatReactive: true, beatStrength: .75,
+  fontSize: 1, crt: 'off', scanStrength: .75, scanBrightness: 1, audio: 'off', volume: .5, director: false, beatReactive: true, beatStrength: .75, interfaceSounds: true, interfaceLevel: .75,
 };
 const rain = { ...defaults };
 let planes = [];
@@ -1450,10 +1453,102 @@ class SignalAudio {
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
     this.filteredNoise(t+1.52,.64,.095,580,.27);
   }
-  ui() {
-    if (this.mode==='off'||!this.ctx)return;
-    this.filteredNoise(this.ctx.currentTime+.008,.031,.023,2350,.8);
+  // Interface Foley is deliberately distinct from cinematic intervention FX.
+  // Short, nearly-redundant slices of the long organic noise bed get slightly
+  // offset attacks and opposing filter movements: the feel of an electromechanical
+  // latch, rather than computer-game beeps. The small delays evoke the editing
+  // approach Dane A. Davis described, not any sampled Matrix recording.
+  uiFragment(at, duration, level, startHz, endHz, pan=0, attack=.004) {
+    const ac=this.ctx;
+    const src=ac.createBufferSource(),filter=ac.createBiquadFilter();
+    const gain=ac.createGain();
+    src.buffer=this.noise;
+    filter.type='bandpass';filter.Q.value=.72;
+    filter.frequency.setValueAtTime(startHz,at);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(100,endHz),at+duration*.79);
+    gain.gain.setValueAtTime(.0001,at);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0002,level),at+attack);
+    gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+    src.connect(filter);
+    filter.connect(gain);
+    let out=gain,stereo;
+    if (ac.createStereoPanner) {
+      stereo=ac.createStereoPanner();stereo.pan.value=pan;
+      gain.connect(stereo);out=stereo;
+    }
+    out.connect(this.master);
+    // No new buffers per gesture, and each tiny voice releases its audio graph.
+    src.onended=()=>{
+      try{src.disconnect();filter.disconnect();gain.disconnect();stereo?.disconnect();}catch{}
+    };
+    const offset=Math.random()*Math.max(.1,this.noise.duration-duration-.1);
+    src.start(at,offset);
+    src.stop(at+duration+.005);
   }
+  interfaceSound(kind='press',position=.5,control='') {
+    if(this.mode==='off'||!this.ctx||!rain.interfaceSounds||rain.interfaceLevel<=0)return;
+    const now=this.ctx.currentTime;
+    const slider=kind==='slider';
+    // Drag gestures can produce hundreds of input events per second. Quantized,
+    // rate-limited grains create subtle tactile steps instead of a buzzing zipper.
+    if(slider) {
+      const bucket=Math.round(Math.max(0,Math.min(1,position))*32);
+      if(control===this.lastSliderControl &&
+         (now-(this.lastSliderAt??-Infinity)<.078||bucket===this.lastSliderBucket))return;
+      this.lastSliderAt=now;this.lastSliderBucket=bucket;this.lastSliderControl=control;
+    }
+    const p=Math.max(0,Math.min(1,Number(position)||0));
+    // A modest gain boost keeps tiny UI transients audible beneath the breakbeat.
+    const level=rain.interfaceLevel*1.4;
+    const f=(d,a,b,amp,offset=0,pan=0,attack=.004)=>
+      this.uiFragment(now+.006+offset,d,amp*level,a,b,pan,attack);
+    switch(kind) {
+      case 'panel-open':
+        f(.078,850,2050,.16,0,-.13,.016);
+        f(.055,1350,750,.055,.027,.12);break;
+      case 'panel-close':
+        f(.064,2100,710,.14,0,.12);
+        f(.039,760,530,.07,.020,-.10);break;
+      case 'select':
+        f(.033,2500,1320,.16,0,-.07);
+        f(.052,1140,1900,.078,.018,.09);break;
+      case 'toggle-on':
+        f(.053,1200,2600,.18,0,-.06);
+        f(.032,2600,1400,.063,.029,.09);break;
+      case 'toggle-off':
+        f(.052,2500,1040,.16,0,.08);
+        f(.030,850,600,.078,.022,-.09);break;
+      case 'slider': {
+        const freq=1050+p*2300;
+        f(.024,freq*1.16,freq*.75,.078,0,(p-.5)*.22,.003);break;
+      }
+      case 'slider-end': {
+        const freq=950+p*1650;
+        f(.045,freq*1.12,freq*.79,.115,0,(p-.5)*.15);
+        f(.027,freq*.63,freq*.51,.036,.018);break;
+      }
+      case 'commit':
+        f(.042,1850,1100,.18,0,-.10);
+        f(.076,620,360,.090,.020,.12);break;
+      case 'reset':
+        f(.092,2400,440,.18,0,.08,.010);
+        f(.053,1080,630,.087,.046,-.08);break;
+      case 'pause':
+        f(.049,1700,570,.15);
+        f(.038,440,300,.077,.023);break;
+      case 'resume':
+        f(.046,670,1600,.13);
+        f(.044,1100,2000,.085,.021);break;
+      case 'record':
+        f(.052,1200,830,.16);
+        f(.071,810,540,.083,.032);break;
+      default: // discrete command button; two microscopic related fragments.
+        f(.035,1850,1200,.16,0,-.06);
+        f(.041,1180,790,.070,.016,.08);
+    }
+  }
+  // Retain compatibility with old editor-side calls.
+  ui() { this.interfaceSound('press'); }
   attachRecording() {
     if(!this.ctx||this.mode==='off')return null;
     const dest=this.ctx.createMediaStreamDestination();
@@ -1472,22 +1567,42 @@ window.signalSound = () => soundEngine;
   const $=id=>document.getElementById(id);
   const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
   const notify=s=>notice.textContent=s;
+  const feedback=(kind,value=.5,control='')=>window.signalSound()?.interfaceSound(kind,value,control);
   window.toggleRainPanel=()=>{
     const open=panel.classList.toggle('open');
     toggle.setAttribute('aria-expanded',String(open));
     toggle.textContent=open?'[ − ] CLOSE SYSTEM':'[ + ] SYSTEM PANEL';
+    feedback(open?'panel-open':'panel-close');
   };
   toggle.addEventListener('click',window.toggleRainPanel);
-  const ranges=['density','fontSize','speed','persistence','mutation','glow','scanStrength','scanBrightness','grain','volume','beatStrength'];
+  const ranges=['density','fontSize','speed','persistence','mutation','glow','scanStrength','scanBrightness','grain','volume','beatStrength','interfaceLevel'];
   for(const name of ranges){
-    $(name).addEventListener('input',()=>setRainOption(name,Number($(name).value)));
+    const el=$(name);
+    const norm=()=>Number((el.value-el.min)/(el.max-el.min));
+    el.addEventListener('input',()=>{
+      setRainOption(name,Number(el.value));
+      feedback('slider',norm(),name);
+    });
+    // One soft landing when releasing a drag or finishing a keyboard adjustment.
+    el.addEventListener('change',()=>feedback('slider-end',norm(),name));
   }
-  for(const name of ['bloom','texture','director','beatReactive'])
-    $(name).addEventListener('change',()=>{setRainOption(name,$(name).checked);window.signalSound()?.ui();});
+  for(const name of ['bloom','texture','director','beatReactive','interfaceSounds'])
+    $(name).addEventListener('change',()=>{
+      const enabled=$(name).checked;
+      if(name==='interfaceSounds'&&!enabled)feedback('toggle-off');
+      setRainOption(name,enabled);
+      if(name!=='interfaceSounds'||enabled)feedback(enabled?'toggle-on':'toggle-off');
+    });
   for(const selector of ['grade','crt','audio']){
     document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
-      setRainOption(selector,button.dataset[selector]);
-      if(selector!=='audio')window.signalSound()?.ui();
+      const selected=button.dataset[selector];
+      const previous=getRainOptions()[selector];
+      if(selected===previous)return;
+      if(selector==='audio'&&selected==='off')feedback('toggle-off');
+      setRainOption(selector,selected);
+      if(selector==='audio'){
+        if(selected!=='off')feedback(previous==='off'?'toggle-on':'select');
+      } else feedback('select');
     }));
   }
   const details={
@@ -1509,7 +1624,7 @@ window.signalSound = () => soundEngine;
       $(name).value=st[name];
       $(name+'-value').textContent=Math.round(st[name]*100)+'%';
     }
-    for(const name of ['bloom','texture','director','beatReactive'])$(name).checked=st[name];
+    for(const name of ['bloom','texture','director','beatReactive','interfaceSounds'])$(name).checked=st[name];
     for(const key of ['grade','crt','audio']){
       document.querySelectorAll(`[data-${key}]`).forEach(b=>{
         const active=b.dataset[key]===st[key];
@@ -1526,6 +1641,7 @@ window.signalSound = () => soundEngine;
     $('grain').disabled=!st.texture;
     $('beatReactive').disabled=st.audio!=='score';
     $('beatStrength').disabled=st.audio!=='score'||!st.beatReactive;
+    $('interfaceLevel').disabled=st.audio==='off'||!st.interfaceSounds;
   }
   window.addEventListener('rain-state',sync);sync();
   const directorHUD=$('director-hud');
@@ -1556,23 +1672,29 @@ window.signalSound = () => soundEngine;
     requestAnimationFrame(beatVisualClock);
   }
   requestAnimationFrame(beatVisualClock);
+  // Surge and Breach own their cinematic sound signatures; don't stack UI ticks on them.
   $('surge-btn').addEventListener('click',()=>{signalBurst();notify('ELECTRICAL SCAN PROPAGATING');});
   $('breach-btn').addEventListener('click',()=>{systemBreach();notify('REALITY BREACH / SIGNAL RELOCK IN PROGRESS');const b=$('breach-btn');b.classList.add('triggered');setTimeout(()=>b.classList.remove('triggered'),500);});
-  $('pause-btn').addEventListener('click',()=>setRainOption('paused',!getRainOptions().paused));
-  $('reseed-btn').addEventListener('click',()=>{reseedRain();window.signalSound()?.ui();notify('SIGNAL FIELD RESEEDED');});
-  $('defaults-btn').addEventListener('click',()=>{resetRain();notify('ORIGINAL SIGNAL CONFIG RESTORED');});
+  $('pause-btn').addEventListener('click',()=>{
+    const next=!getRainOptions().paused;setRainOption('paused',next);
+    feedback(next?'pause':'resume');
+  });
+  $('reseed-btn').addEventListener('click',()=>{reseedRain();feedback('commit');notify('SIGNAL FIELD RESEEDED');});
+  $('defaults-btn').addEventListener('click',()=>{
+    feedback('reset');resetRain();notify('ORIGINAL SIGNAL CONFIG RESTORED');
+  });
   window.captureRain=()=>{
     const canvas=getVisibleRainCanvas();
     if(!canvas)return;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-06-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-08-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
   };
-  $('snapshot-btn').addEventListener('click',window.captureRain);
+  $('snapshot-btn').addEventListener('click',()=>{feedback('commit');window.captureRain();});
   let recorder=null,stopTimer=null;
   window.recordRain=()=>{
     if(recorder?.state==='recording'){recorder.stop();return;}
@@ -1592,7 +1714,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-06-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-08-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
@@ -1604,7 +1726,7 @@ window.signalSound = () => soundEngine;
       stopTimer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},8000);
     }catch(e){stream.getTracks().forEach(t=>t.stop());audioTap?.release();recorder=null;notify('VIDEO ENCODER ERROR');}
   };
-  $('record-btn').addEventListener('click',window.recordRain);
+  $('record-btn').addEventListener('click',()=>{feedback('record');window.recordRain();});
 })();
 </script>
 </body>
