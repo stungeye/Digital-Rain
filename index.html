@@ -1,88 +1,130 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-signal="cinema">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 15</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 16</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--mint:#b5ebc0;--soft:#80b38c;--line:rgba(126,216,144,.2);--neon:#aaffb6}
+/* The interface follows the signal's phosphor palette. Keep text nearly white
+   and the panel opaque: even Deep's muted code should remain easy to read. */
+:root{
+ color-scheme:dark;
+ --ui-page:#000401;--ui-panel:rgba(2,19,10,.97);--ui-hud:rgba(1,16,8,.88);
+ --ui-base:36,94,53;--ui-surface:rgba(35,88,48,.24);--ui-hover:rgba(43,110,61,.34);
+ --ui-selected:rgba(29,95,47,.55);--ui-border:#578D65;--ui-border-hot:#BCF8C9;
+ --ui-text:#F1FFF2;--ui-label:#C9EED0;--ui-muted:#B4D3BC;--ui-dim:#A3C9AC;
+ --ui-accent:#A1F2B5;--ui-led:#87FFA2;--ui-outline:#BEFFD0;
+ --ui-rule:rgba(133,211,155,.56);--ui-glow:rgba(35,163,75,.18);
+ --ui-scroll-track:#071D0D;--ui-scroll-thumb:#39784C;
+}
+:root[data-signal="abyss"]{
+ --ui-page:#00070C;--ui-panel:rgba(3,19,29,.97);--ui-hud:rgba(3,20,31,.88);
+ --ui-base:27,73,105;--ui-surface:rgba(28,78,108,.28);--ui-hover:rgba(37,101,137,.39);
+ --ui-selected:rgba(29,98,138,.55);--ui-border:#568FA9;--ui-border-hot:#A5EAF9;
+ --ui-text:#EEFBFF;--ui-label:#D1EBF4;--ui-muted:#B4D5E3;--ui-dim:#A5CBDF;
+ --ui-accent:#8EDCF1;--ui-led:#70DDF5;--ui-outline:#C0F0FC;
+ --ui-rule:rgba(118,189,220,.53);--ui-glow:rgba(48,150,204,.20);
+ --ui-scroll-track:#081C29;--ui-scroll-thumb:#36718F;
+}
+:root[data-signal="voltage"]{
+ --ui-page:#040600;--ui-panel:rgba(17,23,4,.98);--ui-hud:rgba(20,27,5,.90);
+ --ui-base:80,105,19;--ui-surface:rgba(88,108,22,.27);--ui-hover:rgba(111,139,23,.39);
+ --ui-selected:rgba(95,120,20,.49);--ui-border:#9BAE50;--ui-border-hot:#F1FFAF;
+ --ui-text:#FCFFE9;--ui-label:#EBF5D0;--ui-muted:#D6E4AF;--ui-dim:#C8D9A2;
+ --ui-accent:#DEF68A;--ui-led:#D7FC5D;--ui-outline:#F3FFC0;
+ --ui-rule:rgba(188,211,107,.54);--ui-glow:rgba(154,188,28,.19);
+ --ui-scroll-track:#1C2405;--ui-scroll-thumb:#859E32;
+}
+:root[data-signal="anomaly"]{
+ --ui-page:#080108;--ui-panel:rgba(25,5,18,.98);--ui-hud:rgba(29,5,22,.90);
+ --ui-base:109,35,75;--ui-surface:rgba(110,34,73,.29);--ui-hover:rgba(145,45,94,.40);
+ --ui-selected:rgba(128,31,79,.55);--ui-border:#B77296;--ui-border-hot:#FFC2DF;
+ --ui-text:#FFF1F9;--ui-label:#F8D7E8;--ui-muted:#EBC1D9;--ui-dim:#E3B3D1;
+ --ui-accent:#FFA1D0;--ui-led:#FF7FBC;--ui-outline:#FFD0E9;
+ --ui-rule:rgba(224,125,171,.53);--ui-glow:rgba(219,58,133,.20);
+ --ui-scroll-track:#2A071D;--ui-scroll-thumb:#8D3F69;
+}
 *{box-sizing:border-box}
-html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:#000401}
-#rain{position:fixed;inset:0;overflow:hidden}
+html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:var(--ui-page)}
+#rain{position:fixed;inset:0;overflow:hidden;touch-action:none}
 #rain canvas{display:block;touch-action:none}
-#rain{touch-action:none}
 #crt-output{z-index:1}
-button,input{font:inherit}button{cursor:pointer}
-#fullscreen-toggle{position:fixed;z-index:7;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:43px;height:43px;display:grid;place-items:center;border:1px solid rgba(113,217,137,.30);border-radius:3px;background:rgba(0,12,7,.54);color:rgba(186,239,197,.72);backdrop-filter:blur(4px);transition:border-color .15s,background .15s,color .15s}
-#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible{color:#effff3;border-color:#adffbf;background:rgba(5,33,16,.89)}
+button,input{font:inherit;-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);outline-offset:2px}
+#fullscreen-toggle{position:fixed;z-index:7;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:43px;height:43px;display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
+#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
 #fullscreen-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
 #fullscreen-toggle .fs-exit{display:none}
 #fullscreen-toggle.is-fullscreen .fs-enter{display:none}
 #fullscreen-toggle.is-fullscreen .fs-exit{display:block}
-button:focus-visible,input:focus-visible{outline:2px solid #adffbf;outline-offset:2px}
-.hud{position:fixed;z-index:5;left:clamp(12px,2.2vw,30px);bottom:clamp(12px,2.4vh,28px);font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--mint);letter-spacing:.085em;user-select:none}
-#toggle{border:1px solid rgba(113,217,137,.43);background:rgba(0,14,7,.81);color:#bbebc5;min-width:161px;padding:12px 15px;text-align:left;letter-spacing:.15em;box-shadow:0 0 35px rgba(14,98,38,.11)}
-#toggle:hover{border-color:#b0ffc3;color:#fff;background:rgba(2,28,12,.92)}
-#panel{display:none;position:absolute;bottom:53px;left:0;width:min(392px,calc(100vw - 24px));max-height:min(84vh,850px);overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:rgba(1,14,7,.97);border:1px solid rgba(114,209,134,.48);box-shadow:0 25px 90px #000b,0 0 60px #0a451329;scrollbar-color:#28673c #001306;backdrop-filter:blur(18px)}
+.hud{position:fixed;z-index:5;left:clamp(12px,2.2vw,30px);bottom:clamp(12px,2.4vh,28px);font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--ui-label);letter-spacing:.085em;user-select:none}
+#toggle{border:1px solid var(--ui-border);background:var(--ui-hud);color:var(--ui-text);min-width:161px;padding:12px 15px;text-align:left;letter-spacing:.15em;box-shadow:0 0 35px var(--ui-glow)}
+#toggle:hover{border-color:var(--ui-border-hot);color:var(--ui-text);background:var(--ui-selected)}
+#panel{display:none;position:absolute;bottom:53px;left:0;width:min(392px,calc(100vw - 24px));max-height:min(84vh,850px);overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
 #panel.open{display:block}
-.hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:#77b68a}
-.live{color:#b0f5bb}.live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin:0 8px 1px 0;background:#73ed8d;box-shadow:0 0 12px #6bff82}
-h1{margin:14px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:#f0fff0;text-shadow:0 0 24px #5cf37c3d}
-.sub{font-size:10px;line-height:1.7;letter-spacing:.02em;color:#79a584;margin:0}
-.rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,#6eab80a8,transparent)}
-.tag{font-size:9px;letter-spacing:.23em;color:#84aa8b;margin:0 0 10px}
+.hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:var(--ui-dim)}
+.live{color:var(--ui-accent)}
+.live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin:0 8px 1px 0;background:var(--ui-led);box-shadow:0 0 12px var(--ui-led)}
+h1{margin:14px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:var(--ui-text);text-shadow:0 0 24px var(--ui-glow)}
+.sub{font-size:10px;line-height:1.7;letter-spacing:.02em;color:var(--ui-muted);margin:0}
+.rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,var(--ui-rule),transparent)}
+.tag{font-size:9px;letter-spacing:.23em;color:var(--ui-accent);margin:0 0 10px}
 .triad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .triad.quad{grid-template-columns:repeat(4,minmax(0,1fr))}
-.triad button,.duo button{border:1px solid var(--line);background:rgba(26,67,32,.22);color:#94c6a0;padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
-.triad button.active,.duo button.active{background:rgba(54,120,67,.28);color:#edfff0;border-color:#b1f5bd;box-shadow:inset 0 0 17px #42955b25}
-.triad button:hover,.duo button:hover{border-color:#96dca6}
-.dsc{font-size:10px;color:#80ac88;margin:10px 0 0;min-height:32px;line-height:1.55;letter-spacing:.01em}
+.triad button,.duo button{border:1px solid var(--ui-border);background:var(--ui-surface);color:var(--ui-label);padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
+.triad button.active,.duo button.active{background:var(--ui-selected);color:var(--ui-text);border-color:var(--ui-border-hot);box-shadow:inset 0 0 17px var(--ui-glow)}
+.triad button:hover,.duo button:hover{border-color:var(--ui-border-hot);background:var(--ui-hover);color:var(--ui-text)}
+.triad button.active:hover,.duo button.active:hover{background:var(--ui-selected);color:var(--ui-text)}
+.dsc{font-size:10px;color:var(--ui-muted);margin:10px 0 0;min-height:32px;line-height:1.55;letter-spacing:.01em}
 .control{margin:14px 0 0}
 .control-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
-label{color:#abd4b3;font-size:10px;letter-spacing:.09em}
-output{color:#deffe1;font-size:10px;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;height:12px;margin:0;accent-color:#97eea8;cursor:pointer}
-input[type=checkbox]{width:16px;height:16px;accent-color:#90dba3;cursor:pointer}
+label{color:var(--ui-label);font-size:10px;letter-spacing:.09em}
+output{color:var(--ui-text);font-size:10px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:12px;margin:0;accent-color:var(--ui-accent);cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--ui-accent);cursor:pointer}
+input:disabled{opacity:.60}
 .switch{margin:14px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px}
-.buttons button{background:rgba(24,64,33,.33);border:1px solid var(--line);color:#b7e9bd;padding:11px 4px;font-size:9px;letter-spacing:.095em}
-.buttons button:hover{border-color:#d9ffe2;background:#23532c77;color:#fff}
+.buttons button{background:var(--ui-surface);border:1px solid var(--ui-border);color:var(--ui-label);padding:11px 4px;font-size:9px;letter-spacing:.095em}
+.buttons button:hover{border-color:var(--ui-border-hot);background:var(--ui-hover);color:var(--ui-text)}
 /* Action buttons are neutral until invoked. No permanently highlighted breach. */
-.buttons button.triggered{border-color:#e4ffdb;color:#fff;background:rgba(120,185,107,.40);box-shadow:0 0 16px #9dff9770}
-#notify{color:#aeebb5;font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
-.keyhelp{font-size:9px;line-height:1.9;color:#80b78d;letter-spacing:0}
-kbd{font:inherit;color:#e3ffe6}
-.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:clamp(12px,2.4vh,28px);pointer-events:none;text-align:right;color:rgba(156,235,174,.43);font:9px/1.8 Consolas,monospace;letter-spacing:.18em}
-.mini strong{font-weight:400;color:#b5efb782}
-.mini:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:8px;background:#80ea9d;box-shadow:0 0 9px #80ff9d}
-#director-hud{position:fixed;z-index:4;top:clamp(18px,3.4vh,36px);right:clamp(18px,3.4vw,50px);width:min(340px,calc(100vw - 40px));padding:17px 19px;background:linear-gradient(95deg,rgba(0,17,10,.93),rgba(1,17,13,.74));border-top:1px solid #77e8a379;border-bottom:1px solid #77e8a344;color:#caefd5;opacity:0;transform:translateY(-14px);pointer-events:none;transition:opacity .45s ease,transform .45s ease;letter-spacing:.08em;font:10px/1.4 Consolas,"Liberation Mono",monospace;box-shadow:0 0 45px #00190880}
+.buttons button.triggered{border-color:var(--ui-border-hot);color:var(--ui-text);background:var(--ui-selected);box-shadow:0 0 16px var(--ui-glow)}
+#notify{color:var(--ui-accent);font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
+.keyhelp{font-size:9px;line-height:1.9;color:var(--ui-muted);letter-spacing:0}
+kbd{font:inherit;color:var(--ui-text)}
+.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:clamp(12px,2.4vh,28px);pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em}
+.mini strong{font-weight:400;color:var(--ui-text)}
+.mini:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:8px;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
+#director-hud{position:fixed;z-index:4;top:clamp(18px,3.4vh,36px);right:clamp(18px,3.4vw,50px);width:min(340px,calc(100vw - 40px));padding:17px 19px;background:var(--ui-hud);border-top:1px solid var(--ui-border-hot);border-bottom:1px solid var(--ui-border);color:var(--ui-label);opacity:0;transform:translateY(-14px);pointer-events:none;transition:opacity .45s ease,transform .45s ease;letter-spacing:.08em;font:10px/1.4 Consolas,"Liberation Mono",monospace;box-shadow:0 0 45px var(--ui-glow)}
 #director-hud.on{opacity:1;transform:translateY(0)}
-.dir-meta{display:flex;justify-content:space-between;font-size:9px;color:#88b99c;letter-spacing:.12em}
-.dir-name{font-size:20px;color:#effff1;letter-spacing:.125em;margin:11px 0 5px;text-shadow:0 0 24px #87ffaa6a}
-.dir-desc{font-size:10px;color:#8fb69d;letter-spacing:.03em}
-.dir-track{height:2px;background:#2a603a;margin-top:17px;overflow:hidden}
-#dir-fill{width:100%;height:100%;background:#ccffdd;transform:scaleX(0);transform-origin:left;box-shadow:0 0 12px #a7ffc3}
+.dir-meta{display:flex;justify-content:space-between;font-size:9px;color:var(--ui-muted);letter-spacing:.12em}
+.dir-name{font-size:20px;color:var(--ui-text);letter-spacing:.125em;margin:11px 0 5px;text-shadow:0 0 24px var(--ui-glow)}
+.dir-desc{font-size:10px;color:var(--ui-muted);letter-spacing:.03em}
+.dir-track{height:2px;background:var(--ui-surface);margin-top:17px;overflow:hidden}
+#dir-fill{width:100%;height:100%;background:var(--ui-accent);transform:scaleX(0);transform-origin:left;box-shadow:0 0 12px var(--ui-led)}
 #beat-leds{height:13px;display:flex;justify-content:flex-end;align-items:flex-end;gap:4px;margin-top:5px}
-#beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:#80f6ac;opacity:.28;box-shadow:0 0 7px #59f389}
-#rec-label{position:fixed;z-index:6;top:24px;right:24px;display:none;color:#e1ffe4;font:10px Consolas,monospace;letter-spacing:.2em;pointer-events:none}
-#rec-label.on{display:block}#rec-label.on:before{content:"";display:inline-block;border-radius:50%;width:7px;height:7px;margin-right:9px;background:#fa7777;box-shadow:0 0 10px #f66}
-.note{font-size:9px;color:#769b7c;line-height:1.6;margin:12px 0 0}
+#beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
+#rec-label{position:fixed;z-index:6;top:24px;right:24px;display:none;color:var(--ui-text);font:10px Consolas,monospace;letter-spacing:.2em;pointer-events:none}
+#rec-label.on{display:block}
+#rec-label.on:before{content:"";display:inline-block;border-radius:50%;width:7px;height:7px;margin-right:9px;background:#fa7777;box-shadow:0 0 10px #f66}
+.note{font-size:9px;color:var(--ui-muted);line-height:1.6;margin:12px 0 0}
 @media(max-width:560px){
-  #panel{max-height:min(77dvh,calc(100dvh - 100px));padding:19px 16px 17px}
-  .hud{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}
-  #toggle{min-width:148px;min-height:44px}
-  .mini{display:none}
+ #panel{max-height:min(77dvh,calc(100dvh - 100px));padding:19px 16px 17px}
+ .hud{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}
+ #toggle{min-width:148px;min-height:44px}
+ .mini{display:none}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<main id="rain" aria-label="Interactive falling green digital code rain"></main>
+<main id="rain" aria-label="Interactive falling digital code rain"></main>
 <button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" title="Toggle fullscreen (F)" aria-pressed="false">
  <svg viewBox="0 0 24 24" aria-hidden="true"><path class="fs-enter" d="M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6"/><path class="fs-exit" d="M9 3v6H3 M21 9h-6V3 M15 21v-6h6 M3 15h6v6"/></svg>
 </button>
@@ -90,14 +132,14 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 15<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 16<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
-   <button data-grade="cinema" class="active" aria-pressed="true">ORIGINAL</button>
+   <button data-grade="cinema" class="active" aria-pressed="true">SOURCE</button>
    <button data-grade="abyss" aria-pressed="false">DEEP</button>
    <button data-grade="voltage" aria-pressed="false">OVERDRIVE</button>
-   <button data-grade="anomaly" aria-pressed="false">RED SIGNAL</button>
+   <button data-grade="anomaly" aria-pressed="false">ANOMALY</button>
   </div>
   <p class="dsc" id="grade-help">The original code: emerald tails, white-hot leading glyphs.</p>
   <div class="rule"></div>
@@ -252,7 +294,7 @@ if (typeof window.p5 === 'undefined') {
 </script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v15
+  DIGITAL RAIN // SIGNAL ENGINE v16
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
@@ -281,19 +323,19 @@ const GLYPHS = [
 // aggressive chartreuse. Tonality, depth attenuation, and halos all change.
 const GRADES = {
   cinema: {
-    name: 'ORIGINAL', bg: [0, 3, 1], alpha: 1, heads: 1, blooms: 1,
+    name: 'SOURCE', bg: [0, 3, 1], alpha: 1, heads: 1, blooms: 1,
     ink: [[1,12,4],[2,23,8],[3,39,13],[5,62,19],[8,91,28],
       [13,128,39],[27,168,58],[62,213,96],[144,248,166],[240,255,244]],
     halo: ['rgba(227,255,225,.59)','rgba(55,255,92,.34)','rgba(8,139,43,.10)'],
   },
   abyss: {
-    name: 'DEEP SIGNAL', bg: [0, 5, 9], alpha: .78, heads: .43, blooms: .42,
+    name: 'DEEP', bg: [0, 5, 9], alpha: .78, heads: .43, blooms: .42,
     ink: [[1,10,16],[2,16,24],[2,24,35],[3,35,45],[4,50,65],
       [6,72,87],[12,104,117],[28,148,157],[78,195,200],[175,228,222]],
     halo: ['rgba(154,230,229,.29)','rgba(33,176,191,.22)','rgba(3,85,109,.11)'],
   },
   anomaly: {
-    name: 'RED SIGNAL', bg: [7, 0, 5], alpha: .97, heads: 1, blooms: 1.17,
+    name: 'ANOMALY', bg: [7, 0, 5], alpha: .97, heads: 1, blooms: 1.17,
     ink: [[19,0,9],[35,1,17],[59,2,29],[89,3,42],[127,8,64],
       [171,24,91],[218,48,117],[245,100,155],[255,174,216],[255,240,252]],
     halo: ['rgba(255,206,233,.72)','rgba(252,46,113,.45)','rgba(147,2,65,.15)'],
@@ -375,7 +417,7 @@ const DIRECTOR_SCENES = [
   {start:0, name:'SIGNAL ACQUIRED', detail:'A transmission stirs in the darkness', grade:'abyss',density:.48,speed:.70},
   {start:12, name:'THE CODE AWAKENS', detail:'The signal begins to assemble', grade:'cinema',density:1.0,speed:1.0},
   {start:30, name:'PURSUIT', detail:'A surge of hostile computation', grade:'voltage',density:1.57,speed:1.65},
-  {start:52, name:'RED SIGNAL', detail:'A breach in the simulation', grade:'anomaly',density:1.48,speed:1.35},
+  {start:52, name:'THE ANOMALY', detail:'A breach in the simulation', grade:'anomaly',density:1.48,speed:1.35},
   {start:70, name:'AFTERIMAGE', detail:'The system searches for a way out', grade:'cinema',density:.78,speed:.72},
 ];
 const DIRECTOR_SECONDS = 90;
@@ -2089,10 +2131,10 @@ window.signalSound = () => soundEngine;
     }));
   }
   const details={
-    grade:{cinema:'1999 original: deep emerald ink and porcelain-white leading glyphs.',
+    grade:{cinema:'Source: the iconic falling code, emerald trails and porcelain-white leading glyphs.',
       abyss:'A submerged monitor feed: dark blue-green code, low glow and distant cyan heads.',
       voltage:'An overdriven lime CRT: hot chartreuse code, bright tails and intense bloom.',
-      anomaly:'A corrupt crimson transmission: wine-dark tails, red/magenta ink and pink-white heads.'},
+      anomaly:'Anomaly: a corrupted transmission, crimson tails and magenta-white leading glyphs.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
       glass:'Subtle barrel curve with minimal edge padding, and pronounced scanlines.'},
@@ -2103,6 +2145,10 @@ window.signalSound = () => soundEngine;
   };
   function sync(){
     const st=getRainOptions();
+    document.documentElement.dataset.signal=st.grade;
+    // Match supported mobile browser chrome to the selected signal.
+    const themeBG={cinema:'#03150b',abyss:'#04131d',voltage:'#111704',anomaly:'#190512'};
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeBG[st.grade]);
     for(const name of ranges){
       $(name).value=st[name];
       $(name+'-value').textContent=Math.round(st[name]*100)+'%';
@@ -2165,7 +2211,7 @@ window.signalSound = () => soundEngine;
   });
   $('reseed-btn').addEventListener('click',()=>{reseedRain();feedback('commit');notify('SIGNAL FIELD RESEEDED');});
   $('defaults-btn').addEventListener('click',()=>{
-    resetRain();feedback('reset');notify('ORIGINAL SIGNAL CONFIG RESTORED');
+    resetRain();feedback('reset');notify('SOURCE SIGNAL CONFIG RESTORED');
   });
   window.captureRain=()=>{
     const canvas=getVisibleRainCanvas();
@@ -2173,7 +2219,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-15-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-16-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -2198,7 +2244,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-15-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-16-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
