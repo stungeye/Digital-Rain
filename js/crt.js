@@ -49,6 +49,8 @@ window.CRTDisplay = class CRTDisplay {
       uniform vec2 u_size;
       uniform float u_curve;
       uniform float u_scan;
+      uniform float u_scanScale;
+      uniform float u_scanThickness;
       uniform float u_brightness;
       uniform float u_time;
       void main() {
@@ -63,7 +65,7 @@ window.CRTDisplay = class CRTDisplay {
           return;
         }
         vec3 rgb = texture2D(u_image,lookup).rgb;
-        float scan = pow(.5+.5*cos(6.2831853*gl_FragCoord.y/3.0), 1.45);
+        float scan = pow(.5+.5*cos(6.2831853*gl_FragCoord.y/(3.0*u_scanScale)), 1.45*u_scanThickness);
         // Darker scanlines ordinarily halve perceived phosphor luminance.
         // Recover average emission automatically, while retaining dark gaps.
         float recovery = 1. / (1. - .48*u_scan);
@@ -96,7 +98,7 @@ window.CRTDisplay = class CRTDisplay {
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
     const pos=gl.getAttribLocation(program,'a_pos');
     gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
-    this.uniforms = Object.fromEntries(['u_image','u_size','u_curve','u_scan','u_brightness','u_time'].map(key=>[key,gl.getUniformLocation(program,key)]));
+    this.uniforms = Object.fromEntries(['u_image','u_size','u_curve','u_scan','u_scanScale','u_scanThickness','u_brightness','u_time'].map(key=>[key,gl.getUniformLocation(program,key)]));
     this.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.texture);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -136,6 +138,11 @@ window.CRTDisplay = class CRTDisplay {
     if(this.mode==='off')return;
     const w=this.output.width,h=this.output.height;
     if (w!==source.width||h!==source.height)this.resize();
+    // Only magnify the raster above 100% camera zoom. Full zoom increases
+    // spacing by 35%, with a further 15% widening of the dark bands.
+    const zoomLift=Math.max(0,rain.zoom-1);
+    const scanScale=1+.35*zoomLift;
+    const scanThickness=1+.15*zoomLift;
     if(this.gl) {
       const gl=this.gl,u=this.uniforms;
       gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);
@@ -143,6 +150,8 @@ window.CRTDisplay = class CRTDisplay {
       gl.uniform2f(u.u_size,w,h);
       gl.uniform1f(u.u_curve,this.mode==='glass'?rain.curvature:0);
       gl.uniform1f(u.u_scan,rain.scanStrength);
+      gl.uniform1f(u.u_scanScale,scanScale);
+      gl.uniform1f(u.u_scanThickness,scanThickness);
       gl.uniform1f(u.u_brightness,rain.scanBrightness);
       gl.uniform1f(u.u_time,RainApp.time*.001);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
@@ -161,9 +170,9 @@ window.CRTDisplay = class CRTDisplay {
       } else ctx.drawImage(source,0,0,w,h);
       ctx.restore();
       ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.82})`;
-      for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);
+      for(let y=0;y<h;y+=3*scanScale)ctx.fillRect(0,y,w,scanScale*scanThickness);
       ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.17})`;
-      for(let y=1;y<h;y+=3)ctx.fillRect(0,y,w,1);
+      for(let y=scanScale*scanThickness;y<h;y+=3*scanScale)ctx.fillRect(0,y,w,scanScale*scanThickness);
     }
   }
 }

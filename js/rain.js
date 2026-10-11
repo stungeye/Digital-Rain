@@ -341,7 +341,8 @@ function installRainGestures(target) {
       e.preventDefault();
     } else e.preventDefault();
     const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?width:1);
-    zoomRain(rain.zoom*Math.exp(-Math.max(-260,Math.min(260,delta))*.0017));
+    const sensitivity=e.ctrlKey ? .0017 : .001;
+    zoomRain(rain.zoom*Math.exp(-Math.max(-260,Math.min(260,delta))*sensitivity));
   },{passive:false});
 }
 
