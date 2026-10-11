@@ -67,16 +67,17 @@ function harness({coarse = false, reduced = false, ready = 'loading'} = {}) {
   }
   class AudioNode {
     constructor(kind){this.kind=kind;this.edges=[];for(const key of ['gain','frequency','Q','threshold','knee','ratio','attack','release','detune','playbackRate','pan'])this[key]=new Param();}
-    connect(node){this.edges.push(node);return node;} disconnect(){this.edges=[];} start(){} stop(){}
+    connect(node){this.edges.push(node);return node;} disconnect(){this.edges=[];}
+    start(...args){this.startArgs=args;} stop(...args){this.stopArgs=args;}
   }
   class AudioContext {
-    constructor(){this.currentTime=0;this.sampleRate=1000;this.state='running';this.destination=new AudioNode('destination');this.createdNodes=[];}
+    constructor(options){this.options=options;this.currentTime=0;this.sampleRate=1000;this.state='running';this.destination=new AudioNode('destination');this.createdNodes=[];}
     node(kind){const node=new AudioNode(kind);this.createdNodes.push(node);return node;}
     createGain(){return this.node('gain');}createDynamicsCompressor(){return this.node('compressor');}
     createBiquadFilter(){return this.node('filter');}createOscillator(){return this.node('oscillator');}
     createBufferSource(){return this.node('buffer');}createStereoPanner(){return this.node('panner');}
     createWaveShaper(){return this.node('waveshaper');}
-    createBuffer(channels,length,sampleRate=this.sampleRate){return {duration:length/sampleRate,getChannelData:()=>new Float32Array(length)};}
+    createBuffer(channels,length,sampleRate=this.sampleRate){const data=Array.from({length:channels},()=>new Float32Array(length));return {duration:length/sampleRate,getChannelData:i=>data[i]};}
     resume(){return Promise.resolve();}
   }
   const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:coarse?1:0},
@@ -259,9 +260,9 @@ check('profile scores change tempo, retire old voices and preserve mode/pause/re
       assert.equal(engine.step,0);
     }
     titles.add(engine.score.title);tempos.add(engine.score.bpm);
-    const first=engine.nextStep;
+    const first=engine.nextStep, firstTick=engine.step;
     engine.schedule();
-    assert.ok(Math.abs(engine.nextStep-first-engine.step*60/engine.score.bpm/4)<1e-8,'scheduler follows selected tempo');
+    assert.ok(Math.abs(engine.nextStep-first-(engine.step-firstTick)*60/engine.score.bpm/4)<1e-8,'scheduler follows selected tempo');
     // Exercise every section and the wraparound of each actual arrangement.
     engine.schedulingScore=true;
     for(let tick=0;tick<=engine.score.bars*16;tick++)engine.scoreStep(1+tick*60/engine.score.bpm/4,tick);
@@ -282,6 +283,79 @@ check('profile scores change tempo, retire old voices and preserve mode/pause/re
   assert.equal(engine.mode,'score');assert.equal(engine.score.id,'fracture');
   h.run('resetRain()');assert.equal(engine.profile,'cinema');assert.equal(engine.mode,'effects');
   assert.equal(typeof engine.legacyScoreStep,'function','approved original remains available');
+});
+
+check('audio scheduler buffers touch playback and skips overdue ticks without bunching notes', () => {
+  for(const coarse of [false,true]) {
+    const h=harness({coarse});h.run('setup();soundEngine.setMode("score")');
+    const engine=h.run('soundEngine'),ctx=engine.ctx,beat=60/engine.score.bpm/4;
+    assert.equal(ctx.options.latencyHint,coarse?'playback':'interactive');
+    assert.ok(engine.step>0,'first scheduling happens during activation');
+    if(coarse)assert.ok(engine.nextStep>=ctx.currentTime+.35,'phone gets a longer queued window');
+    const scheduled=[];
+    engine.scoreStep=(t,tick)=>scheduled.push({t,tick});
+    for(const delay of [.08,.3,8]) {
+      const first=engine.nextStep, tick=engine.step;
+      ctx.currentTime=first+delay;
+      scheduled.length=0;engine.schedule();
+      assert.ok(scheduled.length>0&&scheduled.length<=10);
+      assert.ok(scheduled[0].t>=ctx.currentTime+engine.voiceLead);
+      assert.ok(scheduled[0].tick>tick,'overdue ticks are skipped');
+      for(let i=0;i<scheduled.length;i++) {
+        assert.ok(Math.abs(scheduled[i].t-first-(scheduled[i].tick-tick)*beat)<1e-8,'retain tempo grid');
+        if(i)assert.ok(Math.abs(scheduled[i].t-scheduled[i-1].t-beat)<1e-8,'never bunch overdue starts');
+      }
+    }
+    engine.setMode('ambience');ctx.currentTime+=30;engine.nextAmbient=ctx.currentTime-20;
+    const before=ctx.createdNodes.length;engine.schedule();
+    const sources=ctx.createdNodes.slice(before).filter(n=>n.kind==='buffer');
+    assert.ok(sources.length>0);
+    for(const source of sources)assert.ok(source.startArgs[0]>=ctx.currentTime+engine.voiceLead,'ambient events also recover');
+    h.run('setRainOption("paused",true)');engine.setMode('score');
+    const pausedStep=engine.step;ctx.currentTime+=20;engine.schedule();assert.equal(engine.step,pausedStep);
+  }
+});
+
+check('finished voices disconnect their whole graph and score partials retain shared effects until all end', () => {
+  const h=harness();h.run('setup();soundEngine.setMode("effects")');
+  const engine=h.run('soundEngine'),ctx=engine.ctx;
+  const actions=[()=>engine.tone(1,220,.2),()=>engine.tone(1,220,.2,'sine',.1,null,800,.3),
+    ()=>engine.filteredNoise(1,.2,.1),()=>engine.ripple(.5,3),()=>engine.surge(),()=>engine.breach(),
+    ()=>engine.interfaceSound('press')];
+  for(const action of actions) {
+    const before=ctx.createdNodes.length;action();const nodes=ctx.createdNodes.slice(before);
+    const sources=nodes.filter(n=>['oscillator','buffer'].includes(n.kind));
+    assert.ok(sources.length>0);
+    for(const source of sources){assert.equal(typeof source.onended,'function');source.onended();assert.equal(source.onended,null);}
+    for(const node of nodes)assert.equal(node.edges.length,0,'no connected voice nodes after completion');
+  }
+  for(const instrument of ['piano','strings','organ','brass','riff','acid','sub','bell']) {
+    const before=ctx.createdNodes.length;
+    engine.scoreVoice(1,60,.3,instrument,.1,.3);
+    const nodes=ctx.createdNodes.slice(before),sources=nodes.filter(n=>n.kind==='oscillator');
+    const effects=nodes.filter(n=>['filter','panner','waveshaper'].includes(n.kind));
+    for(let i=0;i<sources.length;i++) {
+      sources[i].onended();
+      if(i<sources.length-1)for(const effect of effects)assert.ok(effect.edges.length>0,'later partials still need shared effects');
+    }
+    for(const node of nodes)assert.equal(node.edges.length,0);
+  }
+});
+
+check('uncached UI Foley starts after sample generation and repeats reuse the cached buffer', () => {
+  const h=harness({coarse:true});h.run('setup();soundEngine.setMode("effects")');
+  const engine=h.run('soundEngine'),ctx=engine.ctx;
+  const synthesize=engine.uiFoleySample.bind(engine);
+  engine.uiFoleySample=(...args)=>{const buffer=synthesize(...args);ctx.currentTime+=.12;return buffer;};
+  engine.interfaceSound('press');
+  const source=ctx.createdNodes.filter(n=>n.kind==='buffer').at(-1);
+  assert.ok(source.startArgs[0]>=ctx.currentTime+engine.voiceLead,'synthesis cannot make a UI start late');
+  assert.equal(synthesize('press'),source.buffer,'repeat uses the existing sample');
+  assert.ok(source.buffer.getChannelData(0).some(v=>v!==0),'sample has signal');
+  engine.uiFoleySample=synthesize;
+  engine.interfaceSound('slider',.5,'density');
+  const count=ctx.createdNodes.length;ctx.currentTime+=.02;
+  engine.interfaceSound('slider',.6,'density');assert.equal(ctx.createdNodes.length,count,'slider throttle retained');
 });
 
 check('public settings reject invalid values and clamp every numeric boundary', () => {
@@ -502,3 +576,22 @@ check('reduced-motion preference follows changes until an explicit animation cho
   h.run('resetRain()');assert.equal(h.run('rain.paused'),false);
   preference.matches=true;preference.dispatchEvent({type:'change',matches:true});assert.equal(h.run('rain.paused'),true);
 });
+
+(async()=>{
+  for(const coarse of [false,true]) {
+    const h=harness({coarse});h.run('setup();soundEngine.init()');
+    const engine=h.run('soundEngine'),ctx=engine.ctx,notes=[];
+    let unlock;
+    ctx.state='suspended';ctx.resume=()=>new Promise(resolve=>{unlock=resolve;});
+    engine.scoreStep=(t,tick)=>notes.push({t,tick});
+    engine.setMode('score');assert.equal(notes.length,0,'wait for the audio clock to run');
+    ctx.currentTime=.4;ctx.state='running';unlock();await Promise.resolve();
+    assert.ok(notes.length>0,'unlock primes playback before the timer');
+    assert.equal(notes[0].tick,0,'delayed activation retains the beginning of the score');
+    assert.ok(notes[0].t>=ctx.currentTime+engine.startLead);
+    notes.length=0;ctx.state='suspended';engine.setMode('score');
+    engine.setMode('off');ctx.state='running';unlock();await Promise.resolve();
+    assert.equal(notes.length,0,'muting while unlock is pending cannot schedule music');
+  }
+  console.log('PASS delayed audio unlock primes a complete attack without skipping tick zero or overriding mute');
+})().catch(error=>{console.error(error);process.exitCode=1;});

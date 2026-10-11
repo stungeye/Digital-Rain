@@ -14,6 +14,19 @@ const PROFILE_SCORES = Object.freeze({
   anomaly: Object.freeze({id:'fracture', title:'Fracture', bpm:164, bars:64, style:'Dub / jungle: sliced breaks, half-time sub bass and scattered tape echoes.'}),
   cinema: Object.freeze({id:'source-original', title:'Source / Original Score', bpm:134, bars:32, style:'Big beat / breakbeat: chopped kicks, swung hats, ghost snares and a minor bass ostinato.'})
 });
+// Reuse instrument definitions instead of allocating every preset per note.
+const VOICE_PRESETS = {
+  piano:{partials:[[1,1],[2,.31],[3,.12],[4.01,.055]],type:'sine',attack:.004,release:.42,hz:3600},
+  strings:{partials:[[1,.48],[1.003,.3],[.998,.22]],type:'sawtooth',attack:.28,release:.65,hz:1350},
+  organ:{partials:[[1,.56],[2,.27],[3,.12],[4,.05]],type:'sine',attack:.008,release:.045,hz:2200},
+  brass:{partials:[[1,.65],[1.006,.35]],type:'sawtooth',attack:.025,release:.09,hz:1500},
+  riff:{partials:[[1,.65],[2,.23],[3,.12]],type:'sawtooth',attack:.003,release:.035,hz:1700},
+  acid:{partials:[[1,1]],type:'sawtooth',attack:.006,release:.09,hz:2400},
+  sub:{partials:[[1,.85],[2,.15]],type:'sine',attack:.012,release:.2,hz:320},
+  bell:{partials:[[1,.7],[2.76,.2],[4.13,.1]],type:'sine',attack:.003,release:.32,hz:4300}
+};
+const BUTTON_KINDS = new Set(['press','select','commit','reset',
+  'pause','resume','panel-open','panel-close']);
 window.SignalAudio = class SignalAudio {
   static scores = PROFILE_SCORES;
   constructor() {
@@ -24,6 +37,11 @@ window.SignalAudio = class SignalAudio {
     this.schedulingScore = false;
     this.schedulingAmbient = false;
     this.profile = rain.grade;
+    const touch = window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+    this.latencyHint = touch ? 'playback' : 'interactive';
+    this.lookAhead = touch ? .35 : .20;
+    this.voiceLead = touch ? .04 : .012;
+    this.startLead = touch ? .12 : .075;
   }
   get score() { return PROFILE_SCORES[this.profile] || PROFILE_SCORES.cinema; }
   setProfile(profile) {
@@ -50,7 +68,11 @@ window.SignalAudio = class SignalAudio {
   init() {
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return false;
-    try { this.ctx = new Context(); } catch { return false; }
+    try { this.ctx = new Context({latencyHint:this.latencyHint}); }
+    catch {
+      // Retain older contexts that do not accept constructor options.
+      try { this.ctx = new Context(); } catch { return false; }
+    }
     const ac = this.ctx;
     this.compressor = ac.createDynamicsCompressor();
     this.compressor.threshold.value = -17;
@@ -150,15 +172,21 @@ window.SignalAudio = class SignalAudio {
     if(previousMode==='score' && mode!=='score')this.retireScoreBus();
     // Resume during the actual user gesture. Do not await a promise before
     // scheduling gain/voices, or the first click's sound can be lost.
-    if (mode !== 'off') this.ctx.resume().catch(()=>{});
+    if (mode !== 'off') this.ctx.resume().then(() => {
+      if (this.mode === 'off') return;
+      // Prime as soon as autoplay unlocks, rather than waiting for a timer.
+      // This also preserves tick zero when device startup takes longer.
+      this.nextStep = Math.max(this.nextStep, this.ctx.currentTime + this.startLead);
+      this.schedule();
+    }).catch(()=>{});
     const ac = this.ctx, active = mode !== 'off';
     const ambientEnabled=mode==='ambience'||mode==='score';
     this.ambientBus.gain.cancelScheduledValues(ac.currentTime);
     if(ambientEnabled)this.ambientBus.gain.setTargetAtTime(1,ac.currentTime,.05);
-    else this.ambientBus.gain.setValueAtTime(0,ac.currentTime);
+    else this.ambientBus.gain.setTargetAtTime(0,ac.currentTime,.02);
     if(mode==='score' && previousMode!=='score') {
       this.step=0;
-      this.nextStep=ac.currentTime+.07;
+      this.nextStep=ac.currentTime+this.startLead;
       this.recentHits=[];
     }
     this.setPaused(rain.paused);
@@ -167,11 +195,12 @@ window.SignalAudio = class SignalAudio {
     this.airGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .019 : .043, ac.currentTime, .35);
     this.underGain.gain.setTargetAtTime(mode === 'effects' ? 0 : .019, ac.currentTime, .35);
     if (active && !this.timer) {
-      this.nextStep = ac.currentTime + .07;
+      this.nextStep = ac.currentTime + this.startLead;
       this.nextAmbient = ac.currentTime + 3;
       this.timer = setInterval(() => this.schedule(), 35);
     }
     if (!active && this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (active) this.schedule();
   }
   setPaused(paused) {
     this.scorePaused=Boolean(paused);
@@ -181,18 +210,27 @@ window.SignalAudio = class SignalAudio {
     this.scoreBus.gain.setTargetAtTime(this.scorePaused||this.mode!=='score'?0:1,t,.012);
     // The sequencing position stays fixed while paused. The next note is
     // resynchronized to audio time on resume (no burst of skipped beats).
-    this.nextStep=t+.075;
+    this.nextStep=t+this.startLead;
   }
   schedule() {
     if (!this.ctx || this.mode === 'off' || this.ctx.state !== 'running') return;
     const ac = this.ctx, beat = 60 / this.score.bpm / 4;
+    const earliest = ac.currentTime + this.voiceLead;
+    const horizon = ac.currentTime + this.lookAhead;
     if(this.mode==='score' && this.scorePaused) {
-      this.nextStep=ac.currentTime+.075;
+      this.nextStep=ac.currentTime+this.startLead;
       return;
     }
-    if (this.nextStep < ac.currentTime - .35) this.nextStep = ac.currentTime + .02;
+    // A late start() plays immediately with an envelope already partway
+    // through its attack. Skip missed ticks on the original tempo grid,
+    // rather than compressing overdue notes into a click/burst after a stall.
+    if (this.nextStep < earliest) {
+      const missed = Math.ceil((earliest - this.nextStep) / beat);
+      this.nextStep += missed * beat;
+      this.step += missed;
+    }
     let n = 0;
-    while (this.nextStep < ac.currentTime + .17 && n++ < 10) {
+    while (this.nextStep < horizon && n++ < 10) {
       if (this.mode === 'score') {
         this.schedulingScore=true;
         try { this.scoreStep(this.nextStep, this.step); }
@@ -201,7 +239,8 @@ window.SignalAudio = class SignalAudio {
       this.nextStep += beat; this.step++;
     }
     // Incommensurate, randomized quiet events, not a repeating one-bar chirp.
-    if (ac.currentTime + .17 >= this.nextAmbient) {
+    if (horizon >= this.nextAmbient) {
+      this.nextAmbient = Math.max(this.nextAmbient, earliest);
       if (this.mode === 'ambience') {
         this.schedulingAmbient=true;
         try {
@@ -225,7 +264,18 @@ window.SignalAudio = class SignalAudio {
     if (this.ctx.createStereoPanner) {
       const p = this.ctx.createStereoPanner(); p.pan.value = pan;
       gain.connect(p).connect(bus);
-    } else gain.connect(bus);
+      return [node, gain, p];
+    }
+    gain.connect(bus);
+    return [node, gain];
+  }
+  releaseVoice(source, nodes) {
+    // Stop alone does not dispose the rest of a connected voice graph.
+    // Use the audio end event so cleanup also follows suspended contexts.
+    source.onended = () => {
+      for (const node of nodes) node.disconnect();
+      source.onended = null;
+    };
   }
   tone(t, freq, dur, type = 'sine', amp = .12, endFreq = null, lowpass = 0, pan = 0) {
     if (!this.ctx || this.mode === 'off') return;
@@ -233,10 +283,12 @@ window.SignalAudio = class SignalAudio {
     o.type = type; o.frequency.setValueAtTime(Math.max(1, freq), t);
     if (endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(1,endFreq),t+dur);
     this.env(g,t,amp,.006,Math.max(.035,dur-.006));
+    let nodes;
     if (lowpass) {
       const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lowpass;
-      o.connect(f); this.connectVoice(f,g,pan);
-    } else this.connectVoice(o,g,pan);
+      o.connect(f); nodes = [o, ...this.connectVoice(f,g,pan)];
+    } else nodes = this.connectVoice(o,g,pan);
+    this.releaseVoice(o, nodes);
     o.start(t); o.stop(t+dur+.06);
   }
   filteredNoise(t, dur, amp, hz = 1900, Q = .6, pan = 0, highpass = false) {
@@ -247,7 +299,7 @@ window.SignalAudio = class SignalAudio {
     f.type = highpass ? 'highpass' : 'bandpass';
     f.frequency.value = hz; f.Q.value = Q;
     this.env(g,t,amp,.008,Math.max(.025,dur-.008));
-    s.connect(f); this.connectVoice(f,g,pan);
+    s.connect(f); this.releaseVoice(s, [s, ...this.connectVoice(f,g,pan)]);
     s.start(t, Math.random() * (this.noise.duration - dur - .15));
     s.stop(t+dur+.04);
   }
@@ -284,17 +336,7 @@ window.SignalAudio = class SignalAudio {
   note(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
   scoreVoice(t, midi, dur, instrument, amp=.1, pan=0) {
     const ac=this.ctx, freq=this.note(midi), g=ac.createGain();
-    const presets={
-      piano:{partials:[[1,1],[2,.31],[3,.12],[4.01,.055]],type:'sine',attack:.004,release:.42,hz:3600},
-      strings:{partials:[[1,.48],[1.003,.3],[.998,.22]],type:'sawtooth',attack:.28,release:.65,hz:1350},
-      organ:{partials:[[1,.56],[2,.27],[3,.12],[4,.05]],type:'sine',attack:.008,release:.045,hz:2200},
-      brass:{partials:[[1,.65],[1.006,.35]],type:'sawtooth',attack:.025,release:.09,hz:1500},
-      riff:{partials:[[1,.65],[2,.23],[3,.12]],type:'sawtooth',attack:.003,release:.035,hz:1700},
-      acid:{partials:[[1,1]],type:'sawtooth',attack:.006,release:.09,hz:2400},
-      sub:{partials:[[1,.85],[2,.15]],type:'sine',attack:.012,release:.2,hz:320},
-      bell:{partials:[[1,.7],[2.76,.2],[4.13,.1]],type:'sine',attack:.003,release:.32,hz:4300}
-    };
-    const p=presets[instrument], filter=ac.createBiquadFilter();
+    const p=VOICE_PRESETS[instrument], filter=ac.createBiquadFilter();
     filter.type='lowpass';filter.Q.value=instrument==='acid'?5:.6;
     filter.frequency.setValueAtTime(p.hz,t);
     if(instrument==='acid'||instrument==='brass'||instrument==='riff')
@@ -313,12 +355,18 @@ window.SignalAudio = class SignalAudio {
       const drive=ac.createWaveShaper();drive.curve=this.riffCurve;drive.oversample='2x';
       drive.connect(filter);input=drive;
     }
-    this.connectVoice(filter,g,pan);
+    const shared = this.connectVoice(filter,g,pan);
+    if (input !== filter) shared.push(input);
+    let remaining = p.partials.length;
     for(const [multiple,level] of p.partials) {
       const o=ac.createOscillator(), partial=ac.createGain();
       o.type=p.type;o.frequency.value=freq*multiple;partial.gain.value=level;
       o.connect(partial).connect(input);o.start(t);o.stop(t+dur+p.release+.02);
-      o.onended=()=>{o.disconnect();partial.disconnect();};
+      o.onended=()=>{
+        o.disconnect();partial.disconnect();o.onended=null;
+        // All partials share these effects: retain them until the last ends.
+        if (--remaining === 0) for (const node of shared) node.disconnect();
+      };
     }
   }
   echoNote(t,midi,dur,instrument,amp,pan,delay) {
@@ -455,7 +503,7 @@ window.SignalAudio = class SignalAudio {
   // of the original film's sound design; no sampled film audio or exact cue.
   ripple(x, power = 1) {
     if (this.mode==='off'||!this.ctx) return;
-    const ac=this.ctx, t=ac.currentTime+.012;
+    const ac=this.ctx, t=ac.currentTime+this.voiceLead;
     const pan=Math.max(-.72,Math.min(.72,x*1.44-.72));
     const heavy=power>2, length=heavy?1.35:.94;
     const peak=heavy?.21:.125, rise=heavy?.265:.175;
@@ -468,7 +516,7 @@ window.SignalAudio = class SignalAudio {
       const g=ac.createGain();g.gain.setValueAtTime(.0001,begin);
       g.gain.exponentialRampToValueAtTime(Math.max(.0002,amp),begin+attack);
       g.gain.exponentialRampToValueAtTime(.0001,begin+span);
-      s.connect(f);this.connectVoice(f,g,position);
+      s.connect(f);this.releaseVoice(s,[s,...this.connectVoice(f,g,position)]);
       s.start(begin,Math.random()*(this.noise.duration-span-.1));s.stop(begin+span+.025);
     };
     // The attack gathers energy rather than announcing itself as a click.
@@ -490,7 +538,7 @@ window.SignalAudio = class SignalAudio {
       g.gain.setValueAtTime(.0001,t);
       g.gain.exponentialRampToValueAtTime(peak*level*.8,t+rise);
       g.gain.exponentialRampToValueAtTime(.0001,t+length*.82);
-      o.connect(f);this.connectVoice(f,g,pan*.35);
+      o.connect(f);this.releaseVoice(o,[o,...this.connectVoice(f,g,pan*.35)]);
       o.start(t);o.stop(t+length+.02);
     }
     // The visible echo is smaller and late: a narrow, soft second crest.
@@ -498,7 +546,7 @@ window.SignalAudio = class SignalAudio {
   }
   surge() {
     if (this.mode==='off'||!this.ctx) return;
-    const ac=this.ctx, t=ac.currentTime+.015;
+    const ac=this.ctx, t=ac.currentTime+Math.max(.015,this.voiceLead);
     // A broad electrical pressure wave, NOT a rising laser or arcade chirp.
     const source=ac.createBufferSource(); source.buffer=this.noise;
     const filter=ac.createBiquadFilter();filter.type='bandpass';
@@ -512,6 +560,7 @@ window.SignalAudio = class SignalAudio {
     g.gain.setValueAtTime(.21,t+.8);
     g.gain.exponentialRampToValueAtTime(.0001,t+1.78);
     source.connect(filter).connect(g).connect(this.master);
+    this.releaseVoice(source,[source,filter,g]);
     source.start(t,Math.random()*(this.noise.duration-2)); source.stop(t+1.81);
     this.tone(t,57,1.25,'sine',.24,43);
     for(let i=0;i<6;i++)
@@ -519,7 +568,7 @@ window.SignalAudio = class SignalAudio {
   }
   breach() {
     if (this.mode==='off'||!this.ctx) return;
-    const t=this.ctx.currentTime+.01;
+    const t=this.ctx.currentTime+this.voiceLead;
     this.tone(t,67,1.24,'sine',.53,26);
     this.filteredNoise(t+.13,.99,.24,290,.25);
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
@@ -712,9 +761,7 @@ window.SignalAudio = class SignalAudio {
     src.buffer=this.uiFoleySample(kind,kind==='slider'||kind==='slider-end'?bucket:14);
     // Only buttons gain extra pitch diversity (~ +/-3.5%). Slider detents
     // and the approved checkbox ON/OFF timbres keep their v14 playback.
-    const buttonKinds=new Set(['press','select','commit','reset',
-      'pause','resume','panel-open','panel-close']);
-    src.playbackRate.value=buttonKinds.has(kind)
+    src.playbackRate.value=BUTTON_KINDS.has(kind)
       ? .965+Math.random()*.07 : .985+Math.random()*.03;
     const gain=this.ctx.createGain();
     // Keep the established UI volume calibration: 50% has the amplitude
@@ -725,8 +772,10 @@ window.SignalAudio = class SignalAudio {
     const foleyTrim=kind==='slider'?.39:kind==='slider-end'?.55:1;
     gain.gain.value=.79*level*foleyTrim;
     src.connect(gain).connect(this.uiBus);
-    src.onended=()=>{src.disconnect();gain.disconnect();};
-    src.start(now+.006);
+    this.releaseVoice(src,[src,gain]);
+    // Generating an uncached sample can take longer than the old 6 ms lead.
+    // Read the audio clock again after synthesis, keeping its full attack.
+    src.start(this.ctx.currentTime+this.voiceLead);
   }
 }
 
