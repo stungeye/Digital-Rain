@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 10</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 10<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 11<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -142,11 +142,11 @@ kbd{font:inherit;color:#e3ffe6}
   <div class="rule"></div>
   <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
    <kbd>E</kbd> surge · <kbd>B</kbd> breach · <kbd>D</kbd> director<br>
-   <kbd>M</kbd> audio · <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen<br>
+   <kbd>M</kbd> mute / restore audio · <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen<br>
    <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
    <kbd>H</kbd> panel<br>
    <kbd>R</kbd> reseed · <kbd>G</kbd> glow · <kbd>S</kbd> frame · <kbd>V</kbd> video</p>
-  <p class="note">SFX Only is ready on load. Audio unlocks on your first click, tap or keyboard action; selecting Muted silences all sounds. Video exports include audio when enabled.</p>
+  <p class="note">SFX Only is ready on load. Audio unlocks on your first interaction. Pause stops the breakbeat and beat-reactive pulses while atmospheric Code Hum can continue; cinematic and UI sounds still respond. Keyboard shortcuts work even when a panel control has focus. Muted silences everything.</p>
  </section>
  <button id="toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM PANEL</button>
 </div>
@@ -161,15 +161,17 @@ kbd{font:inherit;color:#e3ffe6}
 <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v8
+  DIGITAL RAIN // SIGNAL ENGINE v11
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
   One physical horizontal lane per stream depth, and all segments in that lane
   have the same velocity. Stream glyphs therefore cannot overwrite one another.
 
+  One global capture-phase shortcut dispatcher, independent of UI focus.
   SPACE pause   F fullscreen   R reseed   G glow   C color grade
-  E surge   D story director   T film texture   S screenshot   H panel
+  E surge   B breach   D story director   M mute/restore previous audio
+  T film texture   S screenshot   H panel   V recording   1/2/3 CRT
   + / - density   Click / touch to ripple (SHIFT + click: stronger)
 */
 
@@ -255,6 +257,9 @@ let breachAt = -Infinity;
 let breachMutated = -1;
 let displayEngine;
 let soundEngine;
+// M restores the previously selected audible mode, even if it was Code Hum
+// or Score + SFX, rather than always dropping the user into SFX Only.
+let lastAudibleMode = defaults.audio;
 let nextGrainFrame = 0;
 const ZOOM_MIN = .65;
 const DIRECTOR_SCENES = [
@@ -299,6 +304,9 @@ function setup() {
     });
   }
   lastRealTime = millis();
+  // One keyboard owner. Capture-phase prevents focused HTML buttons/ranges
+  // and p5's global keyboard callback from competing with our shortcuts.
+  window.addEventListener('keydown', handleRainShortcut, {capture:true});
   buildScene();
   displayEngine = new CRTDisplay(canvas.elt);
   soundEngine = new SignalAudio();
@@ -866,6 +874,10 @@ function setRainOption(name, value) {
   if ((name==='density'||name==='speed'||(name==='grade'&&!directorSettingGrade)) && rain.director)
     setRainOption('director',false);
   const old = rain[name];
+  if(name==='audio') {
+    if(value==='off' && old!=='off') lastAudibleMode=old;
+    else if(value!=='off') lastAudibleMode=value;
+  }
   rain[name] = value;
   if (name === 'director' && old !== value) {
     if(value) {
@@ -883,6 +895,9 @@ function setRainOption(name, value) {
   if (name === 'density') for (const plane of planes) plane.updateDensity();
   // Zoom transforms the existing world: no reseeding, no horizontal slipping.
   if (name === 'audio') soundEngine?.setMode(value);
+  // Freeze the breakbeat engine on pause. The continuous ambient drone is
+  // intentionally unaffected; UI and cinematic effects remain responsive.
+  if (name === 'paused') soundEngine?.setPaused(value);
   if (name === 'volume') soundEngine?.setVolume(value);
   if (name === 'crt') {
     displayEngine?.setMode(value);
@@ -903,6 +918,7 @@ function emitState() {
 }
 function resetRain() {
   for (const key of Object.keys(defaults)) rain[key] = defaults[key];
+  lastAudibleMode = defaults.audio;
   buildScene();
   directorAt=millis();directorScene=-1;directorSaved=null;directorPulseDone=false;
   window.dispatchEvent(new CustomEvent('rain-director-toggle',{detail:{on:false}}));
@@ -910,6 +926,7 @@ function resetRain() {
   // Restore the default SFX-only mode. Reset is a user gesture; keep mute optional.
   soundEngine?.setMode(rain.audio);
   soundEngine?.setVolume(rain.volume);
+  soundEngine?.setPaused(rain.paused);
   emitState();
 }
 function signalBurst() {
@@ -957,30 +974,64 @@ function mouseMoved() {
   const where=screenToWorld(mouseX,mouseY);
   hover = {x:where.x,y:where.y,at:simulationTime};
 }
-function keyPressed() {
-  // Let HTML range sliders and buttons use their ordinary keyboard behavior.
-  if (document.activeElement?.matches?.('input, button, select')) return;
+// No p5 keyPressed() callback: the browser's focused control must not steal
+// Space, E, B, or any other shortcut. One event => at most one action.
+function handleRainShortcut(event) {
+  if(event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
+  // Respect editable text in hosts such as the p5.js editor; range sliders,
+  // checkboxes, radios and buttons are deliberately NOT excluded.
+  const target=event.target;
+  if(target?.isContentEditable || target?.matches?.('textarea, input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit])')) return;
+  const k=String(event.key).toLowerCase();
+  const shortcut = event.code==='Space' || k===' ' ? 'space' :
+    event.code==='NumpadAdd' ? '+' :
+    event.code==='NumpadSubtract' ? '-' :
+    ['+','='].includes(k) ? '+' : ['-','_'].includes(k) ? '-' : k;
+  const recognized = new Set(['space','f','g','r','e','b','d','m','1','2','3','t','c','s','h','v','+','-']);
+  if(!recognized.has(shortcut))return;
+  if(shortcut==='h' && typeof window.toggleRainPanel!=='function')return;
+  if(shortcut==='v' && typeof window.recordRain!=='function')return;
+  event.preventDefault();  // Space never activates a focused button or scrolls.
+  event.stopImmediatePropagation(); // p5 / other keydown listeners cannot double-fire.
   activateRainAudio();
-  const k = String(key).toLowerCase();
-  if (key === ' ') { setRainOption('paused',!rain.paused); return false; }
-  if (k === 'f') fullscreen(!fullscreen());
-  if (k === 'g') setRainOption('bloom',!rain.bloom);
-  if (k === 'r') buildScene();
-  if (k === 'e') signalBurst();
-  if (k === 'b') systemBreach();
-  if (k === 'd') setRainOption('director',!rain.director);
-  if (k === 'm') setRainOption('audio', rain.audio==='off'?'effects':'off');
-  if (k === '1') setRainOption('crt','off');
-  if (k === '2') setRainOption('crt','scan');
-  if (k === '3') setRainOption('crt','glass');
-  if (k === 't') setRainOption('texture',!rain.texture);
-  if (k === 'c') setRainOption('grade',GRADE_NAMES[(GRADE_NAMES.indexOf(rain.grade)+1)%GRADE_NAMES.length]);
-  if (k === 's') { if(window.captureRain) window.captureRain(); else saveCanvas('digital-rain-04','png'); }
-  if (k === 'h') window.toggleRainPanel?.();
-  if (k === 'v') window.recordRain?.();
-  if (key === '+' || key === '=') setRainOption('density',Math.min(1.65,rain.density+.1));
-  if (key === '-') setRainOption('density',Math.max(.3,rain.density-.1));
+  const feedback = kind => soundEngine?.interfaceSound(kind);
+  switch(shortcut) {
+    case 'space': {
+      const paused=!rain.paused;
+      setRainOption('paused',paused);
+      feedback(paused?'pause':'resume');
+      break;
+    }
+    case 'f': fullscreen(!fullscreen()); feedback('select'); break;
+    case 'g': setRainOption('bloom',!rain.bloom); feedback(rain.bloom?'toggle-on':'toggle-off'); break;
+    case 'r': buildScene(); feedback('commit'); break;
+    case 'e': signalBurst(); break; // Cinematic effect owns its sound.
+    case 'b': systemBreach(); break;
+    case 'd': setRainOption('director',!rain.director); feedback(rain.director?'toggle-on':'toggle-off'); break;
+    case 'm': {
+      const wasMuted=rain.audio==='off';
+      if(!wasMuted) feedback('toggle-off');
+      setRainOption('audio',wasMuted?lastAudibleMode:'off');
+      if(wasMuted) feedback('toggle-on');
+      break;
+    }
+    case '1': setRainOption('crt','off'); feedback('select'); break;
+    case '2': setRainOption('crt','scan'); feedback('select'); break;
+    case '3': setRainOption('crt','glass'); feedback('select'); break;
+    case 't': setRainOption('texture',!rain.texture); feedback(rain.texture?'toggle-on':'toggle-off'); break;
+    case 'c': setRainOption('grade',GRADE_NAMES[(GRADE_NAMES.indexOf(rain.grade)+1)%GRADE_NAMES.length]); feedback('select'); break;
+    case 's': {
+      feedback('commit');
+      if(window.captureRain)window.captureRain(); else saveCanvas('digital-rain','png');
+      break;
+    }
+    case 'h': window.toggleRainPanel(); break;
+    case 'v': window.recordRain(); break;
+    case '+': setRainOption('density',Math.min(1.65,rain.density+.1)); feedback('slider'); break;
+    case '-': setRainOption('density',Math.max(.3,rain.density-.1)); feedback('slider'); break;
+  }
 }
+
 function windowResized() {
   resizeCanvas(windowWidth,windowHeight);
   buildScene();
@@ -1164,13 +1215,15 @@ class CRTDisplay {
 // Arrangement: low minor drone; granular electrical rain; spacious, sparse
 // industrial/trip-hop percussion and an original minor ostinato.
 // ─── SIGNAL ENGINE AUDIO / ORIGINAL PROCEDURAL SCORE ─────────────────────
-// No recordings, samples or third-party sound libraries. A 132 BPM breakbeat
+// No recordings, samples or third-party sound libraries. A 134 BPM breakbeat
 // with 32-bar arrangement, continuously varying drones, and restrained Foley.
 class SignalAudio {
   constructor() {
     this.ctx = null; this.mode = 'off'; this.volume = rain.volume;
     this.step = 0; this.nextStep = 0; this.nextAmbient = 0;
     this.timer = null; this.nodes = []; this.recentHits = [];
+    this.scorePaused = rain.paused;
+    this.schedulingScore = false;
   }
   init() {
     const Context = window.AudioContext || window.webkitAudioContext;
@@ -1185,6 +1238,10 @@ class SignalAudio {
     this.compressor.release.value = .2;
     this.master = ac.createGain(); this.master.gain.value = 0;
     this.master.connect(this.compressor); this.compressor.connect(ac.destination);
+    // All score instruments are routed separately from UI and cinematic SFX.
+    // This lets pause mute the full beat instantly without muting the hum.
+    this.scoreBus=ac.createGain();this.scoreBus.gain.value=this.scorePaused?0:1;
+    this.scoreBus.connect(this.master);
     // UI Foley has its own small mastering stage before the shared master.
     // The old UI used only narrow-band noise and vanished beneath the score.
     this.uiBus=ac.createGain();this.uiBus.gain.value=1.12;
@@ -1193,7 +1250,21 @@ class SignalAudio {
     this.uiLimiter.threshold.value=-16;this.uiLimiter.knee.value=10;
     this.uiLimiter.ratio.value=3;this.uiLimiter.attack.value=.003;
     this.uiLimiter.release.value=.085;
-    this.uiBus.connect(this.uiHP).connect(this.uiLimiter).connect(this.master);
+    // Mild asymmetric magnetic/tape-style soft clipping: subtle extra
+    // harmonics and worn edges on the EXISTING UI Foley only. The score,
+    // ambience, ripple, surge and breach bypass this stage unchanged.
+    this.uiWear=ac.createWaveShaper();
+    const curve=new Float32Array(2049);
+    for(let i=0;i<curve.length;i++) {
+      const x=(i/(curve.length-1))*2-1;
+      curve[i]=Math.tanh(2.05*x+.10*x*x)*.55;
+    }
+    this.uiWear.curve=curve;
+    this.uiWear.oversample='2x';
+    this.uiTone=ac.createBiquadFilter();
+    this.uiTone.type='lowpass';this.uiTone.frequency.value=6100;
+    this.uiBus.connect(this.uiHP).connect(this.uiWear).connect(this.uiTone)
+      .connect(this.uiLimiter).connect(this.master);
     this.noise = this.noiseBuffer(27.7);
     // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
     // Start silent until the selected mode has been applied. In SFX-only mode
@@ -1257,12 +1328,19 @@ class SignalAudio {
   }
   setMode(mode) {
     if (mode !== 'off' && !this.ctx && !this.init()) { this.mode = 'off'; return; }
+    const previousMode=this.mode;
     this.mode = mode;
     if (!this.ctx) return;
     // Resume during the actual user gesture. Do not await a promise before
     // scheduling gain/voices, or the first click's sound can be lost.
     if (mode !== 'off') this.ctx.resume().catch(()=>{});
     const ac = this.ctx, active = mode !== 'off';
+    if(mode==='score' && previousMode!=='score') {
+      this.step=0;
+      this.nextStep=ac.currentTime+.07;
+      this.recentHits=[];
+    }
+    this.setPaused(rain.paused);
     this.master.gain.setTargetAtTime(active ? this.volume * .52 : 0, ac.currentTime, active ? .018 : .12);
     this.droneGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .072 : .135, ac.currentTime, .25);
     this.airGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .019 : .043, ac.currentTime, .35);
@@ -1274,13 +1352,31 @@ class SignalAudio {
     }
     if (!active && this.timer) { clearInterval(this.timer); this.timer = null; }
   }
+  setPaused(paused) {
+    this.scorePaused=Boolean(paused);
+    this.recentHits.length=0;
+    if(!this.ctx)return;
+    const t=this.ctx.currentTime;
+    this.scoreBus.gain.setTargetAtTime(this.scorePaused?0:1,t,.012);
+    // The sequencing position stays fixed while paused. The next note is
+    // resynchronized to audio time on resume (no burst of skipped beats).
+    this.nextStep=t+.075;
+  }
   schedule() {
     if (!this.ctx || this.mode === 'off' || this.ctx.state !== 'running') return;
     const ac = this.ctx, beat = 60 / 134 / 4;
+    if(this.mode==='score' && this.scorePaused) {
+      this.nextStep=ac.currentTime+.075;
+      return;
+    }
     if (this.nextStep < ac.currentTime - .35) this.nextStep = ac.currentTime + .02;
     let n = 0;
     while (this.nextStep < ac.currentTime + .17 && n++ < 10) {
-      if (this.mode === 'score') this.scoreStep(this.nextStep, this.step);
+      if (this.mode === 'score') {
+        this.schedulingScore=true;
+        try { this.scoreStep(this.nextStep, this.step); }
+        finally { this.schedulingScore=false; }
+      }
       this.nextStep += beat; this.step++;
     }
     // Incommensurate, randomized quiet events, not a repeating one-bar chirp.
@@ -1300,10 +1396,11 @@ class SignalAudio {
   }
   connectVoice(node, gain, pan = 0) {
     node.connect(gain);
+    const bus=this.schedulingScore?this.scoreBus:this.master;
     if (this.ctx.createStereoPanner) {
       const p = this.ctx.createStereoPanner(); p.pan.value = pan;
-      gain.connect(p).connect(this.master);
-    } else gain.connect(this.master);
+      gain.connect(p).connect(bus);
+    } else gain.connect(bus);
   }
   tone(t, freq, dur, type = 'sine', amp = .12, endFreq = null, lowpass = 0, pan = 0) {
     if (!this.ctx || this.mode === 'off') return;
@@ -1392,7 +1489,7 @@ class SignalAudio {
     if(dropout&&s===12)this.filteredNoise(hit,.48,.09,550,.31);
   }
   beatEnergy() {
-    if(this.mode!=='score'||!this.ctx)return 0;
+    if(this.mode!=='score'||this.scorePaused||!this.ctx)return 0;
     const now=this.ctx.currentTime;
     let energy=0;
     for(const hit of this.recentHits) {
@@ -1652,7 +1749,8 @@ window.signalSound = () => soundEngine;
   };
   document.addEventListener('pointerdown',activateOnGesture,{capture:true});
   document.addEventListener('keydown',event=>{
-    if(event.repeat||['Shift','Control','Alt','Meta','CapsLock'].includes(event.key))return;
+    if(event.repeat||event.altKey||event.ctrlKey||event.metaKey||
+       ['Shift','Control','Alt','Meta','CapsLock'].includes(event.key))return;
     activateOnGesture(event);
   },{capture:true});
   const feedback=(kind,value=.5,control='')=>window.signalSound()?.interfaceSound(kind,value,control);
@@ -1704,7 +1802,7 @@ window.signalSound = () => soundEngine;
     audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
       effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
-      score:'134-BPM big beat / breakbeat: chopped kicks, swung hi-hats, ghost snares, gritty backbeat and evolving 32-bar arrangement.'}
+      score:'134-BPM big beat / breakbeat with chopped kicks, swung hats, ghost snares and evolving 32-bar arrangement. Pause freezes the beat, while low atmospheric hum remains.'}
   };
   function sync(){
     const st=getRainOptions();
@@ -1778,7 +1876,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-10-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-11-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -1803,7 +1901,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-10-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-11-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
