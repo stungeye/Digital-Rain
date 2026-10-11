@@ -1,133 +1,137 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#000401">
-  <meta name="description" content="Matrix-inspired digital rain: cinematic fixed-cell glyphs, collision-free streams and living phosphor glow. Built with p5.js.">
-  <title>DIGITAL RAIN / CINEMA ENGINE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-  <style>
-    :root { color-scheme: dark; --green:#b1e9bc; --accent:#84e49b; --quiet:#62836b; --line:rgba(108,215,129,.19); }
-    * { box-sizing: border-box; }
-    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#000301; }
-    #rain {position:fixed; inset:0; overflow:hidden;}
-    #rain canvas {display:block; touch-action:manipulation;}
-    button,input,select {font:inherit;}
-    button {cursor:pointer;}
-    button:focus-visible, input:focus-visible, select:focus-visible {outline:2px solid #b0ffc8;outline-offset:2px;}
-    .hud {position:fixed;z-index:4;left:clamp(13px,2.2vw,32px);bottom:clamp(13px,2.5vw,33px);
-      font:11px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;color:var(--green);letter-spacing:.09em;
-      user-select:none;}
-    #system-toggle {border:1px solid rgba(120,211,131,.3);background:rgba(0,16,7,.66);color:#9ccfac;
-      min-width:137px;padding:12px 14px;letter-spacing:.17em;text-align:left;
-      transition:background .2s, border-color .2s;color .2s;}
-    #system-toggle:hover, #system-toggle:focus-visible {background:rgba(10,36,17,.94);border-color:rgba(133,239,154,.75);color:#effff0;}
-    #panel {display:none;position:absolute;bottom:52px;left:0;width:min(362px,calc(100vw - 26px));
-      max-height:min(79vh,720px);overflow:auto;overscroll-behavior:contain;padding:25px 23px 22px;
-      border:1px solid rgba(104,199,121,.4);background:rgba(0,13,6,.965);
-      box-shadow:0 22px 95px rgba(0,0,0,.7),0 0 55px rgba(16,93,42,.1),inset 0 0 0 1px rgba(0,0,0,.75);
-      scrollbar-color:#2c6b39 #001306;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);}
-    #panel.open {display:block;}
-    .eyebrow {display:flex;align-items:center;justify-content:space-between;gap:7px;color:#599967;font-size:9px;letter-spacing:.23em;}
-    .eyebrow .live {color:#8ee7a1;}
-    .live::before {content:"";display:inline-block;width:5px;height:5px;margin:0 8px 1px 0;background:#76d892;box-shadow:0 0 8px #6bea8d;border-radius:100%;}
-    .title {margin:16px 0 5px;font-size:23px;line-height:1.1;font-weight:400;letter-spacing:.17em;color:#ebffee;text-shadow:0 0 22px rgba(71,224,109,.25);}
-    .subtitle {margin:0 0 18px;color:#658a6b;letter-spacing:.025em;font-size:10px;line-height:1.75;}
-    .divider {height:1px;background:linear-gradient(90deg,rgba(122,220,135,.43),rgba(122,220,135,0));margin:17px 0;}
-    .section-tag {color:#638b6c;font-size:9px;letter-spacing:.24em;margin:0 0 10px;}
-    .grade-picker {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
-    .grade-picker button {padding:10px 4px;border:1px solid var(--line);color:#719f7a;background:rgba(18,53,27,.25);
-      font-size:9px;letter-spacing:.11em;}
-    .grade-picker button.active {border-color:#89d7a0;color:#e2ffe8;background:rgba(44,119,59,.26);box-shadow:inset 0 0 15px rgba(50,126,72,.15);}
-    .grade-picker button:hover {border-color:#89d7a0;}
-    .control {margin:15px 0 0;}
-    .control-head {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
-    label {color:#a0c7a6;font-size:10px;letter-spacing:.105em;}
-    output {font-size:10px;color:#dbffe1;font-variant-numeric:tabular-nums;}
-    input[type=range] {width:100%;height:14px;margin:0;cursor:pointer;accent-color:#86db95;}
-    .switches {display:flex;align-items:center;justify-content:space-between;margin:15px 0 0;gap:15px;}
-    input[type=checkbox] {width:15px;height:15px;accent-color:#77c78a;cursor:pointer;}
-    .buttons {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:17px;}
-    .buttons button {border:1px solid var(--line);padding:11px 5px;background:rgba(19,58,28,.29);
-      color:#b3e4bb;letter-spacing:.1em;font-size:9px;}
-    .buttons button:hover {background:rgba(30,99,44,.52);border-color:#81cc96;color:white;}
-    .buttons button[data-active="true"] {border-color:#acffbd;color:#edfff0;}
-    .buttons button:disabled {opacity:.35;cursor:default;}
-    #notification {min-height:18px;margin:10px 0 0;color:#8dc79b;font-size:9px;letter-spacing:.04em;}
-    .keyhelp {color:#638f6f;line-height:1.95;font-size:9px;letter-spacing:.025em;}
-    kbd {font:inherit;color:#bbe4c2;}
-    .corner {position:fixed;z-index:2;right:clamp(13px,2.2vw,32px);bottom:clamp(13px,2.5vw,33px);
-      color:rgba(101,181,121,.36);font:9px Consolas,monospace;letter-spacing:.23em;pointer-events:none;}
-    .corner b {font-weight:400;color:rgba(128,200,141,.5);}
-    .corner::before {content:"";display:inline-block;height:4px;width:4px;background:#6fe697;border-radius:50%;
-      vertical-align:middle;margin:0 9px 1px 0;box-shadow:0 0 7px rgba(92,255,138,.7);}
-    #rec-indicator {display:none;position:fixed;right:24px;top:23px;z-index:5;pointer-events:none;
-      color:#deffe2;font:10px Consolas,monospace;letter-spacing:.18em;text-shadow:0 0 6px #0a3d15;}
-    #rec-indicator.on {display:block;}
-    #rec-indicator.on::before {content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#ee746e;
-      margin-right:10px;box-shadow:0 0 10px rgba(255,70,60,.7);animation:blink 1s infinite;}
-    @keyframes blink {50% {opacity:.25;}}
-    @media(max-width:560px) {#panel {padding:20px 17px;max-height:73vh;}.corner {display:none;}#system-toggle {padding:10px 12px;}}
-    @media(prefers-reduced-motion:reduce) {*,*::before,*::after {animation:none!important;transition:none!important;}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000402">
+<meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
+<title>DIGITAL RAIN // SIGNAL ENGINE 04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--mint:#b5ebc0;--soft:#80b38c;--line:rgba(126,216,144,.2);--neon:#aaffb6}
+*{box-sizing:border-box}
+html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:#000401}
+#rain{position:fixed;inset:0;overflow:hidden}
+#rain canvas{display:block;touch-action:manipulation}
+#crt-output{z-index:1}
+button,input{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid #adffbf;outline-offset:2px}
+.hud{position:fixed;z-index:5;left:clamp(12px,2.2vw,30px);bottom:clamp(12px,2.4vh,28px);font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--mint);letter-spacing:.085em;user-select:none}
+#toggle{border:1px solid rgba(113,217,137,.43);background:rgba(0,14,7,.81);color:#bbebc5;min-width:161px;padding:12px 15px;text-align:left;letter-spacing:.15em;box-shadow:0 0 35px rgba(14,98,38,.11)}
+#toggle:hover{border-color:#b0ffc3;color:#fff;background:rgba(2,28,12,.92)}
+#panel{display:none;position:absolute;bottom:53px;left:0;width:min(392px,calc(100vw - 24px));max-height:min(84vh,850px);overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:rgba(1,14,7,.97);border:1px solid rgba(114,209,134,.48);box-shadow:0 25px 90px #000b,0 0 60px #0a451329;scrollbar-color:#28673c #001306;backdrop-filter:blur(18px)}
+#panel.open{display:block}
+.hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:#77b68a}
+.live{color:#b0f5bb}.live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin:0 8px 1px 0;background:#73ed8d;box-shadow:0 0 12px #6bff82}
+h1{margin:14px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:#f0fff0;text-shadow:0 0 24px #5cf37c3d}
+.sub{font-size:10px;line-height:1.7;letter-spacing:.02em;color:#79a584;margin:0}
+.rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,#6eab80a8,transparent)}
+.tag{font-size:9px;letter-spacing:.23em;color:#84aa8b;margin:0 0 10px}
+.triad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.triad button,.duo button{border:1px solid var(--line);background:rgba(26,67,32,.22);color:#94c6a0;padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
+.triad button.active,.duo button.active{background:rgba(54,120,67,.28);color:#edfff0;border-color:#b1f5bd;box-shadow:inset 0 0 17px #42955b25}
+.triad button:hover,.duo button:hover{border-color:#96dca6}
+.dsc{font-size:10px;color:#80ac88;margin:10px 0 0;min-height:32px;line-height:1.55;letter-spacing:.01em}
+.control{margin:14px 0 0}
+.control-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+label{color:#abd4b3;font-size:10px;letter-spacing:.09em}
+output{color:#deffe1;font-size:10px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:12px;margin:0;accent-color:#97eea8;cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;accent-color:#90dba3;cursor:pointer}
+.switch{margin:14px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px}
+.buttons button{background:rgba(24,64,33,.33);border:1px solid var(--line);color:#b7e9bd;padding:11px 4px;font-size:9px;letter-spacing:.095em}
+.buttons button:hover{border-color:#d9ffe2;background:#23532c77;color:#fff}
+.buttons button#breach-btn{border-color:#afdaacaa;color:#f5ffe9;background:rgba(76,113,29,.27)}
+#notify{color:#aeebb5;font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
+.keyhelp{font-size:9px;line-height:1.9;color:#80b78d;letter-spacing:0}
+kbd{font:inherit;color:#e3ffe6}
+.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:clamp(12px,2.4vh,28px);pointer-events:none;text-align:right;color:rgba(156,235,174,.43);font:9px/1.8 Consolas,monospace;letter-spacing:.18em}
+.mini strong{font-weight:400;color:#b5efb782}
+.mini:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:8px;background:#80ea9d;box-shadow:0 0 9px #80ff9d}
+#rec-label{position:fixed;z-index:6;top:24px;right:24px;display:none;color:#e1ffe4;font:10px Consolas,monospace;letter-spacing:.2em;pointer-events:none}
+#rec-label.on{display:block}#rec-label.on:before{content:"";display:inline-block;border-radius:50%;width:7px;height:7px;margin-right:9px;background:#fa7777;box-shadow:0 0 10px #f66}
+.note{font-size:9px;color:#769b7c;line-height:1.6;margin:12px 0 0}
+@media(max-width:560px){#panel{max-height:78vh;padding:19px 16px 17px}.mini{display:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-  <main id="rain" aria-label="Animated digital rain"></main>
-  <div class="hud">
-    <section id="panel" aria-label="Digital rain settings">
-      <div class="eyebrow"><span>M// SIGNAL CONFIGURATION</span><span class="live">LIVE</span></div>
-      <h1 class="title">DIGITAL RAIN</h1>
-      <p class="subtitle">CINEMA ENGINE / 03<br>Exclusive glyph lanes. Living phosphor. No collisions.</p>
-      <div class="divider"></div>
-      <p class="section-tag">01 / PHOSPHOR PROFILE</p>
-      <div class="grade-picker" role="group" aria-label="Color grade">
-        <button type="button" data-grade="cinema" class="active" aria-pressed="true">CINEMA</button>
-        <button type="button" data-grade="abyss" aria-pressed="false">ABYSS</button>
-        <button type="button" data-grade="voltage" aria-pressed="false">VOLTAGE</button>
-      </div>
-      <div class="divider"></div>
-      <p class="section-tag">02 / THE RAIN</p>
-      <div class="control"><div class="control-head"><label for="density">COLUMN DENSITY</label><output id="density-value">105%</output></div>
-        <input id="density" type="range" min="0.3" max="1.65" step="0.05" value="1.05"></div>
-      <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value">100%</output></div>
-        <input id="speed" type="range" min="0.2" max="2.4" step="0.05" value="1"></div>
-      <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value">100%</output></div>
-        <input id="persistence" type="range" min="0.55" max="1.55" step="0.05" value="1"></div>
-      <div class="control"><div class="control-head"><label for="mutation">GLYPH MUTATION</label><output id="mutation-value">100%</output></div>
-        <input id="mutation" type="range" min="0.25" max="2.5" step="0.05" value="1"></div>
-      <div class="control"><div class="control-head"><label for="glow">PHOSPHOR GLOW</label><output id="glow-value">100%</output></div>
-        <input id="glow" type="range" min="0" max="1.8" step="0.05" value="1"></div>
-      <div class="switches"><label for="bloom">BLOOM LIGHTING</label><input type="checkbox" id="bloom" checked></div>
-      <div class="switches"><label for="texture">ANALOG FILM TEXTURE</label><input type="checkbox" id="texture" checked></div>
-      <div class="divider"></div>
-      <p class="section-tag">03 / SIGNAL COMMANDS</p>
-      <div class="buttons">
-        <button id="pause-btn" type="button">PAUSE</button>
-        <button id="burst-btn" type="button">SIGNAL BURST</button>
-        <button id="reseed-btn" type="button">RESEED</button>
-        <button id="snapshot-btn" type="button">SAVE FRAME</button>
-        <button id="record-btn" type="button">RECORD 8s</button>
-        <button id="defaults-btn" type="button">RESET CONFIG</button>
-      </div>
-      <p id="notification" role="status" aria-live="polite"></p>
-      <div class="divider"></div>
-      <p class="keyhelp"><kbd>CLICK / TOUCH</kbd> disturbance &nbsp; · &nbsp; <kbd>SHIFT+CLICK</kbd> stronger<br>
-        <kbd>SPACE</kbd> pause &nbsp; <kbd>F</kbd> fullscreen &nbsp; <kbd>R</kbd> reseed &nbsp; <kbd>E</kbd> surge<br>
-        <kbd>C</kbd> grade &nbsp; <kbd>G</kbd> glow &nbsp; <kbd>T</kbd> grain &nbsp; <kbd>H</kbd> hide<br>
-        <kbd>S</kbd> screenshot &nbsp; <kbd>V</kbd> record &nbsp; <kbd>+ / −</kbd> density</p>
-    </section>
-    <button type="button" id="system-toggle" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM</button>
+<main id="rain" aria-label="Interactive falling green digital code rain"></main>
+<div class="hud">
+ <section id="panel" aria-label="Signal engine controls">
+  <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
+  <h1>DIGITAL RAIN</h1>
+  <p class="sub">SIGNAL ENGINE / 04<br>Film-inspired code, no intersecting streams.</p>
+  <div class="rule"></div>
+  <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
+  <div class="triad" role="group" aria-label="Color profiles">
+   <button data-grade="cinema" class="active" aria-pressed="true">ORIGINAL</button>
+   <button data-grade="abyss" aria-pressed="false">DEEP SIGNAL</button>
+   <button data-grade="voltage" aria-pressed="false">OVERDRIVE</button>
   </div>
-  <div class="corner">MATRIX SIGNAL <b id="hud-state">// ONLINE</b></div>
-  <div id="rec-indicator">CAPTURING SIGNAL</div>
-  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
-  <script>
+  <p class="dsc" id="grade-help">The original code: emerald tails, white-hot leading glyphs.</p>
+  <div class="rule"></div>
+  <p class="tag">02 / THE CODE</p>
+  <div class="control"><div class="control-head"><label for="density">COLUMN DENSITY</label><output id="density-value"></output></div><input id="density" type="range" min="0.3" max="1.65" step="0.05" value="1.05"></div>
+  <div class="control"><div class="control-head"><label for="fontSize">GLOBAL GLYPH SIZE</label><output id="fontSize-value"></output></div><input id="fontSize" type="range" min="0.65" max="1.85" step="0.05" value="1"></div>
+  <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value"></output></div><input id="speed" type="range" min="0.2" max="2.4" step="0.05" value="1"></div>
+  <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value"></output></div><input id="persistence" type="range" min="0.55" max="1.55" step="0.05" value="1"></div>
+  <div class="control"><div class="control-head"><label for="mutation">GLYPH MUTATION</label><output id="mutation-value"></output></div><input id="mutation" type="range" min="0.25" max="2.5" step="0.05" value="1"></div>
+  <div class="control"><div class="control-head"><label for="glow">PHOSPHOR HALO</label><output id="glow-value"></output></div><input id="glow" type="range" min="0" max="1.8" step="0.05" value="1"></div>
+  <div class="switch"><label for="bloom">BLOOM LIGHTING</label><input id="bloom" type="checkbox" checked></div>
+  <div class="rule"></div>
+  <p class="tag">03 / ANALOG DISPLAY</p>
+  <div class="triad" role="group" aria-label="CRT display mode">
+   <button data-crt="off" class="active" aria-pressed="true">FLAT</button>
+   <button data-crt="scan" aria-pressed="false">SCANLINES</button>
+   <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
+  </div>
+  <p class="dsc" id="crt-help">Clean digital signal, with no CRT processing.</p>
+  <div class="control"><div class="control-head"><label for="scanStrength">SCANLINE CONTRAST</label><output id="scanStrength-value"></output></div><input id="scanStrength" type="range" min="0.15" max="1" step="0.05" value="0.62"></div>
+  <div class="switch"><label for="texture">ANALOG FILM GRAIN / DUST</label><input id="texture" type="checkbox" checked></div>
+  <div class="control"><div class="control-head"><label for="grain">FILM TEXTURE STRENGTH</label><output id="grain-value"></output></div><input id="grain" type="range" min="0.1" max="1.5" step="0.05" value="0.75"></div>
+  <div class="rule"></div>
+  <p class="tag">04 / ORIGINAL AUDIO</p>
+  <div class="triad" role="group" aria-label="Original audio modes">
+   <button data-audio="off" class="active" aria-pressed="true">MUTED</button>
+   <button data-audio="ambience" aria-pressed="false">CODE HUM</button>
+   <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
+  </div>
+  <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
+  <div class="control"><div class="control-head"><label for="volume">MASTER VOLUME</label><output id="volume-value"></output></div><input id="volume" type="range" min="0" max="1" step="0.05" value="0.5"></div>
+  <div class="rule"></div>
+  <p class="tag">05 / SIGNAL INTERVENTION</p>
+  <div class="buttons">
+   <button id="surge-btn">E / ELECTRIC SURGE</button>
+   <button id="breach-btn">B / SYSTEM BREACH</button>
+   <button id="pause-btn">PAUSE SIGNAL</button>
+   <button id="reseed-btn">RESEED FIELD</button>
+   <button id="snapshot-btn">SAVE FRAME</button>
+   <button id="record-btn">RECORD 8s</button>
+   <button id="defaults-btn" style="grid-column:1/-1">RESTORE DEFAULTS</button>
+  </div>
+  <p class="dsc">Surge = one narrow travelling scan. Breach = blackout, white-code takeover, and cascading recovery. Click the rain for local ripples.</p>
+  <p id="notify" role="status" aria-live="polite"></p>
+  <div class="rule"></div>
+  <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
+   <kbd>E</kbd> surge · <kbd>B</kbd> breach · <kbd>M</kbd> mute<br>
+   <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
+   <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen · <kbd>H</kbd> panel<br>
+   <kbd>R</kbd> reseed · <kbd>G</kbd> glow · <kbd>S</kbd> frame · <kbd>V</kbd> video</p>
+  <p class="note">Pure WebAudio generative composition. Audio begins only on activation; video exports include audio when it is enabled. Best enjoyed with headphones.</p>
+ </section>
+ <button id="toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM PANEL</button>
+</div>
+<div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // MUTED</div></div>
+<div id="rec-label">REC / SIGNAL</div>
+<script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
+<script>
 /*
-  DIGITAL RAIN // CINEMA ENGINE v3
-  p5.js 2.x · Copy into editor.p5js.org
+  DIGITAL RAIN // SIGNAL ENGINE v4
+  p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
   One physical horizontal lane per stream depth, and all segments in that lane
@@ -148,30 +152,26 @@ const GLYPHS = [
 
 // The original effect was never a uniform phosphor-green. It's nearly black
 // at the tail, clear green near the head, and occasionally porcelain white.
+// Deliberately wide looks: near-monochrome green, submerged cyan, and
+// aggressive chartreuse. Tonality, depth attenuation, and halos all change.
 const GRADES = {
   cinema: {
-    name: 'CINEMA', bg: [0, 3, 1],
-    ink: [
-      [3,19,9], [3,30,12], [4,44,17], [5,65,23], [7,91,31],
-      [12,124,42], [24,161,59], [48,207,92], [120,249,162], [235,255,238],
-    ],
-    halo: ['rgba(217,255,225,.52)', 'rgba(67,255,113,.3)', 'rgba(6,132,45,.11)'],
+    name: 'ORIGINAL', bg: [0, 3, 1], alpha: 1, heads: 1, blooms: 1,
+    ink: [[1,12,4],[2,23,8],[3,39,13],[5,62,19],[8,91,28],
+      [13,128,39],[27,168,58],[62,213,96],[144,248,166],[240,255,244]],
+    halo: ['rgba(227,255,225,.59)','rgba(55,255,92,.34)','rgba(8,139,43,.10)'],
   },
   abyss: {
-    name: 'ABYSS', bg: [0, 3, 2],
-    ink: [
-      [3,16,12], [3,26,17], [4,38,24], [4,54,33], [5,76,46],
-      [8,105,63], [16,146,82], [48,199,126], [135,246,188], [233,255,247],
-    ],
-    halo: ['rgba(206,255,237,.4)', 'rgba(55,240,152,.25)', 'rgba(8,119,70,.1)'],
+    name: 'DEEP SIGNAL', bg: [0, 5, 9], alpha: .78, heads: .43, blooms: .42,
+    ink: [[1,10,16],[2,16,24],[2,24,35],[3,35,45],[4,50,65],
+      [6,72,87],[12,104,117],[28,148,157],[78,195,200],[175,228,222]],
+    halo: ['rgba(154,230,229,.29)','rgba(33,176,191,.22)','rgba(3,85,109,.11)'],
   },
   voltage: {
-    name: 'VOLTAGE', bg: [0, 3, 0],
-    ink: [
-      [5,24,6], [6,36,9], [8,53,13], [11,75,17], [16,109,23],
-      [24,154,35], [50,200,59], [90,238,105], [165,255,174], [251,255,245],
-    ],
-    halo: ['rgba(243,255,216,.62)', 'rgba(123,255,62,.36)', 'rgba(51,159,10,.14)'],
+    name: 'OVERDRIVE', bg: [2, 4, 0], alpha: 1, heads: 1, blooms: 1.75,
+    ink: [[7,19,0],[14,34,0],[24,52,1],[37,78,0],[61,111,1],
+      [96,153,4],[140,195,8],[188,229,36],[227,253,97],[255,255,208]],
+    halo: ['rgba(242,255,188,.82)','rgba(173,255,22,.49)','rgba(77,164,4,.19)'],
   },
 };
 const GRADE_NAMES = Object.keys(GRADES);
@@ -189,7 +189,8 @@ const DEPTHS = [
 
 const defaults = {
   density: 1.05, speed: 1, glow: 1, persistence: 1,
-  mutation: 1, texture: true, grade: 'cinema', bloom: true, paused: false,
+  mutation: 1, texture: true, grain: .75, grade: 'cinema', bloom: true, paused: false,
+  fontSize: 1, crt: 'off', scanStrength: .62, audio: 'off', volume: .5,
 };
 const rain = { ...defaults };
 let planes = [];
@@ -205,6 +206,11 @@ let simulationTime = 0;
 let lastRealTime = 0;
 let lastClickTime = -Infinity;
 let frameNumber = 0;
+let breachAt = -Infinity;
+let breachMutated = -1;
+let displayEngine;
+let soundEngine;
+let nextGrainFrame = 0;
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
@@ -214,6 +220,8 @@ function setup() {
   if (mount) canvas.parent(mount);
   lastRealTime = millis();
   buildScene();
+  displayEngine = new CRTDisplay(canvas.elt);
+  soundEngine = new SignalAudio();
   // The optional film font downloads after p5 initializes. Rebuilding the
   // glyph atlases (only) switches the glyphs without resetting animation.
   if (document.fonts?.ready) document.fonts.ready.then(() => {
@@ -231,7 +239,8 @@ function buildScene() {
   if (!filmTile) filmTile = buildFilmTile();
   filmPattern = drawingContext.createPattern(filmTile, 'repeat');
 
-  const lanePitch = 22.5;
+  const lanePitch = Math.max(22.5 * rain.fontSize,
+    Math.ceil(Math.round(19 * rain.fontSize) * 1.16) + 1);
   const laneCount = Math.ceil(width / lanePitch) + 2;
   const columns = DEPTHS.map(() => []);
   for (let col = -1; col < laneCount; col++) {
@@ -239,9 +248,12 @@ function buildScene() {
     const depth = roll < .21 ? 0 : roll < .74 ? 1 : 2;
     columns[depth].push(col);
   }
-  planes = DEPTHS.map((config, depth) => new CodePlane(config, depth, columns[depth], lanePitch));
+  planes = DEPTHS.map((config, depth) => new CodePlane({
+    ...config, size: Math.max(8, Math.round(config.size * rain.fontSize))
+  }, depth, columns[depth], lanePitch));
   pulses = [];
   signalAt = -Infinity;
+  breachAt = -Infinity;
   background(...GRADES[rain.grade].bg);
 }
 
@@ -249,9 +261,16 @@ function draw() {
   const now = millis();
   const dt = Math.min((now - lastRealTime) / 1000 || 1/60, .055);
   lastRealTime = now; // Pause doesn't accumulate a backlog of movement.
-  if (rain.paused) return;
+  if (rain.paused) {
+    // CRT display retains the last complete frame while paused.
+    return;
+  }
   simulationTime += dt * 1000;
   frameNumber++;
+  if (rain.texture && frameNumber >= nextGrainFrame) {
+    buildFilmTile(filmTile);
+    nextGrainFrame = frameNumber + 3;
+  }
   const t = simulationTime;
   const grade = GRADES[rain.grade];
   background(...grade.bg);
@@ -263,15 +282,23 @@ function draw() {
     for (const plane of planes) plane.drawBloom(ctx, t);
   }
   for (const plane of planes) plane.drawGlyphs(ctx, t);
+  // Full-screen hard dropout: unlike E, the entire signal briefly dies.
+  const breachAge = t - breachAt;
+  if (breachAge >= 0 && breachAge < 220) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0,.85)';
+    ctx.fillRect(0,0,width,height);
+  }
 
   ctx.globalAlpha = 1;
   ctx.drawImage(vignette.canvas, 0, 0, width, height);
   if (rain.texture && filmPattern) {
-    ctx.globalAlpha = .19;
+    ctx.globalAlpha = .54 * rain.grain;
     ctx.fillStyle = filmPattern;
     ctx.fillRect(0, 0, width, height);
     ctx.globalAlpha = 1;
   }
+  displayEngine?.present(drawingContext.canvas);
 }
 
 class CodePlane {
@@ -325,7 +352,7 @@ class CodePlane {
   drawBloom(ctx, now) {
     const c = this.config;
     const scale = c.size;
-    const strength = rain.glow * c.bloom;
+    const strength = rain.glow * c.bloom * GRADES[rain.grade].blooms;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       for (const stream of lane.streams) {
@@ -359,8 +386,13 @@ class CodePlane {
     const surgeOn = surgeAge >= 0 && surgeAge < (height + 500)/.8;
     const hoverAge = now - hover.at;
     const hoverOn = hoverAge < 950;
+    const grade = GRADES[rain.grade];
+    const breachAge = now - breachAt;
+    const breachOn = breachAge >= 0 && breachAge < 2800;
+    const blanking = breachOn && breachAge < 220 ? .12 : 1;
+    const jolt = breachOn && breachAge >= 220 && breachAge < 640;
 
-    ctx.globalAlpha = c.alpha;
+    ctx.globalAlpha = c.alpha * grade.alpha * blanking;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       const x = lane.x;
@@ -386,10 +418,29 @@ class CodePlane {
           const fraction = 1 - age/stream.length;
           const falloff = Math.pow(fraction, 1.5 / rain.persistence);
           let tone = Math.floor((.2 + 8.8*falloff) * cell.energy);
-          if (age === 0) tone = stream.whiteHead ? 9 : 7;
+          if (age === 0) tone = stream.whiteHead && (grade.heads >= 1 || lane.lottery < grade.heads) ? 9 : 7;
           else if (age === 1 && stream.whiteHead) tone = Math.max(tone, 7);
           else if (age === 2 && stream.whiteHead) tone = Math.max(tone, 6);
           if (now < cell.twinkleUntil && age > 2) tone += 2;
+          // SYSTEM BREACH is an entirely different event from the narrow
+          // E-surge: silence/dim -> code-wide relock -> staggered avalanches.
+          // It recolors and mutates ONLY occupied cells, never adds glyphs.
+          if (breachOn) {
+            if (jolt) tone = 9;
+            else if (breachAge >= 640) {
+              const front = (breachAge - 590) * 1.1 - (x / Math.max(1,width))*270;
+              const gap = Math.abs(y - front);
+              if (gap < 185) tone = Math.max(tone, 8 - Math.floor(gap/53));
+              if (breachAge < 1600) tone = Math.max(tone, Math.floor(5*(1-(breachAge-640)/960)));
+            }
+            // 3 discrete relock passes, once per cell per pass.
+            const pass = breachAge < 250 ? -1 : breachAge < 640 ? 0 :
+              breachAge < 1180 ? 1 : breachAge < 1800 ? 2 : 3;
+            if (pass >= 0 && cell.lastBreach !== pass) {
+              cell.lastBreach = pass;
+              if (Math.random() < .83) cell.glyph = randomGlyph();
+            }
+          }
 
           // Two nested wavefronts, all executed as changes to glyph cells.
           for (let p = 0; p < pulseCount; p++) {
@@ -528,7 +579,7 @@ class CodeStream {
       blank: Math.random()<.055,
       nextChange: simulationTime + between(160, 3500)/rain.mutation,
       nextTwinkle: simulationTime + between(600, 5400),
-      twinkleUntil: -Infinity, lastPulse: -1,
+      twinkleUntil: -Infinity, lastPulse: -1, lastBreach: -1,
     };
   }
 
@@ -591,22 +642,23 @@ function buildVignette() {
   return g;
 }
 
-function buildFilmTile() {
-  // Stable organic analog grain + extremely faint scanlines. A tiny cached
-  // texture is cheaper and gentler than generating fullscreen noise each frame.
-  const tile = document.createElement('canvas');
-  tile.width = tile.height = 128;
-  const ctx = tile.getContext('2d');
-  const imageData = ctx.createImageData(128,128);
-  for (let y=0; y<128; y++) for (let x=0; x<128; x++) {
-    const i = (y*128+x)*4;
-    const grit = between(20, 90);
-    imageData.data[i] = grit*.33;
-    imageData.data[i+1] = grit;
-    imageData.data[i+2] = grit*.43;
-    imageData.data[i+3] = (y%3 === 0 ? 30 : 15) + Math.floor(Math.random()*20);
+function buildFilmTile(tile) {
+  // Chromatic film dust, rebuilt every third frame: on/off is plainly visible.
+  if (!tile) {
+    tile = document.createElement('canvas');
+    tile.width = tile.height = 128;
   }
-  ctx.putImageData(imageData,0,0);
+  const ctx = tile.getContext('2d');
+  const data = ctx.createImageData(128,128);
+  for (let i=0; i<data.data.length; i+=4) {
+    const v = Math.random();
+    if (v < .13) { data.data[i]=0;data.data[i+1]=0;data.data[i+2]=0;data.data[i+3]=80; }
+    else { const n = 70+Math.random()*155;
+      data.data[i] = n*.67; data.data[i+1] = n; data.data[i+2] = n*.74;
+      data.data[i+3] = v>.955 ? 110 : 46;
+    }
+  }
+  ctx.putImageData(data,0,0);
   return tile;
 }
 
@@ -615,9 +667,18 @@ function between(a,b) { return a + Math.random()*(b-a); }
 function setRainOption(name, value) {
   if (!(name in rain)) return;
   if (name === 'grade' && !GRADES[value]) return;
+  if (name === 'crt' && !['off','scan','glass'].includes(value)) return;
+  if (name === 'audio' && !['off','ambience','score'].includes(value)) return;
   const old = rain[name];
   rain[name] = value;
   if (name === 'density') for (const plane of planes) plane.updateDensity();
+  if (name === 'fontSize' && old !== value) buildScene();
+  if (name === 'audio') soundEngine?.setMode(value);
+  if (name === 'volume') soundEngine?.setVolume(value);
+  if (name === 'crt') {
+    displayEngine?.setMode(value);
+    if (rain.paused) displayEngine?.present(drawingContext.canvas);
+  }
   if (name === 'grade' && old !== value) {
     // Preserve stream positions while recoloring the entire signal.
     for (const g of Object.values(glows)) g.remove?.();
@@ -632,13 +693,26 @@ function emitState() {
 function resetRain() {
   for (const key of Object.keys(defaults)) rain[key] = defaults[key];
   buildScene();
+  displayEngine?.setMode(rain.crt);
+  soundEngine?.setMode('off');
+  soundEngine?.setVolume(rain.volume);
   emitState();
 }
-function signalBurst() { signalAt = simulationTime; }
+function signalBurst() {
+  if (rain.paused) setRainOption('paused',false);
+  signalAt = simulationTime;
+  soundEngine?.surge();
+}
+function systemBreach() {
+  if (rain.paused) setRainOption('paused',false);
+  breachAt = simulationTime;
+  soundEngine?.breach();
+}
 function addPulse(x,y,power=1) {
   if (simulationTime - lastClickTime < 180) return;
   lastClickTime = simulationTime;
   pulses.push({x,y,at:simulationTime,id:++pulseSeq,power});
+  soundEngine?.ripple(x/Math.max(width,1), power);
   if (pulses.length>4) pulses.shift();
 }
 function mousePressed(event) {
@@ -663,9 +737,14 @@ function keyPressed() {
   if (k === 'g') setRainOption('bloom',!rain.bloom);
   if (k === 'r') buildScene();
   if (k === 'e') signalBurst();
+  if (k === 'b') systemBreach();
+  if (k === 'm') setRainOption('audio', rain.audio==='off'?'ambience':'off');
+  if (k === '1') setRainOption('crt','off');
+  if (k === '2') setRainOption('crt','scan');
+  if (k === '3') setRainOption('crt','glass');
   if (k === 't') setRainOption('texture',!rain.texture);
   if (k === 'c') setRainOption('grade',GRADE_NAMES[(GRADE_NAMES.indexOf(rain.grade)+1)%GRADE_NAMES.length]);
-  if (k === 's') saveCanvas('digital-rain-cinema','png');
+  if (k === 's') { if(window.captureRain) window.captureRain(); else saveCanvas('digital-rain-04','png'); }
   if (k === 'h') window.toggleRainPanel?.();
   if (k === 'v') window.recordRain?.();
   if (key === '+' || key === '=') setRainOption('density',Math.min(1.65,rain.density+.1));
@@ -674,6 +753,7 @@ function keyPressed() {
 function windowResized() {
   resizeCanvas(windowWidth,windowHeight);
   buildScene();
+  displayEngine?.resize();
 }
 
 window.setRainOption = setRainOption;
@@ -681,112 +761,450 @@ window.getRainOptions = () => ({...rain});
 window.resetRain = resetRain;
 window.reseedRain = buildScene;
 window.signalRain = signalBurst;
-  </script>
-  <script>
-    (() => {
-      const panel = document.getElementById('panel');
-      const toggle = document.getElementById('system-toggle');
-      const notice = document.getElementById('notification');
-      const setNotice = text => {notice.textContent = text;};
-      window.toggleRainPanel = () => {
-        const open = panel.classList.toggle('open');
-        toggle.textContent = open ? '[ − ] SYSTEM' : '[ + ] SYSTEM';
-        toggle.setAttribute('aria-expanded', String(open));
-      };
-      toggle.addEventListener('click', window.toggleRainPanel);
-      const controls = ['density','speed','persistence','mutation','glow'];
-      const percentages = new Set(controls);
-      for (const name of controls) {
-        const slider = document.getElementById(name);
-        slider.addEventListener('input', () => setRainOption(name, Number(slider.value)));
-      }
-      for (const name of ['bloom','texture']) {
-        document.getElementById(name).addEventListener('change',event => setRainOption(name,event.target.checked));
-      }
-      for (const button of document.querySelectorAll('[data-grade]')) {
-        button.addEventListener('click', () => setRainOption('grade',button.dataset.grade));
-      }
-      document.getElementById('pause-btn').addEventListener('click', () => setRainOption('paused', !getRainOptions().paused));
-      document.getElementById('burst-btn').addEventListener('click', () => {signalRain(); setNotice('SIGNAL BURST SENT');});
-      document.getElementById('reseed-btn').addEventListener('click', () => {reseedRain();setNotice('NEW SEED INITIALIZED');});
-      document.getElementById('snapshot-btn').addEventListener('click', () => saveCanvas('digital-rain-cinema','png'));
-      document.getElementById('defaults-btn').addEventListener('click', () => {resetRain();setNotice('DEFAULT CONFIG RESTORED');});
-      function syncUI() {
-        const state = getRainOptions();
-        for (const name of controls) {
-          document.getElementById(name).value = state[name];
-          document.getElementById(name+'-value').textContent = Math.round(state[name]*100)+'%';
-        }
-        for (const name of ['bloom','texture']) document.getElementById(name).checked = state[name];
-        for (const button of document.querySelectorAll('[data-grade]')) {
-          const selected = button.dataset.grade === state.grade;
-          button.classList.toggle('active',selected);
-          button.setAttribute('aria-pressed',String(selected));
-        }
-        document.getElementById('pause-btn').textContent = state.paused ? 'RESUME' : 'PAUSE';
-        document.getElementById('hud-state').textContent = state.paused ? '// PAUSED' : '// ONLINE';
-      }
-      window.addEventListener('rain-state',syncUI);
-      syncUI();
 
-      // Real 8-second WebM export, not a sequence of screenshots.
-      // Chrome / Firefox work well. Other browsers receive a useful message.
-      let recorder = null;
-      let stopTimer = null;
-      window.recordRain = () => {
-        if (recorder && recorder.state === 'recording') {
-          recorder.stop();
+window.breachRain = systemBreach;
+window.getVisibleRainCanvas = () => displayEngine && displayEngine.mode!=='off'
+  ? displayEngine.output : drawingContext.canvas;
+
+// ─── CRT VIDEO OUTPUT ────────────────────────────────────────────────────
+// A genuine radial barrel distortion via a fragment shader. This does NOT
+// modify glyph placement or the collision-free rain scheduler; it only bends
+// the final raster as a CRT would. A Canvas2D strip fallback is included.
+class CRTDisplay {
+  constructor(source) {
+    this.source = source;
+    this.mode = 'off';
+    this.output = document.createElement('canvas');
+    this.output.id = 'crt-output';
+    this.output.setAttribute('aria-hidden', 'true');
+    this.output.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;';
+    source.parentElement.appendChild(this.output);
+    this.gl = this.output.getContext('webgl', {
+      alpha:false, antialias:false, depth:false, stencil:false,
+      preserveDrawingBuffer:true, powerPreference:'default'
+    });
+    if (this.gl) {
+      try { this.createGL(); }
+      catch (err) {
+        console.warn('CRT shader unavailable; using canvas fallback', err);
+        this.gl = null;
+        const replacement = document.createElement('canvas');
+        replacement.id = this.output.id;
+        replacement.setAttribute('aria-hidden','true');
+        replacement.style.cssText = this.output.style.cssText;
+        this.output.replaceWith(replacement);
+        this.output = replacement;
+      }
+    }
+    if (!this.gl) this.ctx = this.output.getContext('2d',{alpha:false});
+    this.resize();
+  }
+  createGL() {
+    const gl = this.gl;
+    const vs = `attribute vec2 a_pos;
+      void main(){gl_Position=vec4(a_pos,0.,1.);}`;
+    const fs = `precision mediump float;
+      uniform sampler2D u_image;
+      uniform vec2 u_size;
+      uniform float u_curve;
+      uniform float u_scan;
+      uniform float u_time;
+      void main() {
+        vec2 uv = gl_FragCoord.xy/u_size;
+        vec2 p = uv*2.-1.;
+        // The screen is pinched in at all four edges, not merely masked.
+        vec2 curveP = p*(1. + .20*u_curve*dot(p,p));
+        vec2 lookup = curveP*.5+.5;
+        if (lookup.x<0. || lookup.x>1. || lookup.y<0. || lookup.y>1.) {
+          gl_FragColor = vec4(.001,.006,.003,1.);
           return;
         }
-        const canvas = document.querySelector('#rain canvas');
-        if (!canvas?.captureStream || !window.MediaRecorder) {
-          setNotice('VIDEO RECORDING IS NOT SUPPORTED HERE');
-          return;
+        vec3 rgb = texture2D(u_image,lookup).rgb;
+        float scan = .5+.5*cos(6.2831853*gl_FragCoord.y/3.0);
+        rgb *= 1. - u_scan*(.48*(1.-scan));
+        // Very subtle RGB grille / horizontal phosphor spread.
+        float grille=.96+.04*cos(gl_FragCoord.x*2.0944);
+        rgb *= 1.-.11*u_scan*(1.-grille);
+        float vignette = 1.-(.30*u_curve)*pow(max(abs(p.x),abs(p.y)),2.1);
+        rgb *= vignette;
+        if (u_curve>.5) {
+          float glass = exp(-pow((p.x+.60)/.24,2.)-pow((p.y+.80)/.20,2.));
+          rgb += vec3(.015,.024,.019)*glass;
         }
-        const stream = canvas.captureStream(30);
-        const types = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
-        const mimeType = types.find(type => MediaRecorder.isTypeSupported(type));
-        if (!mimeType) {
-          stream.getTracks().forEach(track => track.stop());
-          setNotice('WEBM ENCODER UNAVAILABLE');
-          return;
+        gl_FragColor=vec4(rgb,1.);
+      }`;
+    const compile = (kind, code) => {
+      const shader = gl.createShader(kind);
+      gl.shaderSource(shader, code); gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader,gl.COMPILE_STATUS))
+        throw new Error(gl.getShaderInfoLog(shader));
+      return shader;
+    };
+    const program=gl.createProgram();
+    gl.attachShader(program,compile(gl.VERTEX_SHADER,vs));
+    gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fs));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+    gl.useProgram(program);
+    const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    const pos=gl.getAttribLocation(program,'a_pos');
+    gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+    this.uniforms = Object.fromEntries(['u_image','u_size','u_curve','u_scan','u_time'].map(key=>[key,gl.getUniformLocation(program,key)]));
+    this.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.texture);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.uniform1i(this.uniforms.u_image,0);
+  }
+  resize() {
+    this.output.width=this.source.width;
+    this.output.height=this.source.height;
+    if(this.gl) this.gl.viewport(0,0,this.output.width,this.output.height);
+  }
+  setMode(mode) {
+    this.mode=mode;
+    this.source.style.opacity=mode==='off'?'1':'0';
+    this.output.style.display=mode==='off'?'none':'block';
+  }
+  present(source) {
+    if(this.mode==='off')return;
+    const w=this.output.width,h=this.output.height;
+    if (w!==source.width||h!==source.height)this.resize();
+    if(this.gl) {
+      const gl=this.gl,u=this.uniforms;
+      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
+      gl.uniform2f(u.u_size,w,h);
+      gl.uniform1f(u.u_curve,this.mode==='glass'?1:0);
+      gl.uniform1f(u.u_scan,rain.scanStrength);
+      gl.uniform1f(u.u_time,simulationTime*.001);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    } else if(this.ctx) {
+      const ctx=this.ctx;
+      ctx.fillStyle='#000400';ctx.fillRect(0,0,w,h);
+      if(this.mode==='glass') {
+        for (let y=0;y<h;y+=3) {
+          const row=Math.min(3,h-y);
+          const v=(y/h-.5)*2;
+          const inset=w*(.012+.052*v*v);
+          ctx.drawImage(source,0,y,w,row,inset,y+2,w-2*inset,row);
         }
-        const chunks = [];
-        try {
-          recorder = new MediaRecorder(stream,{mimeType,videoBitsPerSecond:6500000});
-          recorder.addEventListener('dataavailable',event => {if(event.data?.size)chunks.push(event.data);});
-          recorder.addEventListener('stop', () => {
-            clearTimeout(stopTimer);
-            stream.getTracks().forEach(track => track.stop());
-            document.getElementById('rec-indicator').classList.remove('on');
-            document.getElementById('record-btn').textContent = 'RECORD 8s';
-            if (chunks.length) {
-              const blob = new Blob(chunks,{type:'video/webm'});
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = 'digital-rain-'+Date.now()+'.webm';
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-              setTimeout(() => URL.revokeObjectURL(url), 30000);
-              setNotice('SIGNAL CAPTURE SAVED');
-            }
-            recorder = null;
-          });
-          recorder.start(250);
-          document.getElementById('rec-indicator').classList.add('on');
-          document.getElementById('record-btn').textContent = 'STOP RECORD';
-          setNotice('CAPTURING 8 SECOND SIGNAL…');
-          stopTimer = setTimeout(() => {if(recorder?.state==='recording') recorder.stop();},8000);
-        } catch(error) {
-          stream.getTracks().forEach(track => track.stop());
-          recorder = null;
-          setNotice('COULD NOT BEGIN VIDEO CAPTURE');
+      } else ctx.drawImage(source,0,0,w,h);
+      ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.34})`;
+      for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);
+    }
+  }
+}
+
+// ─── ORIGINAL GENERATIVE SCORE / SOUNDS ────────────────────────────────
+// WebAudio only. No streamed tracks, samples from the films, or external
+// assets. Starts only after an explicit user gesture; OFF is the default.
+// Arrangement: low minor drone; granular electrical rain; spacious, sparse
+// industrial/trip-hop percussion and an original minor ostinato.
+class SignalAudio {
+  constructor() {
+    this.ctx=null;this.mode='off';this.volume=rain.volume;
+    this.step=0;this.nextStep=0;this.timer=null;this.nodes=[];
+  }
+  init() {
+    const AudioContext=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContext)return false;
+    try {this.ctx=new AudioContext();} catch {return false;}
+    const ac=this.ctx;
+    this.compressor=ac.createDynamicsCompressor();
+    this.compressor.threshold.value=-19;this.compressor.knee.value=20;
+    this.compressor.ratio.value=3;this.compressor.attack.value=.01;
+    this.compressor.release.value=.22;
+    this.master=ac.createGain();this.master.gain.value=0;
+    this.master.connect(this.compressor);this.compressor.connect(ac.destination);
+    this.noise=this.noiseBuffer(2.5);
+    this.droneGain=ac.createGain();this.droneGain.gain.value=.13;
+    this.droneLP=ac.createBiquadFilter();this.droneLP.type='lowpass';this.droneLP.frequency.value=180;
+    this.droneGain.connect(this.droneLP).connect(this.master);
+    for(const [f,type,g] of [[65.41,'sine',.52],[98.0,'triangle',.22],[130.81,'sawtooth',.14]]) {
+      const osc=ac.createOscillator();osc.type=type;osc.frequency.value=f;
+      const gain=ac.createGain();gain.gain.value=g;
+      osc.connect(gain).connect(this.droneGain);osc.start();this.nodes.push(osc);
+    }
+    this.lfo=ac.createOscillator();this.lfo.frequency.value=.105;
+    const mod=ac.createGain();mod.gain.value=54;
+    this.lfo.connect(mod).connect(this.droneLP.frequency);this.lfo.start();this.nodes.push(this.lfo);
+    this.airGain=ac.createGain();this.airGain.gain.value=.035;
+    const airLP=ac.createBiquadFilter();airLP.type='bandpass';airLP.frequency.value=1100;airLP.Q.value=.35;
+    const air=ac.createBufferSource();air.buffer=this.noise;air.loop=true;
+    air.connect(airLP).connect(this.airGain).connect(this.master);
+    air.start();this.nodes.push(air);
+    this.setVolume(this.volume);
+    return true;
+  }
+  noiseBuffer(seconds) {
+    const ac=this.ctx;
+    const length=Math.floor(ac.sampleRate*seconds);
+    const b=ac.createBuffer(1,length,ac.sampleRate);
+    const a=b.getChannelData(0);
+    // Brown-ish granularity: blended noise and a continuously leaked state.
+    let brown=0;
+    for(let i=0;i<length;i++) {
+      const w=Math.random()*2-1;
+      brown=(brown+.025*w)/1.025;
+      a[i]=w*.65+brown*1.1;
+    }
+    return b;
+  }
+  setVolume(v) {
+    this.volume=Number(v);
+    if (this.ctx) this.master.gain.setTargetAtTime(this.mode==='off'?0:this.volume*.45,this.ctx.currentTime,.055);
+  }
+  async setMode(mode) {
+    if(mode!=='off'&&!this.ctx&&!this.init()){this.mode='off';return;}
+    this.mode=mode;
+    if(!this.ctx)return;
+    try {await this.ctx.resume();}catch{return;}
+    const ac=this.ctx,active=mode!=='off';
+    this.master.gain.setTargetAtTime(active?this.volume*.45:0,ac.currentTime,.11);
+    this.droneGain.gain.setTargetAtTime(mode==='score'?.12:.13,ac.currentTime,.15);
+    this.airGain.gain.setTargetAtTime(mode==='score'?.028:.042,ac.currentTime,.2);
+    if (active && !this.timer) {
+      this.nextStep=ac.currentTime+.07;
+      this.timer=setInterval(()=>this.schedule(),45);
+    }
+    if (!active && this.timer) {clearInterval(this.timer);this.timer=null;}
+  }
+  schedule() {
+    if(this.mode==='off'||!this.ctx||this.ctx.state!=='running')return;
+    const ac=this.ctx,duration=60/98/4;
+    if(this.nextStep<ac.currentTime-.3)this.nextStep=ac.currentTime+.02;
+    let cycles=0;
+    while(this.nextStep<ac.currentTime+.15 && cycles++<8) {
+      const t=this.nextStep,step=this.step%16;
+      if(this.mode==='score')this.scoreStep(t,step);
+      else if(step%4===1 && Math.random()<.38) this.digit(t,.02);
+      this.nextStep+=duration;
+      this.step++;
+    }
+    const wobble=130+70*(.5+.5*Math.sin(ac.currentTime*.27));
+    this.droneLP.frequency.setTargetAtTime(wobble,ac.currentTime,.13);
+  }
+  envelope(g,t,peak,attack,release) {
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+attack);
+    g.gain.exponentialRampToValueAtTime(.0001,t+attack+release);
+  }
+  tone(t,freq,dur,shape='sine',amp=.12,toFreq=null,filterHz=null,pan=0) {
+    if(!this.ctx||this.mode==='off')return;
+    const ac=this.ctx;
+    const osc=ac.createOscillator();osc.type=shape;
+    osc.frequency.setValueAtTime(freq,t);
+    if(toFreq)osc.frequency.exponentialRampToValueAtTime(toFreq,t+dur);
+    const g=ac.createGain();this.envelope(g,t,amp,.007,Math.max(.03,dur-.007));
+    let end=osc;
+    if(filterHz){const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=filterHz;end.connect(f);end=f;}
+    if(typeof ac.createStereoPanner==='function') {
+      const p=ac.createStereoPanner();p.pan.value=pan;
+      end.connect(g);g.connect(p).connect(this.master);
+    } else end.connect(g).connect(this.master);
+    osc.start(t);osc.stop(t+dur+.04);
+  }
+  burstNoise(t,dur,amp,freq=1800,q=.5,pan=0) {
+    if(!this.ctx||this.mode==='off')return;
+    const ac=this.ctx;
+    const src=ac.createBufferSource();src.buffer=this.noise;
+    const filter=ac.createBiquadFilter();filter.type='bandpass';filter.frequency.value=freq;filter.Q.value=q;
+    const g=ac.createGain();this.envelope(g,t,amp,.008,Math.max(.027,dur-.008));
+    src.connect(filter).connect(g);
+    if(typeof ac.createStereoPanner==='function') {
+      const p=ac.createStereoPanner();p.pan.value=pan;g.connect(p).connect(this.master);
+    } else g.connect(this.master);
+    src.start(t,Math.random()*(this.noise.duration-1));src.stop(t+dur+.025);
+  }
+  scoreStep(t,s) {
+    // Four original, slowly changing minor-key harmonic regions: a real
+    // evolving arrangement rather than a short sample or canned 1-bar loop.
+    const bar=Math.floor(this.step/16);
+    const root=[65.406,51.913,58.270,43.654][Math.floor(bar/4)%4];
+    const restless=bar%8===7;
+    if([0,6,9].includes(s) || (restless&&s===14)) {
+      this.tone(t,112,.22,'sine',s===0?.65:.40,40,220);
+      this.burstNoise(t,.075,.052,110,.5);
+    }
+    if(s===4||s===12){
+      this.burstNoise(t,.17,.22,1900,.9);
+      this.tone(t,178,.1,'triangle',.11,110);
+    }
+    if(s%2===0 || (restless&&s===15)){
+      this.burstNoise(t,.046,s%4===2?.069:.034,6700,1.1,(s%4===2?.38:-.38));
+    }
+    if([0,3,7,10,14].includes(s)) {
+      const bass={0:root,3:root,7:root*1.19,10:root*.89,14:root*.75};
+      this.tone(t,bass[s],.33,'sawtooth',.18,bass[s]*.93,240,-.12);
+    }
+    if(s===0) {
+      const chord=[root*2,root*2*1.19,root*3,root*4.48];
+      for(let i=0;i<chord.length;i++)
+        this.tone(t,chord[i],1.75,'triangle',.012+(.006/(i+1)),null,840);
+    }
+    if([2,11].includes(s)||(restless&&s===15))this.digit(t,.028);
+    if(s===15 && bar%4===3) this.burstNoise(t,.13,.08,2800,1.4,.5);
+  }
+
+  digit(t,level=.035) {
+    this.tone(t,420+Math.random()*450,.065,'sine',level,220+Math.random()*180,2400,Math.random()*1.4-.7);
+  }
+  ripple(x,power=1) {
+    if(this.mode==='off'||!this.ctx)return;
+    const t=this.ctx.currentTime+.01,pan=Math.max(-.9,Math.min(.9,x*2-1));
+    this.burstNoise(t,.24,.16*power,970,.45,pan);
+    this.tone(t,650,.3,'sine',.09*power,135,null,pan);
+    this.digit(t+.12,.055);
+  }
+  surge() {
+    if(this.mode==='off'||!this.ctx)return;
+    const t=this.ctx.currentTime+.01;
+    this.burstNoise(t,.92,.3,650,.45);
+    this.tone(t,85,.95,'sawtooth',.18,340,900);
+    this.tone(t+.15,480,.7,'sine',.065,94);
+  }
+  breach() {
+    if(this.mode==='off'||!this.ctx)return;
+    const t=this.ctx.currentTime+.01;
+    this.tone(t,74,1.35,'sine',.83,28);
+    this.burstNoise(t+.17,.85,.35,280,.32);
+    for(let i=0;i<11;i++) {
+      const at=t+.22+i*.11;
+      this.tone(at,70+Math.random()*950,.11,'triangle',.044,120+Math.random()*90,null,Math.random()*1.4-.7);
+    }
+    this.tone(t+1.55,260,.8,'sine',.17,76);
+  }
+  attachRecording() {
+    if(!this.ctx || this.mode==='off') return null;
+    const destination=this.ctx.createMediaStreamDestination();
+    this.compressor.connect(destination);
+    return {
+      tracks:destination.stream.getAudioTracks(),
+      release:()=>{
+        try {this.compressor.disconnect(destination);}catch{}
+        for(const track of destination.stream.getTracks())track.stop();
+      }
+    };
+  }
+  ui() {
+    if(this.mode==='off'||!this.ctx)return;
+    const t=this.ctx.currentTime+.01;
+    this.tone(t,700,.09,'sine',.052,440);
+  }
+}
+window.signalSound = () => soundEngine;
+
+</script>
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
+  const notify=s=>notice.textContent=s;
+  window.toggleRainPanel=()=>{
+    const open=panel.classList.toggle('open');
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.textContent=open?'[ − ] CLOSE SYSTEM':'[ + ] SYSTEM PANEL';
+  };
+  toggle.addEventListener('click',window.toggleRainPanel);
+  const ranges=['density','fontSize','speed','persistence','mutation','glow','scanStrength','grain','volume'];
+  for(const name of ranges){
+    $(name).addEventListener('input',()=>setRainOption(name,Number($(name).value)));
+  }
+  for(const name of ['bloom','texture'])
+    $(name).addEventListener('change',()=>{setRainOption(name,$(name).checked);window.signalSound()?.ui();});
+  for(const selector of ['grade','crt','audio']){
+    document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
+      setRainOption(selector,button.dataset[selector]);
+      if(selector!=='audio')window.signalSound()?.ui();
+    }));
+  }
+  const details={
+    grade:{cinema:'1999 original: deep emerald ink and porcelain-white leading glyphs.',
+      abyss:'A submerged monitor feed: dark blue-green code, low glow and distant cyan heads.',
+      voltage:'An overdriven lime CRT: hot chartreuse code, bright tails and intense bloom.'},
+    crt:{off:'Unprocessed, razor-sharp digital rain.',
+      scan:'Real-time dark raster lines and a restrained phosphor aperture pattern.',
+      glass:'True shader-driven barrel distortion, glass-edge shadow, and scanlines.'},
+    audio:{off:'Silent until you explicitly enable it. No film audio is used.',
+      ambience:'Sub-bass drone, electronically textured air, intermittent signal chirps, and interactive effects.',
+      score:'Original 98-BPM trip-hop / industrial score with syncopated beats, minor bass and processed signal FX.'}
+  };
+  function sync(){
+    const st=getRainOptions();
+    for(const name of ranges){
+      $(name).value=st[name];
+      $(name+'-value').textContent=Math.round(st[name]*100)+'%';
+    }
+    for(const name of ['bloom','texture'])$(name).checked=st[name];
+    for(const key of ['grade','crt','audio']){
+      document.querySelectorAll(`[data-${key}]`).forEach(b=>{
+        const active=b.dataset[key]===st[key];
+        b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
+      });
+      $(key+'-help').textContent=details[key][st[key]];
+    }
+    $('pause-btn').textContent=st.paused?'RESUME SIGNAL':'PAUSE SIGNAL';
+    $('status').textContent=st.paused?'// PAUSED':'// ONLINE';
+    $('audio-status').textContent=st.audio==='off'?'AUDIO // MUTED':
+      st.audio==='score'?'AUDIO // SCORE + SFX':'AUDIO // CODE HUM';
+    $('scanStrength').disabled=st.crt==='off';
+    $('grain').disabled=!st.texture;
+  }
+  window.addEventListener('rain-state',sync);sync();
+  $('surge-btn').addEventListener('click',()=>{signalBurst();notify('ELECTRICAL SCAN PROPAGATING');});
+  $('breach-btn').addEventListener('click',()=>{systemBreach();notify('REALITY BREACH / SIGNAL RELOCK IN PROGRESS');});
+  $('pause-btn').addEventListener('click',()=>setRainOption('paused',!getRainOptions().paused));
+  $('reseed-btn').addEventListener('click',()=>{reseedRain();window.signalSound()?.ui();notify('SIGNAL FIELD RESEEDED');});
+  $('defaults-btn').addEventListener('click',()=>{resetRain();notify('ORIGINAL SIGNAL CONFIG RESTORED');});
+  window.captureRain=()=>{
+    const canvas=getVisibleRainCanvas();
+    if(!canvas)return;
+    canvas.toBlob(blob=>{
+      if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-04-'+Date.now()+'.png';
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+      notify('RASTER CAPTURE SAVED');
+    },'image/png');
+  };
+  $('snapshot-btn').addEventListener('click',window.captureRain);
+  let recorder=null,stopTimer=null;
+  window.recordRain=()=>{
+    if(recorder?.state==='recording'){recorder.stop();return;}
+    const canvas=getVisibleRainCanvas();
+    if(!canvas?.captureStream||!window.MediaRecorder){notify('VIDEO CAPTURE NOT SUPPORTED');return;}
+    const videoStream=canvas.captureStream(30);
+    const audioTap=window.signalSound()?.attachRecording();
+    const stream=new MediaStream([...videoStream.getVideoTracks(),...(audioTap?.tracks || [])]);
+    const type=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+    if(!type){stream.getTracks().forEach(t=>t.stop());audioTap?.release();notify('NO WEBM ENCODER AVAILABLE');return;}
+    const chunks=[];
+    try{
+      recorder=new MediaRecorder(stream,{mimeType:type,videoBitsPerSecond:6500000});
+      recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
+      recorder.onstop=()=>{
+        clearTimeout(stopTimer);stream.getTracks().forEach(t=>t.stop());audioTap?.release();
+        $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
+        if(chunks.length){
+          const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-04-'+Date.now()+'.webm';
+          document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+          notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
+        recorder=null;
       };
-      document.getElementById('record-btn').addEventListener('click',window.recordRain);
-    })();
-  </script>
+      recorder.start(250);
+      $('record-btn').textContent='STOP RECORD';$('rec-label').classList.add('on');
+      notify('CAPTURING 8s'+(audioTap?' / STEREO SOUND':' / SILENT'));
+      stopTimer=setTimeout(()=>{if(recorder?.state==='recording')recorder.stop();},8000);
+    }catch(e){stream.getTracks().forEach(t=>t.stop());audioTap?.release();recorder=null;notify('VIDEO ENCODER ERROR');}
+  };
+  $('record-btn').addEventListener('click',window.recordRain);
+})();
+</script>
 </body>
 </html>
