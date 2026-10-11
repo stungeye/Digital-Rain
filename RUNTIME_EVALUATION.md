@@ -28,7 +28,7 @@ Actual glyph drawing, transforms, compositing, gradients, patterns, and randomne
 - Simulation uses elapsed time capped at 55 ms and refreshes the real clock while paused. `updateSimulation` now owns advancement and effect/mutation updates; drawing uses current state. Grain refresh remains frame-count based, so actual cadence still matters.
 - Main adapter Canvas requests `alpha:false`; p5 owns its context settings. Compare final compositing and pixels, particularly CRT presentation.
 - Adapter graphics disposal zeros Canvas dimensions; p5 provides its own disposal. Repeated atlas rebuilds, reseeds, and resizes need resource-growth checks.
-- Font readiness rebuilds atlases without reseeding and now invalidates rendering. Verify delayed-font appearance while paused in both runtime paths.
+- Font readiness rebuilds atlases without reseeding and now invalidates rendering. User confirmed the optional font loaded and the Slow 3G paused-arrival test passed on Canvas. Equivalent p5 behavior remains unverified.
 - Resize uses actual viewport dimensions, ignores differences below two pixels, preserves existing world objects, adds coverage when needed, and resizes CRT output/vignette. Check orientation and changing mobile browser chrome.
 - Native hover and ripple input share CRT correction; Canvas glass conversion now follows the actual three-pixel strip destinations and source dimensions. Verify visual alignment, panel exclusion, and gesture lifecycle in both runtime paths and near curved edges.
 - The app's CRT WebGL implementation is separate from p5. Desktop adapter can still use it, while mobile chooses CRT Canvas processing. Keep runtime and CRT comparisons distinct.

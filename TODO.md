@@ -6,12 +6,16 @@ Implementation for tasks 1–8 and the accessibility portion of task 10 is prese
 
 Live-server browser checks observed the Canvas adapter at a 1280×720 viewport, all four profiles, all three display modes, paused appearance changes, 65%/200% zoom, bloom/grain toggles, focused Space, mute/default controls, Escape panel closing with focus restoration, and manual surge/breach resuming animation. No warnings or errors were observed during these checks. These are component checks, not a matched runtime comparison or an audible evaluation.
 
-Implementation is complete for tasks 1–8 and 10. Separate acceptance boxes below remain open where the full criteria include unperformed checks; tasks 2, 5 and 6 have full acceptance evidence. Checked integrated items identify their verification basis. Task 9 retains a provisional keep-both-runtimes recommendation in `RUNTIME_EVALUATION.md`. Desktop p5/direct-open/offline startup, live delayed-font arrival and updated resize appearance, updated curved-edge visual alignment, reduced-motion browser behavior, matched runtime performance comparisons remain unverified. User audio, phone gesture and maximum-density checks subsequently passed (see manual verification below). No runtime replacement, publication, deployment, or commit has occurred.
+Implementation is complete for tasks 1–8 and 10. Separate acceptance boxes below remain open where the full criteria include unperformed checks; tasks 2, 4, 5 and 6 have full acceptance evidence. Checked integrated items identify their verification basis. Task 9 retains a provisional keep-both-runtimes recommendation in `RUNTIME_EVALUATION.md`. Desktop p5/direct-open/offline startup, updated resize appearance, updated curved-edge visual alignment, reduced-motion browser behavior, matched runtime performance comparisons remain unverified. User audio, phone gesture, maximum-density and delayed-font checks subsequently passed (see manual verification below). No runtime replacement, publication, deployment, or commit has occurred.
 
 ## Goal and authorized scope
 
 ### User manual verification — 2026-10-11
 
+- Latest user checks: Canvas renderer selected with and without network access; desktop p5 remains unverified. Camera consistency at different zoom levels, convex CRT curvature/full corner coverage, paused rain interactions, and Tab/Shift-Tab navigation passed. Curved-edge pointer alignment and reduced-motion behavior remain pending.
+- Desktop Firefox and Chrome both explicitly report Canvas selection because the browser reports touch/coarse-pointer capability. The current selection rule skips p5 for either a coarse primary pointer or any reported touch points, including touch-capable desktops; these checks do not exercise the p5 path or establish a CDN failure.
+- Resize preserves the world but the user observed flicker. Follow-up repaints source and CRT output synchronously after resizing, without advancing simulation; all twelve regression groups and rain.js syntax checks pass, including immediate repaint and retained state. Updated resize appearance remains pending user confirmation.
+- Font verification passed: the user confirmed Noto Sans JP reports loaded and the Slow 3G delayed-font test passes, including paused arrival without scene movement or reseeding, on the Canvas path. Desktop p5 font behavior remains outside this evidence.
 - Resize produced no errors, but continual reseeding during window dragging was reported as a visual problem. Follow-up implementation preserves existing lanes/streams/cells and grows coverage around the fixed camera centre; identity and spacing regression checks pass.
 - Paused appearance controls passed. Hover and click/Shift-click disturbances while paused were reported as unwanted; follow-up implementation ignores these rain interactions while paused, preserving camera controls and explicit surge/breach actions. Regression checks confirm no ripple effects/audio while paused.
 - Audio verification passed, including the requested SFX Only, hum/score, mute, pause and Foley checks.
@@ -131,8 +135,8 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 ### 4. Redraw appearance changes while paused
 
 - [x] Implementation complete
-- [ ] Acceptance complete
-- **Verification status:** Frozen-state regression checks and live paused appearance/zoom checks passed; live delayed-font arrival remains unverified.
+- [x] Acceptance complete
+- **Verification status:** Frozen-state regression checks and live paused appearance/zoom checks passed; user confirmed font loaded and Slow 3G delayed-font arrival while paused passed on the Canvas path.
 - **Owner:** Simulation/state owner; coordinate with tasks 6–7.
 - **Reason:** `draw` returns when paused unless `cameraDirty` is set. Profile, bloom, grain, and other appearance changes do not consistently request redraws; zoom does, and CRT has separate handling.
 - **Scope:** Introduce a general render-invalidation mechanism. Use it for relevant visual settings, asset/font changes, reseed, resize, and camera changes. Distinguish requesting a new frame from advancing simulation. Preserve pause and audio semantics.

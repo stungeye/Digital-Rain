@@ -11,7 +11,9 @@ if (!(window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoi
 // Desktop uses real p5.js when the CDN is available.
 function installRainCanvasAdapter() {
   if (typeof window.p5 !== 'undefined') return;
-  console.info('Digital Rain: using resilient Canvas 2D renderer (mobile / p5 unavailable).');
+  const touchDevice=window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+  console.info('Digital Rain: using resilient Canvas 2D renderer ('+
+    (touchDevice?'browser reports touch/coarse-pointer capability; p5 skipped':'p5 unavailable')+').');
   window.__rainCanvasFallback = true;
   const begun=performance.now();
   let main=null,ctx=null,desiredFPS=30,lastDraw=0;
@@ -1062,6 +1064,10 @@ function windowResized() {
   filmPattern=drawingContext.createPattern(filmTile,'repeat');
   invalidateRender();
   displayEngine?.resize();
+  // Changing canvas dimensions clears both outputs. Repaint in this same
+  // event so the browser cannot display a blank frame between resize and tick.
+  renderScene();
+  renderDirty=false;
 }
 
 

@@ -337,7 +337,11 @@ check('resize retains camera centre, simulation and existing lane/stream/cell id
     for(const [w,y] of [[1200,800],[480,240],[1600,1000],[640,360],[1600,1000]]) {
       if(w===1600)h.run('setRainOption("zoom",.65)');
       h.sandbox.innerWidth=w;h.sandbox.innerHeight=y;
-      h.run('windowResized();draw()');verify();
+      const previousRenders=h.renders;
+      h.run('windowResized()');
+      assert.ok(h.renders>previousRenders,'resize repaints before returning, without waiting for draw');
+      verify();
+      h.run('draw()');verify();
       assert.ok(h.run(`(()=>{const view=worldViewport();return view.minX>=worldMinX&&view.maxX<=worldMinX+worldWidth&&
         view.minY>=worldMinY&&view.maxY<=worldMinY+worldHeight;})()`),'resized camera stays covered');
       assert.ok(h.run('new Set(planes.flatMap(p=>p.lanes.map(l=>l.x))).size===planes.reduce((n,p)=>n+p.lanes.length,0)'), 'new columns retain exclusive ownership');
