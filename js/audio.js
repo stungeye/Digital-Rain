@@ -42,6 +42,11 @@ window.SignalAudio = class SignalAudio {
     this.lookAhead = touch ? .35 : .20;
     this.voiceLead = touch ? .04 : .012;
     this.startLead = touch ? .12 : .075;
+    // Scheduling ahead buffers note commands, not the audio render thread.
+    // Android hardware often processes non-128-frame bursts. Let supporting
+    // browsers match that size rather than unevenly rendering 128-frame blocks.
+    // Keep touch-capable desktop processing unchanged.
+    this.renderSizeHint = /Android/i.test(navigator.userAgent || '') ? 'hardware' : 'default';
   }
   get score() { return PROFILE_SCORES[this.profile] || PROFILE_SCORES.cinema; }
   setProfile(profile) {
@@ -68,10 +73,16 @@ window.SignalAudio = class SignalAudio {
   init() {
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return false;
-    try { this.ctx = new Context({latencyHint:this.latencyHint}); }
+    const options = {latencyHint:this.latencyHint};
+    if (this.renderSizeHint === 'hardware') options.renderSizeHint = 'hardware';
+    try { this.ctx = new Context(options); }
     catch {
-      // Retain older contexts that do not accept constructor options.
-      try { this.ctx = new Context(); } catch { return false; }
+      // Unknown dictionary members are normally ignored. If an implementation
+      // rejects the new hint, retain playback latency before trying no options.
+      try { this.ctx = new Context({latencyHint:this.latencyHint}); }
+      catch {
+        try { this.ctx = new Context(); } catch { return false; }
+      }
     }
     const ac = this.ctx;
     this.compressor = ac.createDynamicsCompressor();
@@ -253,9 +264,20 @@ window.SignalAudio = class SignalAudio {
     }
   }
   env(g, t, peak, attack, decay) {
-    g.gain.setValueAtTime(.0001, t);
+    this.beginEnvelope(g,t,attack,Math.max(.0002,peak));
     g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak), t + attack);
     g.gain.exponentialRampToValueAtTime(.0001, t + attack + decay);
+    g.gain.linearRampToValueAtTime(0,t+attack+decay+.005);
+  }
+  beginEnvelope(g,t,attack,peak) {
+    // Exponential ramps require positive values. Bridge from true silence to
+    // their tiny floor, then return to true silence before stopping a source.
+    const lead=Math.min(.001,attack*.5);
+    // Meet the original exponential curve at the bridge's end; using the
+    // floor there would shorten/steepen the rest of the approved attack.
+    const level=.0001*Math.pow(peak/.0001,lead/attack);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(level,t+lead);
   }
   connectVoice(node, gain, pan = 0) {
     node.connect(gain);
@@ -342,10 +364,11 @@ window.SignalAudio = class SignalAudio {
     if(instrument==='acid'||instrument==='brass'||instrument==='riff')
       filter.frequency.exponentialRampToValueAtTime(instrument==='acid'?180:420,t+dur);
     const attack=Math.min(dur*.45,p.attack);
-    g.gain.setValueAtTime(.0001,t);
+    this.beginEnvelope(g,t,attack,amp);
     g.gain.exponentialRampToValueAtTime(amp,t+attack);
     g.gain.exponentialRampToValueAtTime(instrument==='strings'?amp*.75:amp*.26,t+dur);
     g.gain.exponentialRampToValueAtTime(.0001,t+dur+p.release);
+    g.gain.linearRampToValueAtTime(0,t+dur+p.release+.005);
     let input=filter;
     if(instrument==='riff') {
       if(!this.riffCurve) {
@@ -513,9 +536,10 @@ window.SignalAudio = class SignalAudio {
       const begin=t+offset, span=Math.max(.08,duration);
       f.frequency.setValueAtTime(freq,begin);
       f.frequency.exponentialRampToValueAtTime(targetFreq,begin+span*.75);
-      const g=ac.createGain();g.gain.setValueAtTime(.0001,begin);
+      const g=ac.createGain();this.beginEnvelope(g,begin,attack,Math.max(.0002,amp));
       g.gain.exponentialRampToValueAtTime(Math.max(.0002,amp),begin+attack);
       g.gain.exponentialRampToValueAtTime(.0001,begin+span);
+      g.gain.linearRampToValueAtTime(0,begin+span+.005);
       s.connect(f);this.releaseVoice(s,[s,...this.connectVoice(f,g,position)]);
       s.start(begin,Math.random()*(this.noise.duration-span-.1));s.stop(begin+span+.025);
     };
@@ -535,9 +559,10 @@ window.SignalAudio = class SignalAudio {
       const o=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain();
       o.type='triangle';o.frequency.value=base*multiple;
       f.type='lowpass';f.frequency.value=heavy?410:590;
-      g.gain.setValueAtTime(.0001,t);
+      this.beginEnvelope(g,t,rise,peak*level*.8);
       g.gain.exponentialRampToValueAtTime(peak*level*.8,t+rise);
       g.gain.exponentialRampToValueAtTime(.0001,t+length*.82);
+      g.gain.linearRampToValueAtTime(0,t+length*.82+.005);
       o.connect(f);this.releaseVoice(o,[o,...this.connectVoice(f,g,pan*.35)]);
       o.start(t);o.stop(t+length+.02);
     }
@@ -555,10 +580,11 @@ window.SignalAudio = class SignalAudio {
     filter.frequency.exponentialRampToValueAtTime(280,t+1.75);
     filter.Q.value=.48;
     const g=ac.createGain();
-    g.gain.setValueAtTime(.0001,t);
+    this.beginEnvelope(g,t,.09,.21);
     g.gain.exponentialRampToValueAtTime(.21,t+.09);
     g.gain.setValueAtTime(.21,t+.8);
     g.gain.exponentialRampToValueAtTime(.0001,t+1.78);
+    g.gain.linearRampToValueAtTime(0,t+1.785);
     source.connect(filter).connect(g).connect(this.master);
     this.releaseVoice(source,[source,filter,g]);
     source.start(t,Math.random()*(this.noise.duration-2)); source.stop(t+1.81);
@@ -576,7 +602,7 @@ window.SignalAudio = class SignalAudio {
   }
   // ─── SHIPBOARD INTERFACE FOLEY / v14 ──────────────────────────────────
   // Controls feel like physical shipboard hardware. v14 retains the v13
-  // toggle samples byte-for-byte; slider detents are smaller and less frequent,
+  // toggle timbres; slider detents are smaller and less frequent,
   // while buttons now have a slow, damped mass and a quieter seating contact.
   // The synthesis happens
   // OFF the live audio thread, once per type or slider detent. There are no
@@ -602,9 +628,13 @@ window.SignalAudio = class SignalAudio {
     const twopi=Math.PI*2;
     const put=(at,duration,voice)=>{
       const start=Math.floor(at*sr),samples=Math.min(n-start,Math.floor(duration*sr));
+      const fade=Math.min(samples,Math.max(2,Math.round(sr*.003)));
       for(let j=0;j<samples;j++){
         const t=j/sr, v=voice(t,j,samples);
-        if(Number.isFinite(v))out[start+j]+=v;
+        // Some mechanical bodies still have substantial energy at their
+        // finite duration (or at the buffer cap). Soften each internal cut.
+        const tail=Math.min(1,(samples-1-j)/Math.max(1,fade-1));
+        if(Number.isFinite(v))out[start+j]+=v*tail;
       }
     };
     // Weighted switch/relay motion: a dense low note *without* a clean
@@ -743,6 +773,11 @@ window.SignalAudio = class SignalAudio {
       const scale=Math.min(1.35,.74/peak);
       for(let i=0;i<n;i++)out[i]*=scale;
     }
+    // Damping can leave a nonzero last sample, especially panel-close whose
+    // body extends past its buffer. Window AFTER processing/normalization so
+    // every buffer begins and ends at exact zero, at any playback rate.
+    const attack=Math.max(2,Math.round(sr*.001)),release=Math.max(2,Math.round(sr*.005));
+    for(let i=0;i<n;i++)out[i]*=Math.min(1,i/(attack-1),(n-1-i)/(release-1));
     this.uiFoleyCache.set(key,buffer);
     return buffer;
   }

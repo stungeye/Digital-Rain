@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Rain — Android audio listening test</title>
+<style>
+  :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; }
+  body { max-width: 48rem; margin: auto; padding: 1.2rem; background: #101716; color: #e2ede7; }
+  h1 { font-size: 1.5rem; }
+  label { display: block; margin: 1rem 0; }
+  select, button { font: inherit; padding: .6rem; max-width: 100%; }
+  button { margin: .3rem .3rem .3rem 0; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #182320; padding: 1rem; }
+  a { color: #9de2c3; }
+</style>
+<h1>Android audio listening test</h1>
+<p>This plays the app's audio without the rain animation. Compare Default with Hardware
+on the same speaker or headphones, with the same volume. Stop between tests.</p>
+<label>Processing option
+  <select id="render"><option value="default">Default (previous fix)</option>
+    <option value="hardware">Hardware (new Android setting)</option></select>
+</label>
+<label>Sound
+  <select id="sound"><option value="score">Music + hum</option>
+    <option value="tone">Steady tone</option><option value="buffer">Recorded steady tone</option>
+    <option value="effects">SFX only</option></select>
+</label>
+<label>Music
+  <select id="profile"><option value="cinema">Source</option><option value="abyss">Deep</option>
+    <option value="voltage">Overdrive</option><option value="anomaly">Anomaly</option></select>
+</label>
+<label>UI sound
+  <select id="kind"><option value="panel-close">Panel close</option><option value="panel-open">Panel open</option>
+    <option value="press">Button</option><option value="select">Selection</option>
+    <option value="toggle-on">Switch on</option><option value="toggle-off">Switch off</option>
+    <option value="slider">Slider</option><option value="slider-end">Slider release</option>
+    <option value="commit">Commit</option><option value="reset">Reset</option>
+    <option value="pause">Pause</option><option value="resume">Resume</option></select>
+</label>
+<p>Music starts at bar 12 to exercise a busy passage. Listen for at least a minute per setting.
+The recorded tone uses one looping buffer and needs no note timer or live oscillator synthesis.</p>
+<button id="start">Start</button><button id="stop" disabled>Stop</button>
+<button id="foley" disabled>UI click</button><button id="ripple" disabled>Ripple</button>
+<p id="status" role="status">Ready.</p>
+<pre id="report">Start a test to see the browser's actual audio settings.</pre>
+<p>These readings cannot count audible dropouts. Report which options crackle, your browser/Android
+versions, and whether the full <a href="../index.html">rain app</a> behaves differently.
+If the simple tones also crackle, the issue can occur without the score's synthesis or scheduling.</p>
+<script>window.RainApp={state:{grade:'cinema',volume:.5,paused:false,interfaceSounds:true,interfaceLevel:.5}};</script>
+<script src="../js/audio.js"></script>
+<script>
+'use strict';
+const byId=id=>document.getElementById(id);
+const controls=['render','sound','profile'].map(byId);
+let engine=null, ctx=null, source=null, gain=null, refresh=null, test=null;
+function report() {
+  if(!ctx)return;
+  byId('report').textContent=JSON.stringify({
+    browser:navigator.userAgent, ...test, state:ctx.state,
+    sampleRate:ctx.sampleRate,
+    renderQuantumFrames:ctx.renderQuantumSize??'not exposed (hint may be ignored)',
+    baseLatencyMs:Number.isFinite(ctx.baseLatency)?+(ctx.baseLatency*1000).toFixed(2):'not exposed',
+    outputLatencyMs:Number.isFinite(ctx.outputLatency)?+(ctx.outputLatency*1000).toFixed(2):'not exposed',
+    audioTimeSeconds:+ctx.currentTime.toFixed(2)
+  },null,2);
+}
+function start() {
+  if(ctx)return;
+  const processing=byId('render').value, sound=byId('sound').value;
+  test={requestedProcessing:processing,sound,profile:byId('profile').value,latencyHint:'playback'};
+  try {
+    if(sound==='score'||sound==='effects') {
+      RainApp.state.grade=test.profile;
+      engine=new SignalAudio();engine.renderSizeHint=processing;engine.latencyHint='playback';
+      engine.lookAhead=.35;engine.voiceLead=.04;engine.startLead=.12;
+      engine.setMode(sound);
+      if(!engine.ctx)throw Error('Web Audio could not start.');
+      ctx=engine.ctx;
+      if(sound==='score') {
+        // Retire the intro already queued by setMode before jumping ahead.
+        engine.retireScoreBus();engine.step=12*16;engine.recentHits=[];
+        engine.nextStep=ctx.currentTime+engine.startLead;engine.schedule();
+      }
+    } else {
+      const Context=window.AudioContext||window.webkitAudioContext;
+      try {ctx=new Context({latencyHint:'playback',renderSizeHint:processing});}
+      catch {ctx=new Context({latencyHint:'playback'});test.fallback='render hint rejected';}
+      ctx.resume().catch(error=>{byId('status').textContent=error.message;});
+      gain=ctx.createGain();gain.gain.value=0;gain.connect(ctx.destination);
+      if(sound==='tone') {source=ctx.createOscillator();source.frequency.value=440;}
+      else {
+        const buffer=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate),data=buffer.getChannelData(0);
+        for(let i=0;i<data.length;i++)data[i]=Math.sin(2*Math.PI*440*i/ctx.sampleRate);
+        source=ctx.createBufferSource();source.buffer=buffer;source.loop=true;
+      }
+      const t=ctx.currentTime+.12;
+      source.connect(gain);gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.08,t+.04);
+      source.start(t);
+    }
+    controls.forEach(control=>control.disabled=true);
+    byId('start').disabled=true;byId('stop').disabled=false;
+    byId('foley').disabled=byId('ripple').disabled=!engine;
+    byId('status').textContent='Playing. Note any crackles, then Stop to change the test.';
+    refresh=setInterval(report,1000);report();
+  } catch(error) {
+    byId('status').textContent=error.message;
+    stop();
+  }
+}
+async function stop() {
+  byId('stop').disabled=true;byId('foley').disabled=byId('ripple').disabled=true;
+  clearInterval(refresh);
+  if(ctx) {
+    if(engine)engine.setMode('off');
+    else if(gain)gain.gain.setTargetAtTime(0,ctx.currentTime,.015);
+    await new Promise(resolve=>setTimeout(resolve,100));
+    await ctx.close();report();
+  }
+  ctx=null;engine=null;source=null;gain=null;
+  controls.forEach(control=>control.disabled=false);byId('start').disabled=false;
+  byId('status').textContent='Stopped. Choose another setting and Start.';
+}
+byId('start').onclick=start;
+byId('stop').onclick=()=>stop().catch(error=>{byId('status').textContent=error.message;});
+byId('foley').onclick=()=>engine?.interfaceSound(byId('kind').value);
+byId('ripple').onclick=()=>engine?.ripple(.5);
+</script>
+</html>

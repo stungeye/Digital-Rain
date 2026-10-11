@@ -9,7 +9,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 
-function harness({coarse = false, reduced = false, ready = 'loading'} = {}) {
+function harness({coarse = false, reduced = false, ready = 'loading', userAgent = ''} = {}) {
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
   const listeners = new Map(), elements = new Map(), canvasCalls = [], animationFrames = [];
   const math = Object.create(Math);
@@ -80,7 +80,7 @@ function harness({coarse = false, reduced = false, ready = 'loading'} = {}) {
     createBuffer(channels,length,sampleRate=this.sampleRate){const data=Array.from({length:channels},()=>new Float32Array(length));return {duration:length/sampleRate,getChannelData:i=>data[i]};}
     resume(){return Promise.resolve();}
   }
-  const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:coarse?1:0},
+  const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:coarse?1:0,userAgent},
     performance:{now:()=>now},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},
     setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},
     requestAnimationFrame(fn){animationFrames.push(fn);return animationFrames.length;},
@@ -316,6 +316,40 @@ check('audio scheduler buffers touch playback and skips overdue ticks without bu
   }
 });
 
+check('Android requests hardware render blocks with compatible latency fallbacks', () => {
+  for (const [userAgent,coarse,hardware] of [
+    ['Mozilla/5.0 (Linux; Android 16; Pixel 8 Pro)',true,true],
+    ['Mozilla/5.0 (Linux; Android 16)',false,true],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)',true,false],
+    ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',true,false],
+    ['',false,false]
+  ]) {
+    const h=harness({coarse,userAgent});h.run('setup();soundEngine.setMode("effects")');
+    const engine=h.run('soundEngine');
+    assert.equal(engine.ctx.options.renderSizeHint,hardware?'hardware':undefined);
+    assert.equal(engine.ctx.options.latencyHint,coarse?'playback':'interactive');
+    assert.equal(engine.ctx.options.sampleRate,undefined,'retain native sample rate');
+  }
+  for(const reject of ['hardware','options','all']) {
+    const h=harness({coarse:true,userAgent:'Android'}),attempts=[];
+    const Context=h.sandbox.AudioContext;
+    h.sandbox.AudioContext=function(options) {
+      attempts.push(options);
+      if(reject==='all'||(reject==='options'&&options)||options?.renderSizeHint)
+        throw new TypeError('Unsupported context options');
+      return new Context(options);
+    };
+    h.run('setup();soundEngine.setMode("effects")');
+    const engine=h.run('soundEngine');
+    assert.equal(attempts[0].renderSizeHint,'hardware');
+    assert.equal(attempts[1].latencyHint,'playback','do not discard latency with rejected render hint');
+    assert.equal(attempts[1].renderSizeHint,undefined);
+    assert.equal(attempts.length,reject==='hardware'?2:3);
+    if(reject==='all')assert.equal(engine.mode,'off','failure stays silent');
+    else assert.ok(engine.ctx,'older constructors still work');
+  }
+});
+
 check('finished voices disconnect their whole graph and score partials retain shared effects until all end', () => {
   const h=harness();h.run('setup();soundEngine.setMode("effects")');
   const engine=h.run('soundEngine'),ctx=engine.ctx;
@@ -356,6 +390,47 @@ check('uncached UI Foley starts after sample generation and repeats reuse the ca
   engine.interfaceSound('slider',.5,'density');
   const count=ctx.createdNodes.length;ctx.currentTime+=.02;
   engine.interfaceSound('slider',.6,'density');assert.equal(ctx.createdNodes.length,count,'slider throttle retained');
+});
+
+check('UI sample boundaries and synthesized voice envelopes reach true silence', () => {
+  const h=harness();h.run('setup();soundEngine.setMode("effects")');
+  const engine=h.run('soundEngine'),ctx=engine.ctx;
+  const kinds=['panel-open','panel-close','toggle-on','toggle-off','select',
+    'slider','slider-end','commit','reset','pause','resume','press'];
+  for(const sampleRate of [22050,44100,48000]) {
+    ctx.sampleRate=sampleRate;engine.uiFoleyCache.clear();
+    for(const kind of kinds)for(const bucket of kind.startsWith('slider')?[0,14,28]:[14]) {
+      const data=engine.uiFoleySample(kind,bucket).getChannelData(0);
+      assert.equal(Math.abs(data[0]),0,`${kind} starts silent at ${sampleRate}`);
+      assert.equal(Math.abs(data.at(-1)),0,`${kind} ends silent at ${sampleRate}`);
+      assert.ok(data.some(value=>Math.abs(value)>.01),'retain audible sound');
+      for(const value of data)assert.ok(Number.isFinite(value)&&Math.abs(value)<.75);
+    }
+  }
+  const actions=[()=>engine.tone(1,220,.2),()=>engine.filteredNoise(1,.2,.1),
+    ()=>engine.ripple(.5),()=>engine.ripple(.5,3),()=>engine.surge(),()=>engine.breach(),
+    ...['piano','strings','organ','brass','riff','acid','sub','bell'].map(
+      instrument=>()=>engine.scoreVoice(1,60,.3,instrument))];
+  for(const action of actions) {
+    const before=ctx.createdNodes.length;action();
+    const nodes=new Set(ctx.createdNodes.slice(before));
+    for(const source of nodes)if(['oscillator','buffer'].includes(source.kind)) {
+      const envelopes=[],seen=new Set();
+      const visit=node=>{
+        if(!nodes.has(node)||seen.has(node))return;
+        seen.add(node);
+        if(node.kind==='gain'&&node.gain.calls.length)envelopes.push(node.gain.calls);
+        node.edges.forEach(visit);
+      };
+      visit(source);assert.ok(envelopes.length,'source has an envelope');
+      for(const calls of envelopes) {
+        assert.equal(calls[0][1],0,'source starts from silence');
+        assert.equal(calls.at(-1)[1],0,'tail reaches exact zero');
+        assert.ok(calls.at(-1)[2]<source.stopArgs[0],'fade completes before stop');
+        for(const [type,value] of calls)if(type==='exp')assert.ok(value>0,'valid exponential target');
+      }
+    }
+  }
 });
 
 check('public settings reject invalid values and clamp every numeric boundary', () => {
