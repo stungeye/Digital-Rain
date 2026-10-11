@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 11</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -65,7 +65,12 @@ kbd{font:inherit;color:#e3ffe6}
 #rec-label{position:fixed;z-index:6;top:24px;right:24px;display:none;color:#e1ffe4;font:10px Consolas,monospace;letter-spacing:.2em;pointer-events:none}
 #rec-label.on{display:block}#rec-label.on:before{content:"";display:inline-block;border-radius:50%;width:7px;height:7px;margin-right:9px;background:#fa7777;box-shadow:0 0 10px #f66}
 .note{font-size:9px;color:#769b7c;line-height:1.6;margin:12px 0 0}
-@media(max-width:560px){#panel{max-height:78vh;padding:19px 16px 17px}.mini{display:none}}
+@media(max-width:560px){
+  #panel{max-height:min(77dvh,calc(100dvh - 100px));padding:19px 16px 17px}
+  .hud{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}
+  #toggle{min-width:148px;min-height:44px}
+  .mini{display:none}
+}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -75,7 +80,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 11<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 12<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -158,7 +163,81 @@ kbd{font:inherit;color:#e3ffe6}
 </div>
 <div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // SFX ARMED</div><div id="beat-leds" aria-label="Sound-responsive pulse"><i></i><i></i><i></i><i></i></div></div>
 <div id="rec-label">REC / SIGNAL</div>
-<script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
+<script>
+// Normal desktop runs p5.js. Touch/mobile goes straight to the lean Canvas
+// adapter below: no external dependency or idle WebGL context on phones.
+// This avoids a blank page when the CDN or GPU path is blocked on mobile.
+if (!(window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0)) {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></scr' + 'ipt>');
+}
+</script>
+<script>
+// Standalone resilience: some mobile browsers/privacy filters do not fetch
+// the external p5.js script. In that case, the SAME sketch can be driven by
+// this minimal Canvas 2D adapter instead of presenting an empty black page.
+// The p5.js Web Editor and normally loaded standalone use real p5.js.
+if (typeof window.p5 === 'undefined') {
+  console.info('Digital Rain: using resilient Canvas 2D renderer (mobile / p5 unavailable).');
+  window.__rainCanvasFallback = true;
+  const begun=performance.now();
+  let main=null,ctx=null,desiredFPS=30,lastDraw=0;
+  const screenSize=()=>({w:Math.max(1,document.documentElement.clientWidth||innerWidth),
+                        h:Math.max(1,innerHeight||document.documentElement.clientHeight)});
+  const applySize=(w,h)=>{
+    window.width=w;window.height=h;window.windowWidth=w;window.windowHeight=h;
+    main.width=w;main.height=h;
+    window.drawingContext=ctx;
+  };
+  window.createCanvas=(w,h)=>{
+    main=document.createElement('canvas');
+    main.id='defaultCanvas0';
+    main.style.cssText='display:block;width:100%;height:100%;';
+    ctx=main.getContext('2d',{alpha:false});
+    applySize(w,h);
+    return {elt:main,parent(node){node.appendChild(main);}};
+  };
+  window.createGraphics=(w,h)=>{
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const dc=c.getContext('2d');
+    return {canvas:c,drawingContext:dc,pixelDensity(){},clear(){dc.clearRect(0,0,w,h);},
+      remove(){c.width=0;c.height=0;}};
+  };
+  window.frameRate=n=>{desiredFPS=n||30;};
+  window.pixelDensity=()=>1;
+  window.millis=()=>performance.now()-begun;
+  window.background=(r,g,b)=>{
+    ctx.globalAlpha=1;ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(0,0,window.width,window.height);
+  };
+  window.resizeCanvas=(w,h)=>applySize(w,h);
+  window.saveCanvas=(name='digital-rain')=>{
+    const a=document.createElement('a');a.download=name+'.png';a.href=main.toDataURL();a.click();
+  };
+  window.mouseX=0;window.mouseY=0;window.touches=[];
+  window.addEventListener('pointermove',e=>{window.mouseX=e.clientX;window.mouseY=e.clientY;},{passive:true});
+  window.addEventListener('resize',()=>{
+    if(!main)return;
+    const {w,h}=screenSize();
+    if(w!==window.width||h!==window.height)window.windowResized?.();
+  },{passive:true});
+  function tick(now){
+    requestAnimationFrame(tick);
+    if(now-lastDraw<1000/desiredFPS)return;
+    lastDraw=now;
+    try{window.draw?.();}catch(e){
+      console.error('Digital Rain renderer error',e);
+      // A transient graphics failure should not keep hammering the GPU.
+      desiredFPS=5;
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const {w,h}=screenSize();
+    window.windowWidth=w;window.windowHeight=h;
+    try{window.setup?.();requestAnimationFrame(tick);}catch(err){
+      console.error('Digital Rain fallback startup failed',err);
+    }
+  });
+}
+</script>
 <script>
 /*
   DIGITAL RAIN // SIGNAL ENGINE v11
@@ -291,7 +370,7 @@ function worldToScreen(x,y) {
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
-  frameRate(60);
+  frameRate((window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0) ? 30 : 60);
   const mount = document.getElementById('rain');
   if (mount) {
     canvas.parent(mount);
@@ -430,7 +509,7 @@ class CodePlane {
   buildAtlas() {
     // A 2x source atlas produces high-quality edges on ordinary 1x canvas
     // without multiplying every framebuffer pixel on a Retina / 4K screen.
-    const scale = 2;
+    const scale = (navigator.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)')?.matches) ? 1.5 : 2;
     const count = GRADES[rain.grade].ink.length;
     this.tileW = Math.ceil(this.config.size * 1.16);
     this.tileH = Math.ceil(this.lineHeight * 1.15);
@@ -1033,10 +1112,16 @@ function handleRainShortcut(event) {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth,windowHeight);
+  // Mobile browser chrome and orientation changes can produce transient zero
+  // sizes. Resize to the actual CSS viewport rather than stale p5 globals.
+  const w = Math.max(1, document.documentElement.clientWidth || innerWidth);
+  const h = Math.max(1, innerHeight || document.documentElement.clientHeight);
+  if (Math.abs(width-w)<2 && Math.abs(height-h)<2) return;
+  resizeCanvas(w,h);
   buildScene();
   displayEngine?.resize();
 }
+
 
 window.activateRainAudio = activateRainAudio;
 window.setRainOption = setRainOption;
@@ -1063,7 +1148,8 @@ class CRTDisplay {
     this.output.setAttribute('aria-hidden', 'true');
     this.output.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;';
     source.parentElement.appendChild(this.output);
-    this.gl = this.output.getContext('webgl', {
+    const mobileCanvas = window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+    this.gl = mobileCanvas ? null : this.output.getContext('webgl', {
       alpha:false, antialias:false, depth:false, stencil:false,
       preserveDrawingBuffer:true, powerPreference:'default'
     });
@@ -1250,21 +1336,30 @@ class SignalAudio {
     this.uiLimiter.threshold.value=-16;this.uiLimiter.knee.value=10;
     this.uiLimiter.ratio.value=3;this.uiLimiter.attack.value=.003;
     this.uiLimiter.release.value=.085;
-    // Mild asymmetric magnetic/tape-style soft clipping: subtle extra
-    // harmonics and worn edges on the EXISTING UI Foley only. The score,
-    // ambience, ripple, surge and breach bypass this stage unchanged.
+    // A clearly audible worn-electronics treatment, not the previous
+    // near-zero-input waveshaper. Parallel DRY / DIRTY channels preserve
+    // the contacts' attack while making their noisy resonances crunchy.
+    // Score, drone, ripple, surge and breach bypass this entire path.
+    this.uiDry=ac.createGain();this.uiDry.gain.value=.72;
+    this.uiDrive=ac.createGain();this.uiDrive.gain.value=5.5;
     this.uiWear=ac.createWaveShaper();
-    const curve=new Float32Array(2049);
+    const curve=new Float32Array(4097);
     for(let i=0;i<curve.length;i++) {
       const x=(i/(curve.length-1))*2-1;
-      curve[i]=Math.tanh(2.05*x+.10*x*x)*.55;
+      // Asymmetry and hardening add odd AND even harmonics, without
+      // pushing the sound into musical distortion or clipping master.
+      curve[i]=.83*Math.tanh(3.5*x+.48*x*x)+.09*Math.sin(11*x)*Math.min(1,Math.abs(x)*2);
     }
     this.uiWear.curve=curve;
     this.uiWear.oversample='2x';
     this.uiTone=ac.createBiquadFilter();
-    this.uiTone.type='lowpass';this.uiTone.frequency.value=6100;
-    this.uiBus.connect(this.uiHP).connect(this.uiWear).connect(this.uiTone)
-      .connect(this.uiLimiter).connect(this.master);
+    this.uiTone.type='lowpass';this.uiTone.frequency.value=3600;
+    this.uiWet=ac.createGain();this.uiWet.gain.value=.38;
+    this.uiBus.connect(this.uiHP);
+    this.uiHP.connect(this.uiDry).connect(this.uiLimiter);
+    this.uiHP.connect(this.uiDrive).connect(this.uiWear)
+      .connect(this.uiTone).connect(this.uiWet).connect(this.uiLimiter);
+    this.uiLimiter.connect(this.master);
     this.noise = this.noiseBuffer(27.7);
     // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
     // Start silent until the selected mode has been applied. In SFX-only mode
@@ -1636,9 +1731,33 @@ class SignalAudio {
     s.start(t,Math.random()*Math.max(.1,this.noise.duration-duration-.1));
     s.stop(t+duration+.012);
   }
+  uiScrape(t,level=1,pitch=1200,pan=0,duration=.075) {
+    // A gritty, filtered micro-burst with multiple uneven contact points.
+    // Only UI Foley goes through this path; cinematic effects are untouched.
+    const ac=this.ctx, s=ac.createBufferSource(),bp=ac.createBiquadFilter(),
+      amp=ac.createGain();
+    s.buffer=this.noise;bp.type='bandpass';bp.Q.value=.65;
+    bp.frequency.setValueAtTime(pitch,t);
+    bp.frequency.exponentialRampToValueAtTime(pitch*.68,t+duration);
+    const gain=Math.min(.28,.11*level);
+    amp.gain.setValueAtTime(.0001,t);
+    const contacts=[0,.011,.024,.041].filter(x=>x<duration-.012);
+    contacts.forEach((offset,i)=>{
+      const time=t+offset;
+      amp.gain.setValueAtTime(Math.max(.0001,gain*(.21+.15*i)),time);
+      amp.gain.linearRampToValueAtTime(gain*(i===0?1:.65),time+.0012);
+      amp.gain.exponentialRampToValueAtTime(.001,time+.009);
+    });
+    amp.gain.setTargetAtTime(.0001,t+duration-.011,.008);
+    s.connect(bp);const stereo=this.uiRoute(bp,amp,pan);
+    s.onended=()=>{s.disconnect();bp.disconnect();amp.disconnect();stereo?.disconnect();};
+    s.start(t,Math.random()*Math.max(.1,this.noise.duration-duration-.1));
+    s.stop(t+duration+.012);
+  }
   uiStrike(t,{pitch=370,force=1,pan=0,bright=.75,duration=.085,tail=false}={}) {
     this.uiImpulse(t,force,bright,pan,Math.min(.037,duration*.32));
     this.uiBody(t+.003,pitch,force,pan,duration);
+    this.uiScrape(t+.002,force*.95,pitch*2.6,pan,Math.min(.12,duration*.85));
     if(tail)this.uiWisp(t+.017,force*.82,pitch*3.5,-pan,.095);
   }
   interfaceSound(kind='press',position=.5,control='') {
