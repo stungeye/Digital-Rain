@@ -22,7 +22,8 @@ on the same speaker or headphones, with the same volume. Stop between tests.</p>
 </label>
 <label>Sound
   <select id="sound"><option value="score">Music + hum</option>
-    <option value="tone">Steady tone</option><option value="buffer">Recorded steady tone</option>
+    <option value="tone">Steady tone (Web Audio oscillator)</option><option value="buffer">Generated steady tone (Web Audio buffer)</option>
+    <option value="media">Normal audio player tone (90 seconds)</option>
     <option value="effects">SFX only</option></select>
 </label>
 <label>Music
@@ -38,12 +39,14 @@ on the same speaker or headphones, with the same volume. Stop between tests.</p>
     <option value="pause">Pause</option><option value="resume">Resume</option></select>
 </label>
 <p>Music starts at bar 12 to exercise a busy passage. Listen for at least a minute per setting.
-The recorded tone uses one looping buffer and needs no note timer or live oscillator synthesis.</p>
+The generated buffer tone uses one looping buffer and needs no note timer or live oscillator synthesis.
+The normal player plays a generated WAV without an AudioContext, loops, or note timers;
+the processing option does not apply to it. Keep the page visible and screen on for this comparison.</p>
 <button id="start">Start</button><button id="stop" disabled>Stop</button>
 <button id="foley" disabled>UI click</button><button id="ripple" disabled>Ripple</button>
 <p id="status" role="status">Ready.</p>
 <pre id="report">Start a test to see the browser's actual audio settings.</pre>
-<p>These readings cannot count audible dropouts. Report which options crackle, your browser/Android
+<p>These readings and event logs cannot count all audible dropouts. Report which options crackle, your browser/Android
 versions, and whether the full <a href="../index.html">rain app</a> behaves differently.
 If the simple tones also crackle, the issue can occur without the score's synthesis or scheduling.</p>
 <script>window.RainApp={state:{grade:'cinema',volume:.5,paused:false,interfaceSounds:true,interfaceLevel:.5}};</script>
@@ -52,24 +55,63 @@ If the simple tones also crackle, the issue can occur without the score's synthe
 'use strict';
 const byId=id=>document.getElementById(id);
 const controls=['render','sound','profile'].map(byId);
-let engine=null, ctx=null, source=null, gain=null, refresh=null, test=null;
+let engine=null, ctx=null, source=null, gain=null, refresh=null, test=null, media=null, mediaUrl=null;
+let events=[], startedAt=0, stopping=false;
+function logEvent(event) {
+  events.push({seconds:+((performance.now()-startedAt)/1000).toFixed(2),event});
+  if(events.length>40)events.shift();
+  report();
+}
+document.addEventListener('visibilitychange',()=>{if(ctx||media)logEvent('page '+document.visibilityState);});
+// A finite file avoids loop-boundary and live Web Audio processing as variables.
+function toneWav() {
+  const rate=48000, count=rate*90, bytes=new ArrayBuffer(44+count*2), view=new DataView(bytes);
+  const text=(at,s)=>{for(let i=0;i<s.length;i++)view.setUint8(at+i,s.charCodeAt(i));};
+  text(0,'RIFF');view.setUint32(4,bytes.byteLength-8,true);text(8,'WAVE');text(12,'fmt ');
+  view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+  view.setUint32(24,rate,true);view.setUint32(28,rate*2,true);
+  view.setUint16(32,2,true);view.setUint16(34,16,true);text(36,'data');view.setUint32(40,count*2,true);
+  const fade=rate*.04;
+  for(let i=0;i<count;i++) {
+    const envelope=Math.min(1,i/fade,(count-1-i)/fade);
+    view.setInt16(44+i*2,Math.round(Math.sin(2*Math.PI*440*i/rate)*.08*envelope*32767),true);
+  }
+  return new Blob([bytes],{type:'audio/wav'});
+}
 function report() {
-  if(!ctx)return;
+  if(!ctx&&!media)return;
   byId('report').textContent=JSON.stringify({
-    browser:navigator.userAgent, ...test, state:ctx.state,
-    sampleRate:ctx.sampleRate,
-    renderQuantumFrames:ctx.renderQuantumSize??'not exposed (hint may be ignored)',
-    baseLatencyMs:Number.isFinite(ctx.baseLatency)?+(ctx.baseLatency*1000).toFixed(2):'not exposed',
-    outputLatencyMs:Number.isFinite(ctx.outputLatency)?+(ctx.outputLatency*1000).toFixed(2):'not exposed',
-    audioTimeSeconds:+ctx.currentTime.toFixed(2)
+    browser:navigator.userAgent, ...test, pageVisibility:document.visibilityState,
+    ...(ctx?{
+      state:ctx.state, sampleRate:ctx.sampleRate,
+      renderQuantumFrames:ctx.renderQuantumSize??'not exposed (hint may be ignored)',
+      baseLatencyMs:Number.isFinite(ctx.baseLatency)?+(ctx.baseLatency*1000).toFixed(2):'not exposed',
+      outputLatencyMs:Number.isFinite(ctx.outputLatency)?+(ctx.outputLatency*1000).toFixed(2):'not exposed',
+      audioTimeSeconds:+ctx.currentTime.toFixed(2)
+    }:{state:media.ended?'ended':media.paused?'paused':'playing',fileSampleRate:48000,
+      audioTimeSeconds:+media.currentTime.toFixed(2),readyState:media.readyState,
+      error:media.error?{code:media.error.code,message:media.error.message}:null}),
+    events
   },null,2);
 }
-function start() {
-  if(ctx)return;
+async function start() {
+  if(ctx||media||stopping)return;
   const processing=byId('render').value, sound=byId('sound').value;
-  test={requestedProcessing:processing,sound,profile:byId('profile').value,latencyHint:'playback'};
+  events=[];startedAt=performance.now();
+  test={requestedProcessing:sound==='media'?'not applicable':processing,sound,
+    profile:byId('profile').value,latencyHint:sound==='media'?'not applicable':'playback'};
+  const activeTest=test;
+  controls.forEach(control=>control.disabled=true);
+  byId('start').disabled=true;byId('stop').disabled=false;
   try {
-    if(sound==='score'||sound==='effects') {
+    let playPromise=null;
+    if(sound==='media') {
+      media=new Audio();mediaUrl=URL.createObjectURL(toneWav());media.src=mediaUrl;
+      const player=media;
+      for(const name of ['playing','waiting','stalled','pause','ended','error'])
+        player.addEventListener(name,()=>{if(media===player)logEvent('player '+name);});
+      playPromise=player.play();
+    } else if(sound==='score'||sound==='effects') {
       RainApp.state.grade=test.profile;
       engine=new SignalAudio();engine.renderSizeHint=processing;engine.latencyHint='playback';
       engine.lookAhead=.35;engine.voiceLead=.04;engine.startLead=.12;
@@ -97,19 +139,33 @@ function start() {
       source.connect(gain);gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.08,t+.04);
       source.start(t);
     }
-    controls.forEach(control=>control.disabled=true);
-    byId('start').disabled=true;byId('stop').disabled=false;
+    if(ctx) {
+      const context=ctx;
+      context.addEventListener('statechange',()=>{if(ctx===context)logEvent('context '+context.state);});
+    }
     byId('foley').disabled=byId('ripple').disabled=!engine;
     byId('status').textContent='Playing. Note any crackles, then Stop to change the test.';
     refresh=setInterval(report,1000);report();
+    if(playPromise)await playPromise;
   } catch(error) {
-    byId('status').textContent=error.message;
-    stop();
+    if(stopping||test!==activeTest||activeTest.stopped)return;
+    await stop();
+    byId('status').textContent='Could not play: '+error.message;
   }
 }
 async function stop() {
+  if(stopping)return;
+  stopping=true;
+  if(test)test.stopped=true;
   byId('stop').disabled=true;byId('foley').disabled=byId('ripple').disabled=true;
   clearInterval(refresh);
+  logEvent('Stop requested');
+  if(media) {
+    media.pause();report();
+    const player=media;media=null;
+    player.removeAttribute('src');player.load();
+    URL.revokeObjectURL(mediaUrl);mediaUrl=null;
+  }
   if(ctx) {
     if(engine)engine.setMode('off');
     else if(gain)gain.gain.setTargetAtTime(0,ctx.currentTime,.015);
@@ -119,6 +175,7 @@ async function stop() {
   ctx=null;engine=null;source=null;gain=null;
   controls.forEach(control=>control.disabled=false);byId('start').disabled=false;
   byId('status').textContent='Stopped. Choose another setting and Start.';
+  stopping=false;
 }
 byId('start').onclick=start;
 byId('stop').onclick=()=>stop().catch(error=>{byId('status').textContent=error.message;});

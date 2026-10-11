@@ -16,6 +16,8 @@ The first buffering fix did not resolve the user's Pixel 8 Pro speaker crackling
 
 **Controls:** H panel; Space pause; M mute/restore; F fullscreen; E/B surge/breach; C profile; 1/2/3 CRT; T/G grain/bloom; R reseed; +/- density. Click/tap the running rain for ripples; Shift-click strengthens the wave. Phone controls hide keyboard help.
 
+**Latest Pixel results:** the fault is confirmed in mobile Firefox, including isolated oscillator and generated-buffer tones with both processing options. UI sounds seem clean in the listening page. Mobile Chrome is clean in the current comparison; its behavior before these changes is unknown, so this does not establish that the changes fixed Chrome. Firefox remains unresolved. The listening page also offers a normal-player WAV tone without Web Audio and playback/visibility event logs for further comparison. See [AUDIO_HANDOFF.md](AUDIO_HANDOFF.md) for the returned results and next steps.
+
 ## Decisions from the Git history
 
 - **Keep streams collision-free** (`a3129c4`, `9461c35`): each global horizontal lane belongs to one depth. Its streams share velocity and retain at least two dark rows between them. Density changes lane activation and future gaps. Effects modify existing cells; draw bloom before glyphs.
