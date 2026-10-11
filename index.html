@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 06</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 07</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 06<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 07<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -103,6 +103,8 @@ kbd{font:inherit;color:#e3ffe6}
   </div>
   <p class="dsc" id="crt-help">Clean digital signal, with no CRT processing.</p>
   <div class="control"><div class="control-head"><label for="scanStrength">SCANLINE CONTRAST</label><output id="scanStrength-value"></output></div><input id="scanStrength" type="range" min="0.15" max="1" step="0.05" value="0.75"></div>
+  <div class="control"><div class="control-head"><label for="scanBrightness">PHOSPHOR BRIGHTNESS</label><output id="scanBrightness-value"></output></div><input id="scanBrightness" type="range" min="0.6" max="1.75" step="0.05" value="1"></div>
+  <p class="dsc">Brightness automatically compensates as scanlines deepen. Fine-tune phosphor exposure here.</p>
   <div class="switch"><label for="texture">ANALOG FILM GRAIN / DUST</label><input id="texture" type="checkbox" checked></div>
   <div class="control"><div class="control-head"><label for="grain">FILM TEXTURE STRENGTH</label><output id="grain-value"></output></div><input id="grain" type="range" min="0.1" max="1.5" step="0.05" value="0.75"></div>
   <div class="rule"></div>
@@ -116,7 +118,7 @@ kbd{font:inherit;color:#e3ffe6}
   <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
   <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in either audio-enabled mode.</p>
-  <div class="control"><div class="control-head"><label for="beatStrength">BEAT IMPACT</label><output id="beatStrength-value"></output></div><input id="beatStrength" type="range" min="0" max="2" step="0.05" value="1.1"></div>
+  <div class="control"><div class="control-head"><label for="beatStrength">BEAT IMPACT</label><output id="beatStrength-value"></output></div><input id="beatStrength" type="range" min="0" max="2" step="0.05" value="0.75"></div>
   <div class="control"><div class="control-head"><label for="volume">MASTER VOLUME</label><output id="volume-value"></output></div><input id="volume" type="range" min="0" max="1" step="0.05" value="0.5"></div>
   <div class="rule"></div>
   <p class="tag">05 / FIVE-CHAPTER CINEMATIC SEQUENCE</p>
@@ -132,7 +134,7 @@ kbd{font:inherit;color:#e3ffe6}
    <button id="record-btn">RECORD 8s</button>
    <button id="defaults-btn" style="grid-column:1/-1">RESTORE DEFAULTS</button>
   </div>
-  <p class="dsc">Surge = a charged wave through existing code. Breach = blackout and signal relock. Time Dilation was removed because it looked like dropped frames. Click the rain for directional ripples.</p>
+  <p class="dsc">Surge = a charged wave through existing code. Breach = blackout and signal relock. Click the rain to release a viewport-anchored code ripple. Shift-click creates a heavier wave.</p>
   <p id="notify" role="status" aria-live="polite"></p>
   <div class="rule"></div>
   <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
@@ -156,7 +158,7 @@ kbd{font:inherit;color:#e3ffe6}
 <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v6
+  DIGITAL RAIN // SIGNAL ENGINE v7
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
@@ -222,7 +224,7 @@ const DEPTHS = [
 const defaults = {
   density: 1.05, speed: 1, glow: 1, persistence: 1,
   mutation: 1, texture: true, grain: .75, grade: 'cinema', bloom: true, paused: false,
-  fontSize: 1, crt: 'off', scanStrength: .75, audio: 'off', volume: .5, director: false, beatReactive: true, beatStrength: 1.1,
+  fontSize: 1, crt: 'off', scanStrength: .75, scanBrightness: 1, audio: 'off', volume: .5, director: false, beatReactive: true, beatStrength: .75,
 };
 const rain = { ...defaults };
 let planes = [];
@@ -270,6 +272,12 @@ function worldViewport() {
 function screenToWorld(x,y) {
   return { x:worldWidth/2+(x-width/2)/rain.fontSize,
            y:worldHeight/2+(y-height/2)/rain.fontSize };
+}
+// Pulses propagate in VIEWPORT pixels, not world cells. This is critical:
+// zoom must change glyph magnification, NOT ripple radius or velocity.
+function worldToScreen(x,y) {
+  return {x:width*.5+(x-worldWidth*.5)*rain.fontSize,
+          y:height*.5+(y-worldHeight*.5)*rain.fontSize};
 }
 
 function setup() {
@@ -362,6 +370,23 @@ function draw() {
   }
   for (const plane of planes) plane.drawGlyphs(ctx, t);
   ctx.restore();
+  // A restrained, brief source-point bloom makes the origin legible even
+  // if the pointer falls between two glyph lanes. CRT will bend it naturally.
+  for (const pulse of pulses) {
+    const elapsed=(t-pulse.at)/1000;
+    if(elapsed<0 || elapsed>.32)continue;
+    const strength=Math.pow(1-elapsed/.32,2)*(pulse.power>2?.23:.13);
+    const radius=pulse.power>2?74:52;
+    const glow=ctx.createRadialGradient(pulse.x,pulse.y,0,pulse.x,pulse.y,radius);
+    const rgb=rain.grade==='anomaly'?'255,76,155':rain.grade==='abyss'?'78,206,218':
+      rain.grade==='voltage'?'201,255,66':'95,255,144';
+    glow.addColorStop(0,`rgba(${rgb},${strength})`);
+    glow.addColorStop(.34,`rgba(${rgb},${strength*.25})`);
+    glow.addColorStop(1,`rgba(${rgb},0)`);
+    ctx.save();ctx.globalCompositeOperation='screen';ctx.fillStyle=glow;
+    ctx.fillRect(pulse.x-radius,pulse.y-radius,radius*2,radius*2);
+    ctx.restore();
+  }
   // Full-screen hard dropout: unlike E, the entire signal briefly dies.
   const breachAge = t - breachAt;
   if (breachAge >= 0 && breachAge < 220) {
@@ -531,14 +556,21 @@ class CodePlane {
           for (let p = 0; p < pulseCount; p++) {
             const pulse = pulses[p];
             const elapsed = (now - pulse.at)/1000;
-            const distance = Math.hypot(x-pulse.x, y-pulse.y);
-            const ring = Math.abs(distance - elapsed * 930);
-            const echo = Math.abs(distance - elapsed * 640);
-            const strength = Math.max(0, 1-ring/43) + Math.max(0, 1-echo/26)*.42;
+            // The visible canvas is the coordinate system for this wave.
+            // Unlike a world-space ring, it remains correctly sized at 65–185% zoom.
+            const sx=width*.5+(x-worldWidth*.5)*rain.fontSize;
+            const sy=height*.5+(y-worldHeight*.5)*rain.fontSize;
+            const distance = Math.hypot(sx-pulse.x, sy-pulse.y);
+            const ring = Math.abs(distance - elapsed * 780);
+            const echo = Math.abs(distance - Math.max(0,elapsed-.105) * 570);
+            const origin = Math.max(0,1-distance/(pulse.power>2?112:72)) *
+                           Math.max(0,1-elapsed/.30);
+            const strength = Math.max(0, 1-ring/(pulse.power>2?57:43)) +
+                             Math.max(0, 1-echo/32)*.36 + origin*1.5;
             if (strength > 0) {
               tone += Math.ceil(strength * (3 + pulse.power));
               // Exactly once per wavefront/cell, not one random mutation per frame.
-              if (ring < 19 && cell.lastPulse !== pulse.id) {
+              if (ring < 21 && cell.lastPulse !== pulse.id) {
                 cell.lastPulse = pulse.id;
                 if (Math.random() < .5) cell.glyph = randomGlyph();
                 cell.twinkleUntil = now + 130;
@@ -853,7 +885,8 @@ function setRainOption(name, value) {
     displayEngine?.setMode(value);
     if (rain.paused) displayEngine?.present(drawingContext.canvas);
   }
-  if(name==='scanStrength' && rain.paused)displayEngine?.present(drawingContext.canvas);
+  if((name==='scanStrength'||name==='scanBrightness') && rain.paused)
+    displayEngine?.present(drawingContext.canvas);
   if (name === 'grade' && old !== value) {
     // Preserve stream positions while recoloring the entire signal.
     for (const g of Object.values(glows)) g.remove?.();
@@ -889,8 +922,11 @@ function addPulse(x,y,power=1,fromDirector=false) {
   const realNow=millis();
   if (realNow - lastClickTime < 65) return;
   lastClickTime = realNow;
-  const target=screenToWorld(x,y);
-  pulses.push({x:target.x,y:target.y,at:simulationTime,id:++pulseSeq,power});
+  // WebGL curved CRT is a post-process: invert its visible-display mapping
+  // before storing the source-canvas origin. Then the effect appears exactly
+  // under the real pointer, including near curved edges and at high zoom.
+  const source=displayEngine?.screenToSource(x,y) ?? {x,y};
+  pulses.push({x:source.x,y:source.y,at:simulationTime,id:++pulseSeq,power});
   soundEngine?.ripple(x/Math.max(width,1), power);
   if (pulses.length>4) pulses.shift();
 }
@@ -992,6 +1028,7 @@ class CRTDisplay {
       uniform vec2 u_size;
       uniform float u_curve;
       uniform float u_scan;
+      uniform float u_brightness;
       uniform float u_time;
       void main() {
         vec2 uv = gl_FragCoord.xy/u_size;
@@ -1006,7 +1043,10 @@ class CRTDisplay {
         }
         vec3 rgb = texture2D(u_image,lookup).rgb;
         float scan = pow(.5+.5*cos(6.2831853*gl_FragCoord.y/3.0), 1.45);
-        rgb *= 1. - u_scan*(.88*(1.-scan));
+        // Darker scanlines ordinarily halve perceived phosphor luminance.
+        // Recover average emission automatically, while retaining dark gaps.
+        float recovery = 1. / (1. - .48*u_scan);
+        rgb *= (1. - u_scan*(.88*(1.-scan))) * recovery * u_brightness;
         // Very subtle RGB grille / horizontal phosphor spread.
         float grille=.96+.04*cos(gl_FragCoord.x*2.0944);
         rgb *= 1.-.11*u_scan*(1.-grille);
@@ -1035,7 +1075,7 @@ class CRTDisplay {
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
     const pos=gl.getAttribLocation(program,'a_pos');
     gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
-    this.uniforms = Object.fromEntries(['u_image','u_size','u_curve','u_scan','u_time'].map(key=>[key,gl.getUniformLocation(program,key)]));
+    this.uniforms = Object.fromEntries(['u_image','u_size','u_curve','u_scan','u_brightness','u_time'].map(key=>[key,gl.getUniformLocation(program,key)]));
     this.texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.texture);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -1048,6 +1088,20 @@ class CRTDisplay {
     this.output.width=this.source.width;
     this.output.height=this.source.height;
     if(this.gl) this.gl.viewport(0,0,this.output.width,this.output.height);
+  }
+  // The shader maps output pixels to sampled source pixels. Pointer input
+  // must follow the same transformation or a click near curved edges misses.
+  screenToSource(x,y) {
+    if(this.mode!=='glass')return {x,y};
+    if(!this.gl) {
+      // Canvas2D fallback squeezes each three-pixel raster strip inwards.
+      const v=(y/height-.5)*2;
+      const inset=width*(.005+.013*v*v);
+      return {x:(x-inset)*width/(width-2*inset),y};
+    }
+    const px=2*x/width-1,py=2*y/height-1;
+    const factor=.43*(1+.08*(px*px+py*py));
+    return {x:(.5+px*factor)*width,y:(.5+py*factor)*height};
   }
   setMode(mode) {
     this.mode=mode;
@@ -1065,11 +1119,15 @@ class CRTDisplay {
       gl.uniform2f(u.u_size,w,h);
       gl.uniform1f(u.u_curve,this.mode==='glass'?1:0);
       gl.uniform1f(u.u_scan,rain.scanStrength);
+      gl.uniform1f(u.u_brightness,rain.scanBrightness);
       gl.uniform1f(u.u_time,simulationTime*.001);
       gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
     } else if(this.ctx) {
       const ctx=this.ctx;
       ctx.fillStyle='#000400';ctx.fillRect(0,0,w,h);
+      // Fallback brightness must be applied BEFORE the dark scanline masks.
+      const compensation=1/(1-.31*rain.scanStrength)*rain.scanBrightness;
+      ctx.save();ctx.filter=`brightness(${compensation})`;
       if(this.mode==='glass') {
         for (let y=0;y<h;y+=3) {
           const row=Math.min(3,h-y);
@@ -1078,6 +1136,7 @@ class CRTDisplay {
           ctx.drawImage(source,0,y,w,row,inset,y,w-2*inset,row);
         }
       } else ctx.drawImage(source,0,0,w,h);
+      ctx.restore();
       ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.82})`;
       for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);
       ctx.fillStyle=`rgba(0,0,0,${rain.scanStrength*.17})`;
@@ -1316,15 +1375,51 @@ class SignalAudio {
     }
     return Math.min(1,energy);
   }
+  // A bespoke code-wave: a short, swelling pressure front, staggered
+  // micro-fragments and dissonant harmonic tension. Inspired by the *method*
+  // of the original film's sound design; no sampled film audio or exact cue.
   ripple(x, power = 1) {
     if (this.mode==='off'||!this.ctx) return;
-    const t = this.ctx.currentTime+.015, p = Math.max(-.85, Math.min(.85,x*2-1));
-    const heavy=power>2;
-    // Separate tactile click and deep Shift-click impact. No laser chirps.
-    this.filteredNoise(t,.27,heavy?.23:.15,heavy?530:970,.42,p);
-    this.filteredNoise(t+.075,heavy?.33:.21,heavy?.105:.054,heavy?260:1550,.72,-p*.8);
-    this.tone(t,heavy?94:122,heavy?.36:.20,'sine',heavy?.26:.115,heavy?35:64,0,p);
-    if(heavy) this.filteredNoise(t+.19,.34,.09,440,.34,p*.6);
+    const ac=this.ctx, t=ac.currentTime+.012;
+    const pan=Math.max(-.72,Math.min(.72,x*1.44-.72));
+    const heavy=power>2, length=heavy?1.35:.94;
+    const peak=heavy?.21:.125, rise=heavy?.265:.175;
+    const noiseLayer=(offset, duration, freq, targetFreq, amp, position, attack)=>{
+      const s=ac.createBufferSource();s.buffer=this.noise;
+      const f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=.62;
+      const begin=t+offset, span=Math.max(.08,duration);
+      f.frequency.setValueAtTime(freq,begin);
+      f.frequency.exponentialRampToValueAtTime(targetFreq,begin+span*.75);
+      const g=ac.createGain();g.gain.setValueAtTime(.0001,begin);
+      g.gain.exponentialRampToValueAtTime(Math.max(.0002,amp),begin+attack);
+      g.gain.exponentialRampToValueAtTime(.0001,begin+span);
+      s.connect(f);this.connectVoice(f,g,position);
+      s.start(begin,Math.random()*(this.noise.duration-span-.1));s.stop(begin+span+.025);
+    };
+    // The attack gathers energy rather than announcing itself as a click.
+    noiseLayer(0,length,heavy?170:300,heavy?1550:2100,peak,pan,rise);
+    noiseLayer(.045,length*.72,2600,490,peak*.49,-pan*.66,rise*.72);
+    // Nearly-redundant tiny fragments, each slightly staggered and panned.
+    for(let i=0;i<(heavy?8:6);i++) {
+      const at=.05+i*(heavy?.078:.069),freq=650+((i*1277)%1700);
+      noiseLayer(at,.16+(i%3)*.036,freq,freq*.69,
+        peak*(heavy?.11:.095),pan*.6+(i%2?.23:-.23),.04);
+    }
+    // An original low cluster that swells beneath the noise. Dark and
+    // dissonant, but without the cartoon pitch-slide of a laser effect.
+    const base=heavy?73:110;
+    for (const [multiple,level] of [[1,.66],[1.123,.31],[1.414,.19]]) {
+      const o=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain();
+      o.type='triangle';o.frequency.value=base*multiple;
+      f.type='lowpass';f.frequency.value=heavy?410:590;
+      g.gain.setValueAtTime(.0001,t);
+      g.gain.exponentialRampToValueAtTime(peak*level*.8,t+rise);
+      g.gain.exponentialRampToValueAtTime(.0001,t+length*.82);
+      o.connect(f);this.connectVoice(f,g,pan*.35);
+      o.start(t);o.stop(t+length+.02);
+    }
+    // The visible echo is smaller and late: a narrow, soft second crest.
+    noiseLayer(heavy?.34:.25,heavy?.48:.34,1250,620,peak*.28,-pan*.5,.095);
   }
   surge() {
     if (this.mode==='off'||!this.ctx) return;
@@ -1383,7 +1478,7 @@ window.signalSound = () => soundEngine;
     toggle.textContent=open?'[ − ] CLOSE SYSTEM':'[ + ] SYSTEM PANEL';
   };
   toggle.addEventListener('click',window.toggleRainPanel);
-  const ranges=['density','fontSize','speed','persistence','mutation','glow','scanStrength','grain','volume','beatStrength'];
+  const ranges=['density','fontSize','speed','persistence','mutation','glow','scanStrength','scanBrightness','grain','volume','beatStrength'];
   for(const name of ranges){
     $(name).addEventListener('input',()=>setRainOption(name,Number($(name).value)));
   }
@@ -1404,7 +1499,7 @@ window.signalSound = () => soundEngine;
       scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
       glass:'Subtle barrel curve with minimal edge padding, and pronounced scanlines.'},
     audio:{off:'Silent until you explicitly enable it. No film audio is used.',
-      effects:'Only tactile ripple, heavy Shift-click and interface sounds, with no score or drone.',
+      effects:'Only the new layered, swelling code-ripple effects and interface sounds; no score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
       score:'134-BPM big beat / breakbeat: chopped kicks, swung hi-hats, ghost snares, gritty backbeat and evolving 32-bar arrangement.'}
   };
@@ -1427,6 +1522,7 @@ window.signalSound = () => soundEngine;
     $('audio-status').textContent=st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + SFX':st.audio==='effects'?'AUDIO // SFX ONLY':'AUDIO // CODE HUM';
     $('scanStrength').disabled=st.crt==='off';
+    $('scanBrightness').disabled=st.crt==='off';
     $('grain').disabled=!st.texture;
     $('beatReactive').disabled=st.audio!=='score';
     $('beatStrength').disabled=st.audio!=='score'||!st.beatReactive;
