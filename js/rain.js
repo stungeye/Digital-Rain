@@ -145,18 +145,18 @@ const SETTINGS = Object.freeze({
   mutation:numberSetting(1,.25,2.5,.05),
   glow:numberSetting(1,0,1.8,.05,true),
   bloom:booleanSetting(true,true),
-  texture:booleanSetting(true,true),
-  grain:numberSetting(.75,.1,1.5,.05,true),
+  grain:numberSetting(.35,0,1.5,.05,true),
   grade:choiceSetting('cinema',[...GRADE_NAMES],true),
-  crt:choiceSetting('off',['off','scan','glass'],true),
-  scanStrength:numberSetting(.75,.15,1,.05,true),
+  crt:choiceSetting('scan',['off','scan','glass'],true),
+  curvature:numberSetting(1,0,2,.05,true),
+  scanStrength:numberSetting(.85,.15,1,.05,true),
   scanBrightness:numberSetting(1,.6,1.75,.05,true),
   audio:choiceSetting('effects',['off','effects','ambience','score'],true),
   volume:numberSetting(.5,0,1,.05),
   beatReactive:booleanSetting(true,true),
   beatStrength:numberSetting(.75,0,2,.05,true),
   interfaceSounds:booleanSetting(true),
-  interfaceLevel:numberSetting(.5,0,1,.05),
+  interfaceLevel:numberSetting(.4,0,1,.05),
   paused:booleanSetting(false,true),
 });
 const defaults = Object.freeze(Object.fromEntries(Object.entries(SETTINGS).map(([key,spec])=>[key,spec.default])));
@@ -355,6 +355,7 @@ function setup() {
   lastRealTime = millis();
   buildScene();
   displayEngine = new CRTDisplay(canvas.elt);
+  displayEngine.setMode(rain.crt);
   soundEngine = new SignalAudio();
   // The optional film font downloads after the scene initializes. Rebuilding the
   // glyph atlases (only) switches the glyphs without resetting animation.
@@ -412,7 +413,7 @@ function draw() {
 function updateSimulation(dt) {
   simulationTime+=dt*1000;
   frameNumber++;
-  if(rain.texture && frameNumber>=nextGrainFrame) {
+  if(rain.grain>0 && frameNumber>=nextGrainFrame) {
     buildFilmTile(filmTile);
     nextGrainFrame=frameNumber+3;
   }
@@ -466,7 +467,7 @@ function renderScene() {
 
   ctx.globalAlpha = 1;
   ctx.drawImage(vignette.canvas, 0, 0, width, height);
-  if (rain.texture && filmPattern) {
+  if (rain.grain>0 && filmPattern) {
     ctx.globalAlpha = .54 * rain.grain;
     ctx.fillStyle = filmPattern;
     ctx.fillRect(0, 0, width, height);

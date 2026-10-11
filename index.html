@@ -36,21 +36,18 @@
   <div class="control"><div class="control-head"><label for="zoom">CENTRED CAMERA ZOOM</label><output id="zoom-value" for="zoom"></output></div><input id="zoom" type="range"></div>
   <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value" for="speed"></output></div><input id="speed" type="range"></div>
   <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value" for="persistence"></output></div><input id="persistence" type="range"></div>
-  <div class="control"><div class="control-head"><label for="mutation">GLYPH MUTATION</label><output id="mutation-value" for="mutation"></output></div><input id="mutation" type="range"></div>
   <div class="control"><div class="control-head"><label for="glow">PHOSPHOR HALO</label><output id="glow-value" for="glow"></output></div><input id="glow" type="range"></div>
-  <div class="switch"><label for="bloom">BLOOM LIGHTING</label><input id="bloom" type="checkbox" checked></div>
   <div class="rule"></div>
   <p class="tag">03 / ANALOG DISPLAY</p>
   <div class="triad" role="group" aria-label="CRT display mode">
-   <button data-crt="off" class="active" aria-pressed="true">FLAT</button>
-   <button data-crt="scan" aria-pressed="false">SCANLINES</button>
+   <button data-crt="off" aria-pressed="false">FLAT</button>
+   <button data-crt="scan" class="active" aria-pressed="true">SCANLINES</button>
    <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
   </div>
-  <p class="dsc" id="crt-help">Clean digital signal, with no CRT processing.</p>
-  <div class="control"><div class="control-head"><label for="scanStrength">SCANLINE CONTRAST</label><output id="scanStrength-value" for="scanStrength"></output></div><input id="scanStrength" type="range"></div>
+  <p class="dsc" id="crt-help">Analog scanlines with compensated phosphor brightness.</p>
+  <div class="control"><div class="control-head"><label for="curvature">CRT CURVATURE</label><output id="curvature-value" for="curvature"></output></div><input id="curvature" type="range"></div>
   <div class="control"><div class="control-head"><label for="scanBrightness">PHOSPHOR BRIGHTNESS</label><output id="scanBrightness-value" for="scanBrightness"></output></div><input id="scanBrightness" type="range"></div>
   <p class="dsc">Brightness automatically compensates as scanlines deepen. Fine-tune phosphor exposure here.</p>
-  <div class="switch"><label for="texture">ANALOG FILM GRAIN / DUST</label><input id="texture" type="checkbox" checked></div>
   <div class="control"><div class="control-head"><label for="grain">FILM TEXTURE STRENGTH</label><output id="grain-value" for="grain"></output></div><input id="grain" type="range"></div>
   <div class="rule"></div>
   <p class="tag">04 / ORIGINAL AUDIO</p>
@@ -61,8 +58,7 @@
    <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
   </div>
   <p class="dsc" id="audio-help">SFX Only is ready. Sound starts on your first interaction; Muted remains available.</p>
-  <div class="switch"><label for="interfaceSounds">INTERFACE FEEDBACK SFX</label><input id="interfaceSounds" type="checkbox" checked></div>
-  <div class="control"><div class="control-head"><label for="interfaceLevel">UI FEEDBACK LEVEL</label><output id="interfaceLevel-value" for="interfaceLevel"></output></div><input id="interfaceLevel" type="range"></div>
+  <div class="control"><div class="control-head"><label for="interfaceLevel">UI SOUND LEVEL</label><output id="interfaceLevel-value" for="interfaceLevel"></output></div><input id="interfaceLevel" type="range"></div>
   <p class="dsc">Mechanical contact, resonant confirmation and a restrained electric tail. Designed to cut through the score. Silent in Muted mode.</p>
   <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in every audio-enabled mode.</p>
@@ -88,10 +84,10 @@
    <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
    <kbd>H</kbd> panel<br>
    <kbd>R</kbd> reseed · <kbd>G</kbd> glow</p>
-  <p class="note">Reduced motion starts paused. Use Pause/Resume<span class="keyboard-only"> or Space</span> to choose animation; manual Surge and Breach also start it. Later motion preferences apply until you make that choice. Restore Defaults follows your current preference.</p>
-  <p class="note">SFX Only is ready on load. Audio unlocks on your first interaction. Pause stops the breakbeat and beat-reactive pulses while atmospheric Code Hum can continue; cinematic and UI sounds still respond.<span class="keyboard-only"> Keyboard shortcuts work even when a panel control has focus.</span> Muted silences everything.</p>
  </section>
- <button id="toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM PANEL</button>
+ <button id="toggle" type="button" aria-label="Open system panel" title="Open system panel (H)" aria-expanded="false" aria-controls="panel">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path class="panel-open" d="M3 6h6 M13 6h8 M3 12h12 M19 12h2 M3 18h2 M9 18h12 M9 3v6 M15 9v6 M5 15v6"/><path class="panel-close" d="M6 6l12 12 M18 6L6 18"/></svg>
+ </button>
 </div>
 <div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // SFX ARMED</div><div id="beat-leds" aria-hidden="true"><i></i><i></i><i></i><i></i></div></div>
 <!-- Ordered classic scripts preserve direct-open startup. -->

@@ -12,6 +12,8 @@ const root = path.resolve(__dirname, '..');
 function harness({coarse = false, reduced = false, ready = 'loading', userAgent = ''} = {}) {
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
   const listeners = new Map(), elements = new Map(), canvasCalls = [], animationFrames = [];
+  const markup=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const markupIds=new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]));
   const math = Object.create(Math);
   math.random = () => { randomCalls++; return ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296); };
   function eventTarget(target = {}) {
@@ -30,7 +32,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   }
   function element(tag = 'div') {
     const el = eventTarget({tagName: tag.toUpperCase(), style: {}, dataset: {}, value: '1',
-      children: [], attributes: {}, checked: false, classList: {add(){},remove(){},toggle(){},contains(){return false;}},
+      children: [], attributes: {}, checked: false, classList: (()=>{const classes=new Set();return {add(name){classes.add(name);},remove(name){classes.delete(name);},toggle(name){if(classes.has(name)){classes.delete(name);return false;}classes.add(name);return true;},contains(name){return classes.has(name);}};})(),
       appendChild(child){child.parentElement = this;this.children.push(child);},
       setAttribute(k,v){this.attributes[k] = String(v);},getAttribute(k){return this.attributes[k];},
       closest(){return null;},contains(other){return other===this;},focus(){},
@@ -51,7 +53,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
     return el;
   }
   const document = eventTarget({readyState:ready,hidden:false,
-    createElement:element,getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
+    createElement:element,getElementById(id){if(!markupIds.has(id))return null;if(!elements.has(id))elements.set(id,element());return elements.get(id);},
     querySelector(){return null;},querySelectorAll(){return [];},
     write(){throw Error('startup must not inject external scripts');},
     documentElement:element(),body:element(),fonts:{ready:{then(fn){fontReady=fn;}}},
@@ -114,6 +116,9 @@ check('ordered scripts initialize exactly once with desktop and mobile Canvas ru
     h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});h.advance();h.run('draw()');
     assert.ok(h.run('planes.length === 3 && planes.every(p=>p.lanes.length>0)'));
     assert.ok(h.renders>0);
+    assert.equal(h.run('displayEngine.mode'),'scan','default display processing is active from startup');
+    assert.equal(h.run('displayEngine.output.style.display'),'block');
+    assert.equal(h.run('displayEngine.source.style.opacity'),'0');
     assert.equal(h.sandbox.__rainCanvasRuntime,true);
     const state=h.snapshot();
     const frameRequests=h.animationFrames.length;
@@ -194,6 +199,68 @@ check('Canvas CRT pointer conversion agrees with actual strip draw destinations'
     assert.ok(Number.isFinite(a.x)&&Number.isFinite(a.y));
     assert.ok(Math.abs(a.x+b.x-640)<1e-7&&Math.abs(a.y+b.y-360)<1e-7);
   }
+});
+
+check('curvature preserves coverage and pointer alignment across its range', () => {
+  const h=harness();h.run('setup();setRainOption("crt","glass")');
+  for(const curvature of [0,.5,1,2]) {
+    h.run(`displayEngine.gl=null;setRainOption("curvature",${curvature})`);
+    h.canvasCalls.length=0;h.run('displayEngine.present(drawingContext.canvas)');
+    const strips=h.canvasCalls.filter(c=>c.args.length===9&&c.args[0]===h.sandbox.drawingContext.canvas);
+    assert.ok(strips.length>10);
+    for(const strip of strips) {
+      const [source,sx,sy,sw,sh,dx,dy,dw]=strip.args;
+      assert.ok(dx<=0&&dx+dw>=640);
+      for(const fraction of [0,.5,1]) {
+        const point=h.run(`displayEngine.screenToSource(${dx+dw*fraction},${dy})`);
+        assert.ok(Math.abs(point.x-(sx+sw*fraction))<1e-7);
+        assert.equal(point.y,sy);
+      }
+    }
+    for(const gl of ['null','{}']) {
+      h.run(`displayEngine.gl=${gl}`);
+      for(const [x,y] of [[0,0],[640,360],[0,180],[480,180],[64,36]]) {
+        const point=h.run(`displayEngine.screenToSource(${x},${y})`);
+        assert.ok(point.x>=-1e-7&&point.x<=640+1e-7&&point.y>=-1e-7&&point.y<=360+1e-7);
+        if(curvature===0){assert.ok(Math.abs(point.x-x)<1e-7);assert.ok(Math.abs(point.y-y)<1e-7);}
+      }
+    }
+  }
+});
+
+check('polished defaults reset and canvas interaction closes the panel', () => {
+  const h=harness();h.run('setup()');
+  for(const [name,value] of [['grain',.35],['crt','scan'],['scanStrength',.85],['interfaceLevel',.4],['mutation',1],['curvature',1]])
+    assert.equal(h.run(`getRainOptions().${name}`),value);
+  const panel=h.elements.get('panel'),toggle=h.elements.get('toggle');
+  toggle.dispatchEvent({type:'click'});
+  assert.equal(panel.classList.contains('open'),true);
+  assert.equal(toggle.attributes['aria-expanded'],'true');
+  assert.equal(toggle.attributes['aria-label'],'Close system panel');
+  h.run('setRainOption("paused",true)');
+  h.elements.get('rain').dispatchEvent({type:'pointerdown',pointerType:'mouse',button:0,clientX:10,clientY:10});
+  assert.equal(panel.classList.contains('open'),false);
+  assert.equal(toggle.attributes['aria-expanded'],'false');
+  assert.equal(toggle.attributes['aria-label'],'Open system panel');
+  h.run('setRainOption("curvature",2);setRainOption("grain",1);resetRain()');
+  assert.equal(h.run('rain.curvature'),1);assert.equal(h.run('rain.grain'),.35);
+});
+
+check('zero film strength disables grain and slider and shortcut restore it', () => {
+  const h=harness();h.run(`setup();setRainOption('audio','off');
+    let grainDraws=0;
+    const originalFill=drawingContext.fillRect;
+    drawingContext.fillRect=function(...args){if(this.fillStyle===filmPattern)grainDraws++;originalFill.apply(this,args);};
+    setRainOption('grain',0);renderScene();`);
+  assert.equal(h.run('grainDraws'),0);
+  const slider=h.elements.get('grain');
+  assert.notEqual(slider.disabled,true,'slider remains available at zero');
+  slider.value='0.5';slider.dispatchEvent({type:'input'});
+  h.run('renderScene()');assert.equal(h.run('grainDraws'),1);
+  const key=()=>h.sandbox.dispatchEvent({type:'keydown',key:'t',target:slider,preventDefault(){},stopImmediatePropagation(){}});
+  key();assert.equal(h.run('rain.grain'),0);
+  key();assert.equal(h.run('rain.grain'),.35);
+  assert.equal(h.sandbox.document.getElementById('texture'),null);
 });
 
 check('SFX Only gates every ambient source independently of LFO modulation', () => {
@@ -473,8 +540,8 @@ check('paused visual changes redraw without advancing positions or effect bookke
       c.nextChange=-1;c.nextTwinkle=-1;c.lastBreach=-1;c.pulseIds=[];c.lastSurge=-1;
     }`);
   const frozen=h.snapshot();
-  for(const [name,value] of [['grade','abyss'],['bloom',false],['glow',.4],['texture',false],['grain',.2],
-    ['persistence',.8],['zoom',.65],['zoom',2],['crt','scan'],['crt','glass'],['scanStrength',1],['scanBrightness',1.2]]){
+  for(const [name,value] of [['grade','abyss'],['bloom',false],['glow',.4],['grain',0],['grain',.2],
+    ['persistence',.8],['zoom',.65],['zoom',2],['crt','scan'],['crt','glass'],['scanStrength',1],['scanBrightness',1.2],['curvature',0],['curvature',2]]){
     const renders=h.renders;h.sandbox.testValue=value;
     h.run(`setRainOption(${JSON.stringify(name)},testValue)`);h.advance(1000);h.run('draw()');
     assert.ok(h.renders>renders,`${name} invalidates paused frame`);
@@ -640,7 +707,7 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   h.run('setRainOption("volume",.9);setRainOption("zoom",2);setRainOption("grade","anomaly");setRainOption("crt","glass");resetRain()');
   assert.equal(h.run('JSON.stringify(rain)'),h.run('JSON.stringify(defaults)'));
   assert.equal(engine.mode,'effects');assert.equal(engine.volume,.5);assert.equal(engine.scorePaused,false);
-  assert.equal(h.run('displayEngine.mode'),'off');assert.equal(h.elements.get('zoom').value,1);
+  assert.equal(h.run('displayEngine.mode'),'scan');assert.equal(h.elements.get('zoom').value,1);
   key('m');key('m');assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
 });
 

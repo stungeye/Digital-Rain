@@ -46,7 +46,7 @@ function handleRainShortcut(event) {
     case '1': setRainOption('crt','off'); feedback('select'); break;
     case '2': setRainOption('crt','scan'); feedback('select'); break;
     case '3': setRainOption('crt','glass'); feedback('select'); break;
-    case 't': setRainOption('texture',!rain.texture); feedback(getRainOptions().texture?'toggle-on':'toggle-off'); break;
+    case 't': setRainOption('grain',rain.grain>0?0:RainApp.settings.grain.default); feedback(getRainOptions().grain>0?'toggle-on':'toggle-off'); break;
     case 'c': setRainOption('grade',RainApp.profiles[(RainApp.profiles.indexOf(rain.grade)+1)%RainApp.profiles.length]); feedback('select'); break;
     case 'h': window.toggleRainPanel(); break;
     case '+': setRainOption('density',rain.density+.1); feedback('slider'); break;
@@ -107,20 +107,31 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     activateOnGesture(event);
   },{capture:true});
   const feedback=(kind,value=.5,control='')=>window.signalSound()?.interfaceSound(kind,value,control);
+  const updatePanelButton=()=>{
+    const label=panel.classList.contains('open')?'Close system panel':'Open system panel';
+    toggle.setAttribute('aria-label',label);
+    toggle.title=label+(useTouchHelp()?'':' (H)');
+  };
+  touchControls?.addEventListener?.('change',updatePanelButton);
+  phoneLayout?.addEventListener?.('change',updatePanelButton);
+  updatePanelButton();
   window.toggleRainPanel=()=>{
     const open=panel.classList.toggle('open');
     toggle.setAttribute('aria-expanded',String(open));
-    toggle.textContent=open?'[ − ] CLOSE SYSTEM':'[ + ] SYSTEM PANEL';
+    updatePanelButton();
     if(!open&&panel.contains(document.activeElement))toggle.focus();
     feedback(open?'panel-open':'panel-close');
   };
   toggle.addEventListener('click',window.toggleRainPanel);
+  $('rain').addEventListener('pointerdown',()=>{
+    if(panel.classList.contains('open'))window.toggleRainPanel();
+  });
   panel.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&panel.classList.contains('open')){
       event.preventDefault();window.toggleRainPanel();toggle.focus();
     }
   });
-  const ranges=Object.keys(RainApp.settings).filter(name=>RainApp.settings[name].type==='number');
+  const ranges=Object.keys(RainApp.settings).filter(name=>RainApp.settings[name].type==='number'&&$(name));
   for(const name of ranges){
     const el=$(name),spec=RainApp.settings[name];
     el.min=spec.min;el.max=spec.max;el.step=spec.step;
@@ -132,12 +143,11 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     // One soft landing when releasing a drag or finishing a keyboard adjustment.
     el.addEventListener('change',()=>feedback('slider-end',norm(),name));
   }
-  for(const name of ['bloom','texture','beatReactive','interfaceSounds'])
+  for(const name of ['beatReactive'])
     $(name).addEventListener('change',()=>{
       const enabled=$(name).checked;
-      if(name==='interfaceSounds'&&!enabled)feedback('toggle-off');
       setRainOption(name,enabled);
-      if(name!=='interfaceSounds'||enabled)feedback(enabled?'toggle-on':'toggle-off');
+      feedback(enabled?'toggle-on':'toggle-off');
     });
   for(const selector of ['grade','crt','audio']){
     document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
@@ -157,8 +167,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       voltage:'An overdriven lime CRT: hot chartreuse code, bright tails and intense bloom.',
       anomaly:'Anomaly: a corrupted transmission, crimson tails and magenta-white leading glyphs.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
-      scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
-      glass:'Subtle barrel curve with a full-screen crop, and pronounced scanlines.'},
+      scan:'Analog scanlines with compensated phosphor brightness.',
+      glass:'Adjustable barrel curve with a full-screen crop, and pronounced scanlines.'},
     audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
       effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
@@ -175,7 +185,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       $(name+'-value').textContent=RainApp.settings[name].format(st[name]);
       $(name).setAttribute('aria-valuetext',RainApp.settings[name].format(st[name]));
     }
-    for(const name of ['bloom','texture','beatReactive','interfaceSounds'])$(name).checked=st[name];
+    for(const name of ['beatReactive'])$(name).checked=st[name];
     for(const key of ['grade','crt','audio']){
       document.querySelectorAll(`[data-${key}]`).forEach(b=>{
         const active=b.dataset[key]===st[key];
@@ -192,9 +202,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     $('audio-status').textContent=st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + SFX':
       st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // CODE HUM';
-    $('scanStrength').disabled=st.crt==='off';
+    $('curvature').disabled=st.crt!=='glass';
     $('scanBrightness').disabled=st.crt==='off';
-    $('grain').disabled=!st.texture;
     $('beatReactive').disabled=st.audio!=='score';
     $('beatStrength').disabled=st.audio!=='score'||!st.beatReactive;
     $('interfaceLevel').disabled=st.audio==='off'||!st.interfaceSounds;

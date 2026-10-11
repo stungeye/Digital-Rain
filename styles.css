@@ -1,6 +1,7 @@
 /* The interface follows the signal's phosphor palette. Keep text nearly white
    and the panel opaque: even Deep's muted code should remain easy to read. */
 :root{
+ --hud-left:calc(2 * max(12px,env(safe-area-inset-left)));--hud-top:calc(2 * max(12px,env(safe-area-inset-top)));--hud-gap:10px;--hud-button:43px;
  color-scheme:dark;
  --ui-page:#000401;--ui-panel:rgba(2,19,10,.97);--ui-hud:rgba(1,16,8,.88);
  --ui-base:36,94,53;--ui-surface:rgba(35,88,48,.24);--ui-hover:rgba(43,110,61,.34);
@@ -45,16 +46,19 @@ html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:v
 button,input{font:inherit;-webkit-tap-highlight-color:transparent}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);outline-offset:2px}
-#fullscreen-toggle{position:fixed;z-index:7;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:43px;height:43px;display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
-#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
-#fullscreen-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
+#fullscreen-toggle,#toggle{position:fixed;z-index:7;left:var(--hud-left);width:var(--hud-button);height:var(--hud-button);display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
+#fullscreen-toggle{top:var(--hud-top)}
+#toggle{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
+#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible,#toggle:hover,#toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
+#fullscreen-toggle svg,#toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
 #fullscreen-toggle .fs-exit{display:none}
 #fullscreen-toggle.is-fullscreen .fs-enter{display:none}
 #fullscreen-toggle.is-fullscreen .fs-exit{display:block}
-.hud{position:fixed;z-index:5;left:clamp(12px,2.2vw,30px);bottom:clamp(12px,2.4vh,28px);font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--ui-label);letter-spacing:.085em;user-select:none}
-#toggle{border:1px solid var(--ui-border);background:var(--ui-hud);color:var(--ui-text);min-width:161px;padding:12px 15px;text-align:left;letter-spacing:.15em;box-shadow:0 0 35px var(--ui-glow)}
-#toggle:hover{border-color:var(--ui-border-hot);color:var(--ui-text);background:var(--ui-selected)}
-#panel{display:none;position:absolute;bottom:53px;left:0;width:min(392px,calc(100vw - 24px));max-height:min(84vh,850px);overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
+.hud{position:fixed;z-index:5;left:var(--hud-left);top:calc(var(--hud-top) + 2 * (var(--hud-button) + var(--hud-gap)));font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--ui-label);letter-spacing:.085em;user-select:none}
+#toggle .panel-close{display:none}
+#toggle[aria-expanded="true"] .panel-close{display:block}
+#toggle[aria-expanded="true"] .panel-open{display:none}
+#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 2 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
 #panel.open{display:block}
 .hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:var(--ui-dim)}
 .live{color:var(--ui-accent)}
@@ -91,16 +95,13 @@ kbd{font:inherit;color:var(--ui-text)}
 .mini:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:8px;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
 #beat-leds{height:13px;display:flex;justify-content:flex-end;align-items:flex-end;gap:4px;margin-top:5px}
 #beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
-.note{font-size:9px;color:var(--ui-muted);line-height:1.6;margin:12px 0 0}
 /* Phones and coarse-pointer devices keep touch guidance, without advertising
    shortcuts that require a physical keyboard. */
 @media(max-width:560px),(pointer:coarse){
  .keyhelp,.keyboard-only{display:none}
 }
 @media(max-width:560px){
- #panel{max-height:min(77dvh,calc(100dvh - 100px));padding:19px 16px 17px}
- .hud{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}
- #toggle{min-width:148px;min-height:44px}
+ #panel{padding:19px 16px 17px}
  .mini{display:none}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
