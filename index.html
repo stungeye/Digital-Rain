@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 14</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 15</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -14,9 +14,16 @@
 *{box-sizing:border-box}
 html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:#000401}
 #rain{position:fixed;inset:0;overflow:hidden}
-#rain canvas{display:block;touch-action:manipulation}
+#rain canvas{display:block;touch-action:none}
+#rain{touch-action:none}
 #crt-output{z-index:1}
 button,input{font:inherit}button{cursor:pointer}
+#fullscreen-toggle{position:fixed;z-index:7;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:43px;height:43px;display:grid;place-items:center;border:1px solid rgba(113,217,137,.30);border-radius:3px;background:rgba(0,12,7,.54);color:rgba(186,239,197,.72);backdrop-filter:blur(4px);transition:border-color .15s,background .15s,color .15s}
+#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible{color:#effff3;border-color:#adffbf;background:rgba(5,33,16,.89)}
+#fullscreen-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
+#fullscreen-toggle .fs-exit{display:none}
+#fullscreen-toggle.is-fullscreen .fs-enter{display:none}
+#fullscreen-toggle.is-fullscreen .fs-exit{display:block}
 button:focus-visible,input:focus-visible{outline:2px solid #adffbf;outline-offset:2px}
 .hud{position:fixed;z-index:5;left:clamp(12px,2.2vw,30px);bottom:clamp(12px,2.4vh,28px);font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--mint);letter-spacing:.085em;user-select:none}
 #toggle{border:1px solid rgba(113,217,137,.43);background:rgba(0,14,7,.81);color:#bbebc5;min-width:161px;padding:12px 15px;text-align:left;letter-spacing:.15em;box-shadow:0 0 35px rgba(14,98,38,.11)}
@@ -76,11 +83,14 @@ kbd{font:inherit;color:#e3ffe6}
 </head>
 <body>
 <main id="rain" aria-label="Interactive falling green digital code rain"></main>
+<button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" title="Toggle fullscreen (F)" aria-pressed="false">
+ <svg viewBox="0 0 24 24" aria-hidden="true"><path class="fs-enter" d="M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6"/><path class="fs-exit" d="M9 3v6H3 M21 9h-6V3 M15 21v-6h6 M3 15h6v6"/></svg>
+</button>
 <div class="hud">
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 12<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 15<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -93,7 +103,7 @@ kbd{font:inherit;color:#e3ffe6}
   <div class="rule"></div>
   <p class="tag">02 / THE CODE</p>
   <div class="control"><div class="control-head"><label for="density">COLUMN DENSITY</label><output id="density-value"></output></div><input id="density" type="range" min="0.3" max="1.65" step="0.05" value="1.05"></div>
-  <div class="control"><div class="control-head"><label for="fontSize">CENTRED CAMERA ZOOM</label><output id="fontSize-value"></output></div><input id="fontSize" type="range" min="0.65" max="1.85" step="0.05" value="1"></div>
+  <div class="control"><div class="control-head"><label for="fontSize">CENTRED CAMERA ZOOM</label><output id="fontSize-value"></output></div><input id="fontSize" type="range" min="0.65" max="2" step="0.01" value="1"></div>
   <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value"></output></div><input id="speed" type="range" min="0.2" max="2.4" step="0.05" value="1"></div>
   <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value"></output></div><input id="persistence" type="range" min="0.55" max="1.55" step="0.05" value="1"></div>
   <div class="control"><div class="control-head"><label for="mutation">GLYPH MUTATION</label><output id="mutation-value"></output></div><input id="mutation" type="range" min="0.25" max="2.5" step="0.05" value="1"></div>
@@ -142,10 +152,12 @@ kbd{font:inherit;color:#e3ffe6}
    <button id="record-btn">RECORD 8s</button>
    <button id="defaults-btn" style="grid-column:1/-1">RESTORE DEFAULTS</button>
   </div>
+  <p class="dsc">Desktop: wheel to zoom. Mobile: drag horizontally to explore, pinch to zoom, tap to ripple. Use the top-left icon for fullscreen.</p>
   <p class="dsc">Surge = a charged wave through existing code. Breach = blackout and signal relock. Click the rain to release a viewport-anchored code ripple. Shift-click creates a heavier wave.</p>
   <p id="notify" role="status" aria-live="polite"></p>
   <div class="rule"></div>
   <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
+   <kbd>WHEEL</kbd> zoom · <kbd>PINCH</kbd> zoom · <kbd>SWIPE</kbd> mobile horizontal pan<br>
    <kbd>E</kbd> surge · <kbd>B</kbd> breach · <kbd>D</kbd> director<br>
    <kbd>M</kbd> mute / restore audio · <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen<br>
    <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
@@ -240,7 +252,7 @@ if (typeof window.p5 === 'undefined') {
 </script>
 <script>
 /*
-  DIGITAL RAIN // SIGNAL ENGINE v11
+  DIGITAL RAIN // SIGNAL ENGINE v15
   p5.js 2.x · No additional libraries required. Copy into editor.p5js.org
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
@@ -251,7 +263,8 @@ if (typeof window.p5 === 'undefined') {
   SPACE pause   F fullscreen   R reseed   G glow   C color grade
   E surge   B breach   D story director   M mute/restore previous audio
   T film texture   S screenshot   H panel   V recording   1/2/3 CRT
-  + / - density   Click / touch to ripple (SHIFT + click: stronger)
+  + / - density   Wheel / pinch: zoom. Mobile swipe: horizontal pan.
+  Click / touch to ripple (SHIFT + click: stronger)
 */
 
 const HALF_KATAKANA = 'ﾊﾋｼﾂｳｰﾅﾐﾓﾆｻﾜｵﾘﾎﾏｴｷﾑﾃｹﾒｶﾕﾗｾﾈｽﾀﾇ';
@@ -325,6 +338,11 @@ let directorPulseDone = false;
 let directorSettingGrade = false;
 let viewport = null;
 let worldWidth = 0, worldHeight = 0;
+let cameraPanX = 0; // World-space horizontal camera displacement, bounded to the simulated field.
+let cameraDirty = false;
+let nativeGesturesInstalled = false;
+const mobileInput = () => window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+const ZOOM_MAX = 2;
 let directorScene = -1;
 let directorSyncAt = 0;
 let hover = { x: -999, y: -999, at: -Infinity };
@@ -341,6 +359,18 @@ let soundEngine;
 let lastAudibleMode = defaults.audio;
 let nextGrainFrame = 0;
 const ZOOM_MIN = .65;
+function clampZoom(value) { return Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,value)); }
+function cameraMaxPan() { return Math.max(0,(worldWidth-width/rain.fontSize)*.5); }
+function setCameraPan(x) {
+  const max=cameraMaxPan();
+  const next=Math.max(-max,Math.min(max,x));
+  if(Math.abs(next-cameraPanX)<.0001)return;
+  cameraPanX=next;
+  cameraDirty=true;
+}
+function zoomRain(value) {
+  setRainOption('fontSize',clampZoom(value));
+}
 const DIRECTOR_SCENES = [
   {start:0, name:'SIGNAL ACQUIRED', detail:'A transmission stirs in the darkness', grade:'abyss',density:.48,speed:.70},
   {start:12, name:'THE CODE AWAKENS', detail:'The signal begins to assemble', grade:'cinema',density:1.0,speed:1.0},
@@ -351,20 +381,118 @@ const DIRECTOR_SCENES = [
 const DIRECTOR_SECONDS = 90;
 function worldViewport() {
   const f=rain.fontSize;
+  const centerX=worldWidth/2+cameraPanX;
   return {
-    minX:worldWidth/2 - width/2/f, maxX:worldWidth/2 + width/2/f,
+    minX:centerX - width/2/f, maxX:centerX + width/2/f,
     minY:worldHeight/2 - height/2/f, maxY:worldHeight/2 + height/2/f,
   };
 }
 function screenToWorld(x,y) {
-  return { x:worldWidth/2+(x-width/2)/rain.fontSize,
+  return { x:worldWidth/2+cameraPanX+(x-width/2)/rain.fontSize,
            y:worldHeight/2+(y-height/2)/rain.fontSize };
 }
 // Pulses propagate in VIEWPORT pixels, not world cells. This is critical:
 // zoom must change glyph magnification, NOT ripple radius or velocity.
 function worldToScreen(x,y) {
-  return {x:width*.5+(x-worldWidth*.5)*rain.fontSize,
+  return {x:width*.5+(x-worldWidth*.5-cameraPanX)*rain.fontSize,
           y:height*.5+(y-worldHeight*.5)*rain.fontSize};
+}
+
+
+// One native pointer path on both desktop and mobile. We wait for touch-up
+// before emitting a ripple, so a pan or pinch never triggers a false click.
+function installRainGestures(target) {
+  if(nativeGesturesInstalled)return;
+  nativeGesturesInstalled=true;
+  const active=new Map();
+  let drag=null, pinch=null, suppressTap=false;
+  const point=e=>{
+    const r=target.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*width/Math.max(1,r.width),
+            y:(e.clientY-r.top)*height/Math.max(1,r.height)};
+  };
+  const getPair=()=>Array.from(active.values()).slice(0,2);
+  const startPinch=()=>{
+    if(active.size<2)return;
+    const [a,b]=getPair();
+    const midX=(a.x+b.x)/2,midY=(a.y+b.y)/2;
+    pinch={distance:Math.max(12,Math.hypot(a.x-b.x,a.y-b.y)),
+      zoom:rain.fontSize, anchorX:screenToWorld(midX,midY).x};
+    drag=null;suppressTap=true;
+  };
+  target.style.touchAction='none';
+  target.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse') {
+      if(e.button!==0)return;
+      const pt=point(e);
+      if(pt.x>=0&&pt.x<=width&&pt.y>=0&&pt.y<=height)
+        addPulse(pt.x,pt.y,e.shiftKey?3.25:1);
+      return;
+    }
+    if(e.pointerType!=='touch' && e.pointerType!=='pen')return;
+    e.preventDefault();
+    const pt=point(e);
+    active.set(e.pointerId,{...pt,startX:pt.x,startY:pt.y,moved:false});
+    try{target.setPointerCapture(e.pointerId);}catch(_e){}
+    if(active.size===1){
+      drag={id:e.pointerId,startX:pt.x,panX:cameraPanX};
+      suppressTap=false;
+    }else startPinch();
+  },{passive:false});
+  target.addEventListener('pointermove',e=>{
+    if(!active.has(e.pointerId))return;
+    e.preventDefault();
+    const current=active.get(e.pointerId),pt=point(e);
+    current.x=pt.x;current.y=pt.y;
+    if(Math.hypot(pt.x-current.startX,pt.y-current.startY)>9)current.moved=true;
+    if(active.size>=2){
+      if(!pinch)startPinch();
+      const [a,b]=getPair();
+      const distance=Math.max(12,Math.hypot(a.x-b.x,a.y-b.y));
+      const midX=(a.x+b.x)/2;
+      const next=clampZoom(pinch.zoom*distance/pinch.distance);
+      zoomRain(next);
+      // Keep the code under the midpoint of the fingers stationary in X.
+      setCameraPan(pinch.anchorX-worldWidth/2-(midX-width/2)/rain.fontSize);
+    }else if(drag&&drag.id===e.pointerId){
+      if(!current.moved)return;
+      suppressTap=true;
+      setCameraPan(drag.panX-(pt.x-drag.startX)/rain.fontSize);
+    }
+  },{passive:false});
+  const finish=(e,cancel)=>{
+    const current=active.get(e.pointerId);
+    if(!current)return;
+    if(e.pointerType==='touch')e.preventDefault();
+    active.delete(e.pointerId);
+    // A second finger lifting must never count as a tap on the first.
+    const wasPinching=!!pinch;
+    if(active.size<2)pinch=null;
+    if(active.size===1){
+      const [id,p]=active.entries().next().value;
+      drag={id,startX:p.x,panX:cameraPanX};
+      suppressTap=true;
+    }else if(active.size===0){
+      if(!cancel&&!wasPinching&&!suppressTap&&!current.moved){
+        const pt=point(e);
+        if(pt.x>=0&&pt.x<=width&&pt.y>=0&&pt.y<=height)
+          addPulse(pt.x,pt.y,1);
+      }
+      drag=null;suppressTap=false;
+    }
+  };
+  target.addEventListener('pointerup',e=>finish(e,false),{passive:false});
+  target.addEventListener('pointercancel',e=>finish(e,true),{passive:false});
+  target.addEventListener('lostpointercapture',e=>{
+    if(active.has(e.pointerId))finish(e,true);
+  });
+  target.addEventListener('wheel',e=>{
+    if(e.ctrlKey) { // Browser/trackpad pinch events express zoom as ctrl+wheel.
+      e.preventDefault();
+    } else e.preventDefault();
+    const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?width:1);
+    zoomRain(rain.fontSize*Math.exp(-Math.max(-260,Math.min(260,delta))*.0017));
+  },{passive:false});
 }
 
 function setup() {
@@ -372,16 +500,8 @@ function setup() {
   pixelDensity(1);
   frameRate((window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0) ? 30 : 60);
   const mount = document.getElementById('rain');
-  if (mount) {
-    canvas.parent(mount);
-    mount.addEventListener('pointerdown', event => {
-      if(event.button !== 0 && event.pointerType==='mouse')return;
-      const rect=canvas.elt.getBoundingClientRect();
-      const x=(event.clientX-rect.left)*width/rect.width;
-      const y=(event.clientY-rect.top)*height/rect.height;
-      if(x>=0&&x<=width&&y>=0&&y<=height) addPulse(x,y,event.shiftKey?3.25:1);
-    });
-  }
+  if (mount) canvas.parent(mount);
+  installRainGestures(mount || canvas.elt);
   lastRealTime = millis();
   // One keyboard owner. Capture-phase prevents focused HTML buttons/ranges
   // and p5's global keyboard callback from competing with our shortcuts.
@@ -408,8 +528,12 @@ function buildScene() {
 
   // A persistent overscanned world. The slider changes ONLY the camera's
   // scale about the exact screen centre; it never destroys/reseeds streams.
-  worldWidth = Math.ceil(width / ZOOM_MIN);
+  // Mobile gets real off-screen horizontal territory to explore. Desktop
+  // retains the smaller overscan and its established performance profile.
+  worldWidth = Math.ceil(width * (mobileInput()?2.70:1/ZOOM_MIN));
   worldHeight = Math.ceil(height / ZOOM_MIN);
+  cameraPanX=0;
+  cameraDirty=true;
   const lanePitch = Math.max(22.5, Math.ceil(19 * 1.16) + 1);
   const laneCount = Math.ceil(worldWidth / lanePitch) + 2;
   const columns = DEPTHS.map(() => []);
@@ -431,30 +555,31 @@ function draw() {
   const now = millis();
   const dt = Math.min((now - lastRealTime) / 1000 || 1/60, .055);
   lastRealTime = now; // Pause doesn't accumulate a backlog of movement.
-  if (rain.paused) {
-    // CRT display retains the last complete frame while paused.
-    return;
-  }
-  simulationTime += dt * 1000;
-  updateDirector(now, dt);
-  frameNumber++;
-  if (rain.texture && frameNumber >= nextGrainFrame) {
-    buildFilmTile(filmTile);
-    nextGrainFrame = frameNumber + 3;
+  if (rain.paused && !cameraDirty) return;
+  const advancing=!rain.paused;
+  cameraDirty=false;
+  if(advancing){
+    simulationTime += dt * 1000;
+    updateDirector(now, dt);
+    frameNumber++;
+    if (rain.texture && frameNumber >= nextGrainFrame) {
+      buildFilmTile(filmTile);
+      nextGrainFrame = frameNumber + 3;
+    }
   }
   const t = simulationTime;
   const grade = GRADES[rain.grade];
   background(...grade.bg);
   const ctx = drawingContext;
   pulses = pulses.filter(p => t - p.at < 1550);
-  for (const plane of planes) plane.update(dt, t);
+  if(advancing)for (const plane of planes) plane.update(dt, t);
 
   viewport = worldViewport();
   ctx.save();
   // Camera zoom is centred in both axes, with no random realignment.
   ctx.translate(width*.5, height*.5);
   ctx.scale(rain.fontSize, rain.fontSize);
-  ctx.translate(-worldWidth*.5, -worldHeight*.5);
+  ctx.translate(-worldWidth*.5-cameraPanX, -worldHeight*.5);
   if (rain.bloom && rain.glow > 0) {
     for (const plane of planes) plane.drawBloom(ctx, t);
   }
@@ -648,7 +773,7 @@ class CodePlane {
             const elapsed = (now - pulse.at)/1000;
             // The visible canvas is the coordinate system for this wave.
             // Unlike a world-space ring, it remains correctly sized at 65–185% zoom.
-            const sx=width*.5+(x-worldWidth*.5)*rain.fontSize;
+            const sx=width*.5+(x-worldWidth*.5-cameraPanX)*rain.fontSize;
             const sy=height*.5+(y-worldHeight*.5)*rain.fontSize;
             const distance = Math.hypot(sx-pulse.x, sy-pulse.y);
             const ring = Math.abs(distance - elapsed * 780);
@@ -949,6 +1074,7 @@ function setRainOption(name, value) {
   if (name === 'grade' && !GRADES[value]) return;
   if (name === 'crt' && !['off','scan','glass'].includes(value)) return;
   if (name === 'audio' && !['off','effects','ambience','score'].includes(value)) return;
+  if (name === 'fontSize')value=clampZoom(Number(value)||1);
   // Taking manual control exits the cinematic sequence gracefully.
   if ((name==='density'||name==='speed'||(name==='grade'&&!directorSettingGrade)) && rain.director)
     setRainOption('director',false);
@@ -958,6 +1084,10 @@ function setRainOption(name, value) {
     else if(value!=='off') lastAudibleMode=value;
   }
   rain[name] = value;
+  if (name === 'fontSize') {
+    setCameraPan(cameraPanX); // Zoom-out can reduce the allowed pan range.
+    cameraDirty=true;
+  }
   if (name === 'director' && old !== value) {
     if(value) {
       directorSaved={density:rain.density,speed:rain.speed,grade:rain.grade};
@@ -1040,12 +1170,12 @@ function addPulse(x,y,power=1,fromDirector=false) {
 function mousePressed(event) {
   // Editor fallback: the standalone page uses a native pointer listener to
   // survive CRT layering and varying p5 event-target implementations.
-  if (document.getElementById('rain')) return;
+  if (nativeGesturesInstalled) return;
   if (mouseX>=0 && mouseX<=width && mouseY>=0 && mouseY<=height)
     addPulse(mouseX,mouseY,event?.shiftKey?3:1);
 }
 function touchStarted(event) {
-  if (document.getElementById('rain')) return;
+  if (nativeGesturesInstalled) return false;
   if (touches.length) addPulse(touches[0].x,touches[0].y,1);
   return false;
 }
@@ -1081,7 +1211,10 @@ function handleRainShortcut(event) {
       feedback(paused?'pause':'resume');
       break;
     }
-    case 'f': fullscreen(!fullscreen()); feedback('select'); break;
+    case 'f': if(window.toggleRainFullscreen)window.toggleRainFullscreen();
+      else if(document.fullscreenElement)document.exitFullscreen?.();
+      else document.documentElement.requestFullscreen?.().catch(()=>{});
+      feedback('select'); break;
     case 'g': setRainOption('bloom',!rain.bloom); feedback(rain.bloom?'toggle-on':'toggle-off'); break;
     case 'r': buildScene(); feedback('commit'); break;
     case 'e': signalBurst(); break; // Cinematic effect owns its sound.
@@ -1837,8 +1970,12 @@ class SignalAudio {
     }
     const src=this.ctx.createBufferSource();
     src.buffer=this.uiFoleySample(kind,kind==='slider'||kind==='slider-end'?bucket:14);
-    // Very small variations keep repeated buttons from sounding identical.
-    src.playbackRate.value=.985+Math.random()*.03;
+    // Only buttons gain extra pitch diversity (~ +/-3.5%). Slider detents
+    // and the approved checkbox ON/OFF timbres keep their v14 playback.
+    const buttonKinds=new Set(['press','select','commit','reset','record',
+      'pause','resume','panel-open','panel-close']);
+    src.playbackRate.value=buttonKinds.has(kind)
+      ? .965+Math.random()*.07 : .985+Math.random()*.03;
     const gain=this.ctx.createGain();
     // Keep the established UI volume calibration: 50% has the amplitude
     // curve of the previous 25% setting. Score and cinematic SFX bypass it.
@@ -1870,6 +2007,31 @@ window.signalSound = () => soundEngine;
 (()=>{
   const $=id=>document.getElementById(id);
   const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
+  const fsButton=$('fullscreen-toggle');
+  const updateFullscreenButton=()=>{
+    const active=!!document.fullscreenElement;
+    fsButton.classList.toggle('is-fullscreen',active);
+    fsButton.setAttribute('aria-pressed',String(active));
+    fsButton.setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');
+    fsButton.title=active?'Exit fullscreen (F)':'Enter fullscreen (F)';
+  };
+  window.toggleRainFullscreen=async()=>{
+    try{
+      if(document.fullscreenElement){await document.exitFullscreen();}
+      else if(document.documentElement.requestFullscreen){
+        await document.documentElement.requestFullscreen({navigationUI:'hide'});
+      } else {
+        notify('FULLSCREEN UNAVAILABLE HERE / TRY ADD TO HOME SCREEN ON IOS');
+      }
+    } catch(err){notify('FULLSCREEN BLOCKED BY BROWSER');}
+    updateFullscreenButton();
+  };
+  fsButton.addEventListener('click',()=>{
+    activateRainAudio();window.toggleRainFullscreen();
+    window.signalSound()?.interfaceSound('select');
+  });
+  document.addEventListener('fullscreenchange',updateFullscreenButton);
+  updateFullscreenButton();
   const notify=s=>notice.textContent=s;
   // Browser autoplay policy: do not create or resume WebAudio on page load.
   // The first pointer/key gesture arms the selected default, before the UI
@@ -2011,7 +2173,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-11-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-15-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -2036,7 +2198,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-11-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-15-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
