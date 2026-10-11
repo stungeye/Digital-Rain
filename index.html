@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 13</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -1649,11 +1649,11 @@ class SignalAudio {
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
     this.filteredNoise(t+1.52,.64,.095,580,.27);
   }
-  // ─── SHIPBOARD INTERFACE FOLEY / v13 ──────────────────────────────────
-  // Rebuilt from silence. The dry old interface (metallic triangles, digital
-  // pips, glittering 1–4kHz clicks) is removed. These short samples model a
-  // battered spacecraft: weighted rubber/steel thuds, friction under load,
-  // irregular switch contact and muted motor coils. The synthesis happens
+  // ─── SHIPBOARD INTERFACE FOLEY / v14 ──────────────────────────────────
+  // Controls feel like physical shipboard hardware. v14 retains the v13
+  // toggle samples byte-for-byte; slider detents are smaller and less frequent,
+  // while buttons now have a slow, damped mass and a quieter seating contact.
+  // The synthesis happens
   // OFF the live audio thread, once per type or slider detent. There are no
   // imported samples or copyrighted movie sounds. Only UI Foley uses this.
   uiFoleySample(kind='press',bucket=14) {
@@ -1662,8 +1662,8 @@ class SignalAudio {
     const ac=this.ctx,sr=ac.sampleRate;
     const lengths={
       'panel-open':.42,'panel-close':.31,'toggle-on':.30,'toggle-off':.27,
-      'select':.22,'slider':.115,'slider-end':.18,'commit':.30,
-      'reset':.47,'pause':.24,'resume':.31,'record':.36,'press':.22
+      'select':.28,'slider':.075,'slider-end':.14,'commit':.33,
+      'reset':.47,'pause':.28,'resume':.32,'record':.38,'press':.28
     };
     const len=lengths[kind]||.22;
     const n=Math.ceil((len+.022)*sr);
@@ -1732,19 +1732,43 @@ class SignalAudio {
         return amount*envelope*(.78*mechanical+.24*noise);
       });
     };
+    // Weighted control actuator: a broad, downward-drifting low-mid body,
+    // a dry damped contact and no ringing bell tones. On speakers that can't
+    // reproduce the fundamental, its second/third harmonics carry the weight.
+    // Unlike the old short knock, this body remains perceptible for ~160 ms.
+    const actuator=(at,freq=76,amount=1,duration=.23)=>{
+      let phase=0,contact=0,undertone=0;
+      put(at,duration,t=>{
+        const white=rnd()*2-1;
+        contact+=.27*(white-contact);
+        undertone+=.09*(white-undertone);
+        const body=(1-Math.exp(-t*750))*Math.exp(-t*14.4);
+        const hit=Math.exp(-t*170);
+        const f=freq*(1+.22*Math.exp(-t*39));
+        phase+=twopi*f/sr;
+        const mass=.78*Math.sin(phase)+.41*Math.sin(phase*2+.17)
+          +.15*Math.sin(phase*3.06+.8);
+        const rough=.065*(contact+undertone);
+        return amount*(body*(mass+rough)+hit*(.15*contact+.08*undertone));
+      });
+    };
+    // The final seating contact is quieter and slightly delayed: a switch
+    // bottoming out inside heavy plastic, not a sharp high-frequency click.
+    const seat=(at,freq=108,amount=.28)=>actuator(at,freq,amount,.105);
     const p=Math.max(0,Math.min(1,bucket/28));
     // Each control expresses a *different physical mechanism*, not a
     // different envelope on a shared bright electronic note.
     switch(kind){
       case 'panel-open':
         friction(0,.27,.58,.66);coil(.025,.29,67,.33,true);
-        knock(.235,93,.95,.15);friction(.27,.10,.16,.35);break;
+        actuator(.226,80,.76,.19);seat(.284,105,.18);
+        friction(.27,.10,.16,.35);break;
       case 'panel-close':
         friction(0,.20,.43,.53,true);
-        knock(.142,83,1.08,.16);knock(.197,119,.27,.08);break;
+        actuator(.137,76,.88,.20);seat(.205,100,.24);break;
       case 'select':
-        knock(0,119,.85,.115);knock(.050,96,.58,.125);
-        friction(.024,.085,.22,.45);break;
+        actuator(0,91,.87,.19);seat(.058,107,.40);
+        friction(.029,.074,.18,.45);break;
       case 'toggle-on':
         knock(0,91,.72,.13);friction(.022,.16,.35,.6);
         coil(.052,.19,81,.56,true);knock(.181,109,.65,.10);break;
@@ -1752,31 +1776,33 @@ class SignalAudio {
         coil(0,.125,83,.32,false);friction(.016,.10,.31,.48,true);
         knock(.088,76,1.0,.15);break;
       case 'slider': {
-        // Preserve directional pitch feedback, but keep it in the lower
-        // register. Every detent is a tiny POT / mechanical track movement.
+        // An almost-felt potentiometer track, not a sequence of clunks.
+        // Keep the directional pitch contour but strongly reduce the body's
+        // loudness and duration. The release is quieter than a button.
         const f=88+124*Math.pow(p,.82);
-        knock(0,f,.49,.068);
-        friction(0,.057,.33,.36+p*.35,p<.5);break;
+        knock(0,f,.25,.040);
+        friction(0,.039,.12,.34+p*.28,p<.5);break;
       }
       case 'slider-end':
-        friction(0,.07,.28,.4,true);
-        knock(.038,104+102*p,.79,.112);break;
+        friction(0,.048,.16,.37,true);
+        knock(.020,94+104*p,.29,.069);break;
       case 'commit':
-        knock(0,90,1.07,.155);friction(.04,.125,.39,.7);
-        knock(.126,113,.52,.12);break;
+        actuator(0,78,1.22,.25);seat(.074,105,.38);
+        friction(.035,.12,.29,.62);break;
       case 'reset':
         friction(0,.30,.62,.64,true);coil(.05,.30,63,.54,false);
-        knock(.23,77,1.05,.19);knock(.306,106,.58,.10);break;
+        actuator(.224,71,1.05,.23);seat(.313,100,.34);break;
       case 'pause':
-        knock(0,83,.93,.18);friction(.043,.11,.22,.32,true);break;
+        actuator(0,76,1.0,.23);friction(.049,.11,.22,.32,true);break;
       case 'resume':
-        knock(0,88,.76,.13);coil(.025,.22,75,.48,true);
-        knock(.173,121,.42,.09);break;
+        actuator(0,82,.95,.21);coil(.025,.22,75,.48,true);
+        seat(.169,108,.32);break;
       case 'record':
-        knock(0,79,1.02,.17);coil(.036,.21,65,.37,true);
-        knock(.207,105,.45,.10);break;
+        actuator(0,75,1.08,.22);coil(.036,.21,65,.37,true);
+        seat(.205,101,.36);break;
       default:
-        knock(0,99,.90,.15);friction(.013,.088,.29,.54);break;
+        actuator(0,79,1.18,.25);seat(.076,112,.34);
+        friction(.023,.094,.21,.54);break;
     }
     // Magnetic/tape-like overload in the sound itself. Stronger than the
     // former effect chain because the raw waveform *actually hits* it.
@@ -1806,7 +1832,7 @@ class SignalAudio {
     const now=this.ctx.currentTime;
     if(kind==='slider'){
       if(control===this.lastSliderControl&&
-        (now-(this.lastSliderAt??-Infinity)<.055||bucket===this.lastSliderBucket))return;
+        (now-(this.lastSliderAt??-Infinity)<.095||bucket===this.lastSliderBucket))return;
       this.lastSliderAt=now;this.lastSliderBucket=bucket;this.lastSliderControl=control;
     }
     const src=this.ctx.createBufferSource();
@@ -1817,7 +1843,10 @@ class SignalAudio {
     // Keep the established UI volume calibration: 50% has the amplitude
     // curve of the previous 25% setting. Score and cinematic SFX bypass it.
     const level=Math.pow(Math.max(.001,rain.interfaceLevel*.5),.73);
-    gain.gain.value=.79*level;
+    // Sliders should recede behind the other controls; they sound often.
+    // Button weight comes from its extended body, not a master volume boost.
+    const foleyTrim=kind==='slider'?.39:kind==='slider-end'?.55:1;
+    gain.gain.value=.79*level*foleyTrim;
     src.connect(gain).connect(this.uiBus);
     src.onended=()=>{src.disconnect();gain.disconnect();};
     src.start(now+.006);
