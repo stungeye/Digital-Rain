@@ -37,16 +37,9 @@ window.SignalAudio = class SignalAudio {
     this.schedulingScore = false;
     this.schedulingAmbient = false;
     this.profile = rain.grade;
-    const touch = window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
-    this.latencyHint = touch ? 'playback' : 'interactive';
-    this.lookAhead = touch ? .35 : .20;
-    this.voiceLead = touch ? .04 : .012;
-    this.startLead = touch ? .12 : .075;
-    // Scheduling ahead buffers note commands, not the audio render thread.
-    // Android hardware often processes non-128-frame bursts. Let supporting
-    // browsers match that size rather than unevenly rendering 128-frame blocks.
-    // Keep touch-capable desktop processing unchanged.
-    this.renderSizeHint = /Android/i.test(navigator.userAgent || '') ? 'hardware' : 'default';
+    this.lookAhead = .17;
+    this.voiceLead = .012;
+    this.startLead = .075;
   }
   get score() { return PROFILE_SCORES[this.profile] || PROFILE_SCORES.cinema; }
   setProfile(profile) {
@@ -73,17 +66,7 @@ window.SignalAudio = class SignalAudio {
   init() {
     const Context = window.AudioContext || window.webkitAudioContext;
     if (!Context) return false;
-    const options = {latencyHint:this.latencyHint};
-    if (this.renderSizeHint === 'hardware') options.renderSizeHint = 'hardware';
-    try { this.ctx = new Context(options); }
-    catch {
-      // Unknown dictionary members are normally ignored. If an implementation
-      // rejects the new hint, retain playback latency before trying no options.
-      try { this.ctx = new Context({latencyHint:this.latencyHint}); }
-      catch {
-        try { this.ctx = new Context(); } catch { return false; }
-      }
-    }
+    try { this.ctx = new Context(); } catch { return false; }
     const ac = this.ctx;
     this.compressor = ac.createDynamicsCompressor();
     this.compressor.threshold.value = -17;
@@ -264,20 +247,10 @@ window.SignalAudio = class SignalAudio {
     }
   }
   env(g, t, peak, attack, decay) {
-    this.beginEnvelope(g,t,attack,Math.max(.0002,peak));
+    g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak), t + attack);
     g.gain.exponentialRampToValueAtTime(.0001, t + attack + decay);
     g.gain.linearRampToValueAtTime(0,t+attack+decay+.005);
-  }
-  beginEnvelope(g,t,attack,peak) {
-    // Exponential ramps require positive values. Bridge from true silence to
-    // their tiny floor, then return to true silence before stopping a source.
-    const lead=Math.min(.001,attack*.5);
-    // Meet the original exponential curve at the bridge's end; using the
-    // floor there would shorten/steepen the rest of the approved attack.
-    const level=.0001*Math.pow(peak/.0001,lead/attack);
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(level,t+lead);
   }
   connectVoice(node, gain, pan = 0) {
     node.connect(gain);
@@ -364,7 +337,7 @@ window.SignalAudio = class SignalAudio {
     if(instrument==='acid'||instrument==='brass'||instrument==='riff')
       filter.frequency.exponentialRampToValueAtTime(instrument==='acid'?180:420,t+dur);
     const attack=Math.min(dur*.45,p.attack);
-    this.beginEnvelope(g,t,attack,amp);
+    g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(amp,t+attack);
     g.gain.exponentialRampToValueAtTime(instrument==='strings'?amp*.75:amp*.26,t+dur);
     g.gain.exponentialRampToValueAtTime(.0001,t+dur+p.release);
@@ -526,7 +499,7 @@ window.SignalAudio = class SignalAudio {
   // of the original film's sound design; no sampled film audio or exact cue.
   ripple(x, power = 1) {
     if (this.mode==='off'||!this.ctx) return;
-    const ac=this.ctx, t=ac.currentTime+this.voiceLead;
+    const ac=this.ctx, t=ac.currentTime+.012;
     const pan=Math.max(-.72,Math.min(.72,x*1.44-.72));
     const heavy=power>2, length=heavy?1.35:.94;
     const peak=heavy?.21:.125, rise=heavy?.265:.175;
@@ -536,7 +509,7 @@ window.SignalAudio = class SignalAudio {
       const begin=t+offset, span=Math.max(.08,duration);
       f.frequency.setValueAtTime(freq,begin);
       f.frequency.exponentialRampToValueAtTime(targetFreq,begin+span*.75);
-      const g=ac.createGain();this.beginEnvelope(g,begin,attack,Math.max(.0002,amp));
+      const g=ac.createGain();g.gain.setValueAtTime(.0001,begin);
       g.gain.exponentialRampToValueAtTime(Math.max(.0002,amp),begin+attack);
       g.gain.exponentialRampToValueAtTime(.0001,begin+span);
       g.gain.linearRampToValueAtTime(0,begin+span+.005);
@@ -559,7 +532,7 @@ window.SignalAudio = class SignalAudio {
       const o=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain();
       o.type='triangle';o.frequency.value=base*multiple;
       f.type='lowpass';f.frequency.value=heavy?410:590;
-      this.beginEnvelope(g,t,rise,peak*level*.8);
+      g.gain.setValueAtTime(.0001,t);
       g.gain.exponentialRampToValueAtTime(peak*level*.8,t+rise);
       g.gain.exponentialRampToValueAtTime(.0001,t+length*.82);
       g.gain.linearRampToValueAtTime(0,t+length*.82+.005);
@@ -571,7 +544,7 @@ window.SignalAudio = class SignalAudio {
   }
   surge() {
     if (this.mode==='off'||!this.ctx) return;
-    const ac=this.ctx, t=ac.currentTime+Math.max(.015,this.voiceLead);
+    const ac=this.ctx, t=ac.currentTime+.015;
     // A broad electrical pressure wave, NOT a rising laser or arcade chirp.
     const source=ac.createBufferSource(); source.buffer=this.noise;
     const filter=ac.createBiquadFilter();filter.type='bandpass';
@@ -580,7 +553,7 @@ window.SignalAudio = class SignalAudio {
     filter.frequency.exponentialRampToValueAtTime(280,t+1.75);
     filter.Q.value=.48;
     const g=ac.createGain();
-    this.beginEnvelope(g,t,.09,.21);
+    g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(.21,t+.09);
     g.gain.setValueAtTime(.21,t+.8);
     g.gain.exponentialRampToValueAtTime(.0001,t+1.78);
@@ -594,7 +567,7 @@ window.SignalAudio = class SignalAudio {
   }
   breach() {
     if (this.mode==='off'||!this.ctx) return;
-    const t=this.ctx.currentTime+this.voiceLead;
+    const t=this.ctx.currentTime+.01;
     this.tone(t,67,1.24,'sine',.53,26);
     this.filteredNoise(t+.13,.99,.24,290,.25);
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
@@ -810,7 +783,7 @@ window.SignalAudio = class SignalAudio {
     this.releaseVoice(src,[src,gain]);
     // Generating an uncached sample can take longer than the old 6 ms lead.
     // Read the audio clock again after synthesis, keeping its full attack.
-    src.start(this.ctx.currentTime+this.voiceLead);
+    src.start(this.ctx.currentTime+.006);
   }
 }
 

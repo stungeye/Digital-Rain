@@ -17,8 +17,8 @@
 <p>This plays the app's audio without the rain animation. Compare Default with Hardware
 on the same speaker or headphones, with the same volume. Stop between tests.</p>
 <label>Processing option
-  <select id="render"><option value="default">Default (previous fix)</option>
-    <option value="hardware">Hardware (new Android setting)</option></select>
+  <select id="render"><option value="default">Default render size</option>
+    <option value="hardware">Hardware (experimental)</option></select>
 </label>
 <label>Sound
   <select id="sound"><option value="score">Music + hum</option>
@@ -39,6 +39,8 @@ on the same speaker or headphones, with the same volume. Stop between tests.</p>
     <option value="pause">Pause</option><option value="resume">Resume</option></select>
 </label>
 <p>Music starts at bar 12 to exercise a busy passage. Listen for at least a minute per setting.
+These diagnostic contexts request playback latency; the app uses the browser's default context settings.
+Both options use the current app's common scheduling and sound envelopes.
 The generated buffer tone uses one looping buffer and needs no note timer or live oscillator synthesis.
 The normal player plays a generated WAV without an AudioContext, loops, or note timers;
 the processing option does not apply to it. Keep the page visible and screen on for this comparison.</p>
@@ -106,6 +108,12 @@ async function start() {
   controls.forEach(control=>control.disabled=true);
   byId('start').disabled=true;byId('stop').disabled=false;
   try {
+    // Keep experimental context configuration here, outside the production engine.
+    const Context=window.AudioContext||window.webkitAudioContext;
+    const diagnosticContext=function() {
+      try {return new Context({latencyHint:'playback',renderSizeHint:processing});}
+      catch {test.fallback='render hint rejected';return new Context({latencyHint:'playback'});}
+    };
     let playPromise=null;
     if(sound==='media') {
       media=new Audio();mediaUrl=URL.createObjectURL(toneWav());media.src=mediaUrl;
@@ -115,9 +123,12 @@ async function start() {
       playPromise=player.play();
     } else if(sound==='score'||sound==='effects') {
       RainApp.state.grade=test.profile;
-      engine=new SignalAudio();engine.renderSizeHint=processing;engine.latencyHint='playback';
-      engine.lookAhead=.35;engine.voiceLead=.04;engine.startLead=.12;
-      engine.setMode(sound);
+      engine=new SignalAudio();
+      // init() constructs its context synchronously; restore the constructor
+      // before playback promises or any other page work can run.
+      const originalContext=window.AudioContext;
+      try {window.AudioContext=diagnosticContext;engine.setMode(sound);}
+      finally {window.AudioContext=originalContext;}
       if(!engine.ctx)throw Error('Web Audio could not start.');
       ctx=engine.ctx;
       if(sound==='score') {
@@ -126,9 +137,7 @@ async function start() {
         engine.nextStep=ctx.currentTime+engine.startLead;engine.schedule();
       }
     } else {
-      const Context=window.AudioContext||window.webkitAudioContext;
-      try {ctx=new Context({latencyHint:'playback',renderSizeHint:processing});}
-      catch {ctx=new Context({latencyHint:'playback'});test.fallback='render hint rejected';}
+      ctx=diagnosticContext();
       ctx.resume().catch(error=>{byId('status').textContent=error.message;});
       gain=ctx.createGain();gain.gain.value=0;gain.connect(ctx.destination);
       if(sound==='tone') {source=ctx.createOscillator();source.frequency.value=440;}

@@ -285,13 +285,11 @@ check('profile scores change tempo, retire old voices and preserve mode/pause/re
   assert.equal(typeof engine.legacyScoreStep,'function','approved original remains available');
 });
 
-check('audio scheduler buffers touch playback and skips overdue ticks without bunching notes', () => {
+check('audio scheduler skips overdue ticks without bunching notes on desktop and touch devices', () => {
   for(const coarse of [false,true]) {
     const h=harness({coarse});h.run('setup();soundEngine.setMode("score")');
     const engine=h.run('soundEngine'),ctx=engine.ctx,beat=60/engine.score.bpm/4;
-    assert.equal(ctx.options.latencyHint,coarse?'playback':'interactive');
     assert.ok(engine.step>0,'first scheduling happens during activation');
-    if(coarse)assert.ok(engine.nextStep>=ctx.currentTime+.35,'phone gets a longer queued window');
     const scheduled=[];
     engine.scoreStep=(t,tick)=>scheduled.push({t,tick});
     for(const delay of [.08,.3,8]) {
@@ -316,38 +314,43 @@ check('audio scheduler buffers touch playback and skips overdue ticks without bu
   }
 });
 
-check('Android requests hardware render blocks with compatible latency fallbacks', () => {
-  for (const [userAgent,coarse,hardware] of [
-    ['Mozilla/5.0 (Linux; Android 16; Pixel 8 Pro)',true,true],
-    ['Mozilla/5.0 (Linux; Android 16)',false,true],
-    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)',true,false],
-    ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',true,false],
-    ['',false,false]
+check('audio uses common scheduling defaults and the native context configuration', () => {
+  for (const [userAgent,coarse] of [
+    ['Mozilla/5.0 (Linux; Android 16; Pixel 8 Pro)',true],
+    ['Mozilla/5.0 (Linux; Android 16)',false],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)',true],
+    ['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',true],
+    ['',false]
   ]) {
-    const h=harness({coarse,userAgent});h.run('setup();soundEngine.setMode("effects")');
-    const engine=h.run('soundEngine');
-    assert.equal(engine.ctx.options.renderSizeHint,hardware?'hardware':undefined);
-    assert.equal(engine.ctx.options.latencyHint,coarse?'playback':'interactive');
-    assert.equal(engine.ctx.options.sampleRate,undefined,'retain native sample rate');
-  }
-  for(const reject of ['hardware','options','all']) {
-    const h=harness({coarse:true,userAgent:'Android'}),attempts=[];
+    const h=harness({coarse,userAgent}),attempts=[];
     const Context=h.sandbox.AudioContext;
-    h.sandbox.AudioContext=function(options) {
-      attempts.push(options);
-      if(reject==='all'||(reject==='options'&&options)||options?.renderSizeHint)
-        throw new TypeError('Unsupported context options');
-      return new Context(options);
+    h.sandbox.AudioContext=function(...args) {
+      attempts.push(args);
+      const context=new Context(...args);context.sampleRate=48000;return context;
     };
     h.run('setup();soundEngine.setMode("effects")');
     const engine=h.run('soundEngine');
-    assert.equal(attempts[0].renderSizeHint,'hardware');
-    assert.equal(attempts[1].latencyHint,'playback','do not discard latency with rejected render hint');
-    assert.equal(attempts[1].renderSizeHint,undefined);
-    assert.equal(attempts.length,reject==='hardware'?2:3);
-    if(reject==='all')assert.equal(engine.mode,'off','failure stays silent');
-    else assert.ok(engine.ctx,'older constructors still work');
+    assert.deepEqual(attempts,[[]],'context receives no configuration overrides');
+    assert.equal(engine.ctx.sampleRate,48000,'retain native sample rate');
+    assert.equal(engine.lookAhead,.17);
+    assert.equal(engine.voiceLead,.012);
+    assert.equal(engine.startLead,.075);
+    for(const [action,lead] of [[()=>engine.ripple(.5),.012],[()=>engine.surge(),.015],
+      [()=>engine.breach(),.01],[()=>engine.interfaceSound('press'),.006]]) {
+      const before=engine.ctx.createdNodes.length;action();
+      const sources=engine.ctx.createdNodes.slice(before).filter(n=>['oscillator','buffer'].includes(n.kind));
+      assert.ok(sources.length>0);
+      assert.ok(Math.abs(Math.min(...sources.map(source=>source.startArgs[0]))-engine.ctx.currentTime-lead)<1e-9,
+        'effects retain their short start delays on every device');
+    }
   }
+  const h=harness({coarse:true,userAgent:'Android'}),attempts=[];
+  h.sandbox.AudioContext=function(...args) {attempts.push(args);throw new Error('Audio unavailable');};
+  h.run('setup();soundEngine.setMode("effects")');
+  const engine=h.run('soundEngine');
+  assert.deepEqual(attempts,[[]],'a constructor failure is handled without redundant retries');
+  assert.equal(engine.mode,'off','failure stays silent');
+  assert.equal(engine.ctx,null);
 });
 
 check('finished voices disconnect their whole graph and score partials retain shared effects until all end', () => {
@@ -383,7 +386,7 @@ check('uncached UI Foley starts after sample generation and repeats reuse the ca
   engine.uiFoleySample=(...args)=>{const buffer=synthesize(...args);ctx.currentTime+=.12;return buffer;};
   engine.interfaceSound('press');
   const source=ctx.createdNodes.filter(n=>n.kind==='buffer').at(-1);
-  assert.ok(source.startArgs[0]>=ctx.currentTime+engine.voiceLead,'synthesis cannot make a UI start late');
+  assert.ok(Math.abs(source.startArgs[0]-ctx.currentTime-.006)<1e-9,'UI lead is measured after sample generation');
   assert.equal(synthesize('press'),source.buffer,'repeat uses the existing sample');
   assert.ok(source.buffer.getChannelData(0).some(v=>v!==0),'sample has signal');
   engine.uiFoleySample=synthesize;
@@ -424,7 +427,7 @@ check('UI sample boundaries and synthesized voice envelopes reach true silence',
       };
       visit(source);assert.ok(envelopes.length,'source has an envelope');
       for(const calls of envelopes) {
-        assert.equal(calls[0][1],0,'source starts from silence');
+        assert.equal(calls[0][1],.0001,'source starts at the positive exponential envelope floor');
         assert.equal(calls.at(-1)[1],0,'tail reaches exact zero');
         assert.ok(calls.at(-1)[2]<source.stopArgs[0],'fade completes before stop');
         for(const [type,value] of calls)if(type==='exp')assert.ok(value>0,'valid exponential target');

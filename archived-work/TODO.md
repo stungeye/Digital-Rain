@@ -2,6 +2,12 @@
 
 For the pending Pixel 8 Pro audio investigation, read [AUDIO_HANDOFF.md](AUDIO_HANDOFF.md) before continuing after the user's mobile test report.
 
+## Audio simplification checkpoint — 2026-10-11
+
+The user authorized the selective cleanup from the audio review. Production now uses default context construction and common pre-mitigation score/SFX timing, with touch/Android latency/render-size branches removed. The exact-zero attack interpolation helper is removed; established `0.0001` attacks, final zero fades and UI component/buffer tapers remain. Retained improvements include complete voice cleanup, shared presets, stall recovery, delayed-unlock priming, post-generation UI timing and ambient fades. Scores, routing and volume calibration are retained.
+
+Investigation pages remain separate development tools. Hardware/playback options in `tests/audio-live.html` are explicit test-only experiments, not production settings. No media fallback has been implemented. All 19 regression groups, syntax checks, 16 mocked listening-page context/routing combinations and diff checks pass for this cleanup. Updated desktop/mobile listening remains pending; the earlier browser measurements and device reports below are historical evidence. Firefox/Pixel stability remains unresolved. Read the latest AUDIO_HANDOFF.md checkpoint before continuing.
+
 ## Implementation checkpoint — 2026-10-11
 
 Implementation for tasks 1–8 and the accessibility portion of task 10 is present in the six target app files. The final integration review found and fixed repeated cell mutations when ripple fronts overlap: cells now remember each active pulse independently. Twelve regression groups in `tests/checks.js` pass, including resize identity/spacing, paused-pointer suppression, CRT full-viewport coverage, adapter startup through `DOMContentLoaded`, settings/reset/mute synchronization, frozen rendering, collision spacing over 1,800 updates, effect ownership and viewport culling, native gestures, shortcut exclusions/first audio activation, scheduled audio routing, and reduced-motion preference handling. All four app scripts and the test file pass Node syntax checks.
@@ -12,7 +18,9 @@ Implementation is complete for tasks 1–10. Separate acceptance boxes below rem
 
 ## Goal and authorized scope
 
-### User manual verification — 2026-10-11
+### User manual verification history — 2026-10-11
+
+The audio implementation descriptions and pass counts below record earlier checkpoints; the selective cleanup above supersedes their context/timing settings and unchanged-production status.
 
 - Next-step media prototype implemented separately in `tests/audio-media.html` / `tests/media-score.js`; production audio remains unchanged. One offline-rendered score loops through a normal player at 48,000 or 22,050 Hz, with media-clock beat feedback, pause/resume, profile selection, music level/mute and optional isolated live hum/SFX. Preparation needs a subsequent Play gesture, percussion noise repeats and profile changes require re-preparation. Pixel loop/combined playback/control acceptance remains open.
 - Prototype validation: all 19 existing regression groups pass; Chrome 154/Windows passed eight complete score renders (all four profiles at both rates), finite/unclipped samples and zero PCM endpoints, playback/loop/pause/beat/volume/mute controls, live hum/SFX isolation and closure, retry/cancellation/replacement and resource cleanup. Phone-sized layout and syntax/diff checks passed. This does not establish clean audible Firefox/Pixel loops or combined music/hum/SFX; see AUDIO_HANDOFF.md for scope.
