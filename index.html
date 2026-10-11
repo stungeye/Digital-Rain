@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 12</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 13</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -1328,38 +1328,19 @@ class SignalAudio {
     // This lets pause mute the full beat instantly without muting the hum.
     this.scoreBus=ac.createGain();this.scoreBus.gain.value=this.scorePaused?0:1;
     this.scoreBus.connect(this.master);
-    // UI Foley has its own small mastering stage before the shared master.
-    // The old UI used only narrow-band noise and vanished beneath the score.
-    this.uiBus=ac.createGain();this.uiBus.gain.value=1.12;
-    this.uiHP=ac.createBiquadFilter();this.uiHP.type='highpass';this.uiHP.frequency.value=125;
+    // Shipboard UI Foley v13: no musical beeps and no parallel fake-grit
+    // overlay. Short, physically-modelled mechanical samples supply the dirt.
+    // Preserve the existing separate volume control and score/cinematic buses.
+    this.uiBus=ac.createGain();this.uiBus.gain.value=.90;
+    this.uiHP=ac.createBiquadFilter();this.uiHP.type='highpass';this.uiHP.frequency.value=43;
+    this.uiLP=ac.createBiquadFilter();this.uiLP.type='lowpass';this.uiLP.frequency.value=2150;
+    this.uiLP.Q.value=.5;
     this.uiLimiter=ac.createDynamicsCompressor();
-    this.uiLimiter.threshold.value=-16;this.uiLimiter.knee.value=10;
-    this.uiLimiter.ratio.value=3;this.uiLimiter.attack.value=.003;
-    this.uiLimiter.release.value=.085;
-    // A clearly audible worn-electronics treatment, not the previous
-    // near-zero-input waveshaper. Parallel DRY / DIRTY channels preserve
-    // the contacts' attack while making their noisy resonances crunchy.
-    // Score, drone, ripple, surge and breach bypass this entire path.
-    this.uiDry=ac.createGain();this.uiDry.gain.value=.72;
-    this.uiDrive=ac.createGain();this.uiDrive.gain.value=5.5;
-    this.uiWear=ac.createWaveShaper();
-    const curve=new Float32Array(4097);
-    for(let i=0;i<curve.length;i++) {
-      const x=(i/(curve.length-1))*2-1;
-      // Asymmetry and hardening add odd AND even harmonics, without
-      // pushing the sound into musical distortion or clipping master.
-      curve[i]=.83*Math.tanh(3.5*x+.48*x*x)+.09*Math.sin(11*x)*Math.min(1,Math.abs(x)*2);
-    }
-    this.uiWear.curve=curve;
-    this.uiWear.oversample='2x';
-    this.uiTone=ac.createBiquadFilter();
-    this.uiTone.type='lowpass';this.uiTone.frequency.value=3600;
-    this.uiWet=ac.createGain();this.uiWet.gain.value=.38;
-    this.uiBus.connect(this.uiHP);
-    this.uiHP.connect(this.uiDry).connect(this.uiLimiter);
-    this.uiHP.connect(this.uiDrive).connect(this.uiWear)
-      .connect(this.uiTone).connect(this.uiWet).connect(this.uiLimiter);
-    this.uiLimiter.connect(this.master);
+    this.uiLimiter.threshold.value=-18;this.uiLimiter.knee.value=8;
+    this.uiLimiter.ratio.value=3.2;this.uiLimiter.attack.value=.006;
+    this.uiLimiter.release.value=.16;
+    this.uiBus.connect(this.uiHP).connect(this.uiLP).connect(this.uiLimiter).connect(this.master);
+    this.uiFoleyCache=new Map();
     this.noise = this.noiseBuffer(27.7);
     // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
     // Start silent until the selected mode has been applied. In SFX-only mode
@@ -1668,172 +1649,178 @@ class SignalAudio {
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
     this.filteredNoise(t+1.52,.64,.095,580,.27);
   }
-  // ─── INTERFACE FOLEY / 09 ──────────────────────────────────────────────
-  // Not musical UI beeps. Every action consists of an audible point of
-  // contact, a short mechanical resonance and an electrical material tail.
-  // Same acoustic palette, distinct motion for each control class.
-  // All voices use short envelopes, are routed through a dedicated bounded
-  // UI bus, and stop automatically. No film samples or external assets.
-  uiEnvelope(g,t,peak,duration,attack=.0025) {
-    g.gain.setValueAtTime(.0001,t);
-    g.gain.linearRampToValueAtTime(Math.max(.0002,peak),t+attack);
-    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
-  }
-  uiRoute(node,g,pan=0) {
-    const ac=this.ctx;
-    node.connect(g);
-    if(ac.createStereoPanner){
-      const s=ac.createStereoPanner();s.pan.value=Math.max(-.6,Math.min(.6,pan));
-      g.connect(s).connect(this.uiBus);return s;
+  // ─── SHIPBOARD INTERFACE FOLEY / v13 ──────────────────────────────────
+  // Rebuilt from silence. The dry old interface (metallic triangles, digital
+  // pips, glittering 1–4kHz clicks) is removed. These short samples model a
+  // battered spacecraft: weighted rubber/steel thuds, friction under load,
+  // irregular switch contact and muted motor coils. The synthesis happens
+  // OFF the live audio thread, once per type or slider detent. There are no
+  // imported samples or copyrighted movie sounds. Only UI Foley uses this.
+  uiFoleySample(kind='press',bucket=14) {
+    const key=kind+':'+bucket;
+    if(this.uiFoleyCache.has(key))return this.uiFoleyCache.get(key);
+    const ac=this.ctx,sr=ac.sampleRate;
+    const lengths={
+      'panel-open':.42,'panel-close':.31,'toggle-on':.30,'toggle-off':.27,
+      'select':.22,'slider':.115,'slider-end':.18,'commit':.30,
+      'reset':.47,'pause':.24,'resume':.31,'record':.36,'press':.22
+    };
+    const len=lengths[kind]||.22;
+    const n=Math.ceil((len+.022)*sr);
+    const buffer=ac.createBuffer(1,n,sr),out=buffer.getChannelData(0);
+    // Seeded local randomness: each control has a recognizable physical
+    // identity, rather than generating a completely unrelated noise event.
+    let seed=2166136261;
+    for(const ch of key)seed=Math.imul(seed^ch.charCodeAt(0),16777619)>>>0;
+    const rnd=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+      return (seed>>>0)/4294967296;};
+    const twopi=Math.PI*2;
+    const put=(at,duration,voice)=>{
+      const start=Math.floor(at*sr),samples=Math.min(n-start,Math.floor(duration*sr));
+      for(let j=0;j<samples;j++){
+        const t=j/sr, v=voice(t,j,samples);
+        if(Number.isFinite(v))out[start+j]+=v;
+      }
+    };
+    // Weighted switch/relay motion: a dense low note *without* a clean
+    // oscillator envelope. Inharmonic undertones and contact vibration
+    // produce recognizably physical weight; there is no bell-like resonance.
+    const knock=(at,freq,amount=1,decay=.13)=>{
+      let phase=0,rough=0;
+      put(at,decay,(t)=>{
+        const envelope=(1-Math.exp(-t*950))*Math.exp(-t*(5.1/decay));
+        const f=freq*(1+.11*Math.exp(-t*48));
+        phase+=twopi*f/sr;
+        rough+=.12*((rnd()*2-1)-rough);
+        const ring=Math.sin(phase)+.28*Math.sin(phase*2.18+.4)
+          +.13*Math.sin(phase*3.57+1.7);
+        // Sporadic sticky contacts; dull and short, not high pitched.
+        const chatter=t<.041?(Math.sin(t*twopi*98)>-.6?1:.24):0;
+        return amount*envelope*(.66*ring+.34*rough*(1+.8*chatter));
+      });
+    };
+    // Unlubricated potentiometer/worn sliding latch: rolling, scratchy
+    // pressure, with slightly different stops and starts for every control.
+    const friction=(at,duration,amount=.28,weight=.5,reverse=false)=>{
+      let low=0,slow=0,rotor=0,grit=0;
+      put(at,duration,(t)=>{
+        const x=t/duration;
+        const envelope=Math.pow(Math.sin(Math.PI*x),.65)*
+          (reverse?(1.1-.45*x):(.45+.65*x));
+        const white=rnd()*2-1;
+        low+=.17*(white-low);
+        slow+=.019*(low-slow);
+        grit+=.04*((rnd()>.86?1:-.10)-grit);
+        rotor+=twopi*(55+weight*60+9*Math.sin(t*twopi*9))/sr;
+        const stutter=(Math.sin(t*twopi*(45+weight*21))>-.82?1:.53);
+        return amount*envelope*stutter*
+          (1.3*(low-slow)+.40*slow+.27*grit+.16*Math.sin(rotor));
+      });
+    };
+    // A low electrical winding / decaying mechanical load. Never a digital
+    // glissando; its speed/torque moves, but the frequency remains sub-200Hz.
+    const coil=(at,duration,freq=80,amount=.3,engage=true)=>{
+      let phase=0,noise=0;
+      put(at,duration,(t)=>{
+        const x=t/duration;
+        const envelope=engage?Math.sin(Math.PI*Math.pow(x,.64))**2:
+          Math.pow(1-x,1.6)*(1-Math.exp(-t*180));
+        phase+=twopi*(freq*(engage?(.96+.07*x):(1-.095*x)))/sr;
+        noise+=.08*((rnd()*2-1)-noise);
+        const mechanical=Math.sin(phase)+.29*Math.sin(phase*2.04+.3)
+          +.17*Math.sin(phase*3.2+2);
+        return amount*envelope*(.78*mechanical+.24*noise);
+      });
+    };
+    const p=Math.max(0,Math.min(1,bucket/28));
+    // Each control expresses a *different physical mechanism*, not a
+    // different envelope on a shared bright electronic note.
+    switch(kind){
+      case 'panel-open':
+        friction(0,.27,.58,.66);coil(.025,.29,67,.33,true);
+        knock(.235,93,.95,.15);friction(.27,.10,.16,.35);break;
+      case 'panel-close':
+        friction(0,.20,.43,.53,true);
+        knock(.142,83,1.08,.16);knock(.197,119,.27,.08);break;
+      case 'select':
+        knock(0,119,.85,.115);knock(.050,96,.58,.125);
+        friction(.024,.085,.22,.45);break;
+      case 'toggle-on':
+        knock(0,91,.72,.13);friction(.022,.16,.35,.6);
+        coil(.052,.19,81,.56,true);knock(.181,109,.65,.10);break;
+      case 'toggle-off':
+        coil(0,.125,83,.32,false);friction(.016,.10,.31,.48,true);
+        knock(.088,76,1.0,.15);break;
+      case 'slider': {
+        // Preserve directional pitch feedback, but keep it in the lower
+        // register. Every detent is a tiny POT / mechanical track movement.
+        const f=88+124*Math.pow(p,.82);
+        knock(0,f,.49,.068);
+        friction(0,.057,.33,.36+p*.35,p<.5);break;
+      }
+      case 'slider-end':
+        friction(0,.07,.28,.4,true);
+        knock(.038,104+102*p,.79,.112);break;
+      case 'commit':
+        knock(0,90,1.07,.155);friction(.04,.125,.39,.7);
+        knock(.126,113,.52,.12);break;
+      case 'reset':
+        friction(0,.30,.62,.64,true);coil(.05,.30,63,.54,false);
+        knock(.23,77,1.05,.19);knock(.306,106,.58,.10);break;
+      case 'pause':
+        knock(0,83,.93,.18);friction(.043,.11,.22,.32,true);break;
+      case 'resume':
+        knock(0,88,.76,.13);coil(.025,.22,75,.48,true);
+        knock(.173,121,.42,.09);break;
+      case 'record':
+        knock(0,79,1.02,.17);coil(.036,.21,65,.37,true);
+        knock(.207,105,.45,.10);break;
+      default:
+        knock(0,99,.90,.15);friction(.013,.088,.29,.54);break;
     }
-    g.connect(this.uiBus);return null;
-  }
-  uiImpulse(t,level=1,brightness=1,pan=0,length=.026) {
-    // Broadband snap and midrange 'material' rather than a faint narrow-band hiss.
-    const ac=this.ctx,source=ac.createBufferSource(),hp=ac.createBiquadFilter(),
-      lp=ac.createBiquadFilter(),g=ac.createGain();
-    source.buffer=this.noise;
-    hp.type='highpass';hp.frequency.value=650+brightness*620;
-    lp.type='lowpass';lp.frequency.value=4200+brightness*2300;
-    this.uiEnvelope(g,t,Math.min(.95,.53*level),length,.0012);
-    source.connect(hp).connect(lp);const stereo=this.uiRoute(lp,g,pan);
-    source.onended=()=>{source.disconnect();hp.disconnect();lp.disconnect();g.disconnect();stereo?.disconnect();};
-    source.start(t,Math.random()*Math.max(.1,this.noise.duration-length-.1));
-    source.stop(t+length+.012);
-  }
-  uiBody(t,pitch=350,level=1,pan=0,duration=.085) {
-    // Two non-octave resonances sound more like a loaded relay than a note.
-    // Pitch is almost stationary to avoid cartoonish computer noises.
-    const ac=this.ctx;
-    for(const [ratio,kind,amp,span] of [[1,'triangle',.36,1],[2.67,'sine',.18,.67]]) {
-      const o=ac.createOscillator(),g=ac.createGain(),
-        f=ac.createBiquadFilter();
-      o.type=kind;
-      o.frequency.setValueAtTime(pitch*ratio,t);
-      o.frequency.exponentialRampToValueAtTime(pitch*ratio*.975,t+duration*span);
-      f.type='lowpass';f.frequency.value=kind==='triangle'?1800:3400;
-      this.uiEnvelope(g,t,Math.min(.8,amp*level),duration*span,.0025);
-      o.connect(f);const stereo=this.uiRoute(f,g,pan);
-      o.onended=()=>{o.disconnect();f.disconnect();g.disconnect();stereo?.disconnect();};
-      o.start(t);o.stop(t+duration*span+.014);
+    // Magnetic/tape-like overload in the sound itself. Stronger than the
+    // former effect chain because the raw waveform *actually hits* it.
+    // Gentle 1-pole damping prevents electronic sparkle and retains the
+    // mid-bass harmonics required to hear weight on laptop speakers.
+    let lp=0,high=0,peak=0;
+    for(let i=0;i<n;i++){
+      const driven=out[i]*2.55;
+      const saturated=Math.tanh(driven+0.18*driven*Math.abs(driven));
+      lp+=.34*(saturated-lp);
+      high+=.028*(lp-high);
+      out[i]=lp*.92+high*.08;
+      peak=Math.max(peak,Math.abs(out[i]));
     }
-  }
-  uiWisp(t,level=1,pitch=1700,pan=0,duration=.10,rising=false) {
-    // Small asymmetrical electrical trail. Present but shorter than a ripple.
-    const ac=this.ctx,s=ac.createBufferSource(),bp=ac.createBiquadFilter(),
-      g=ac.createGain();
-    s.buffer=this.noise;bp.type='bandpass';bp.Q.value=.48;
-    bp.frequency.setValueAtTime(pitch,t);
-    bp.frequency.exponentialRampToValueAtTime(pitch*(rising?1.33:.75),t+duration*.85);
-    this.uiEnvelope(g,t,Math.min(.6,.12*level),duration,.014);
-    s.connect(bp);const stereo=this.uiRoute(bp,g,pan);
-    s.onended=()=>{s.disconnect();bp.disconnect();g.disconnect();stereo?.disconnect();};
-    s.start(t,Math.random()*Math.max(.1,this.noise.duration-duration-.1));
-    s.stop(t+duration+.012);
-  }
-  uiScrape(t,level=1,pitch=1200,pan=0,duration=.075) {
-    // A gritty, filtered micro-burst with multiple uneven contact points.
-    // Only UI Foley goes through this path; cinematic effects are untouched.
-    const ac=this.ctx, s=ac.createBufferSource(),bp=ac.createBiquadFilter(),
-      amp=ac.createGain();
-    s.buffer=this.noise;bp.type='bandpass';bp.Q.value=.65;
-    bp.frequency.setValueAtTime(pitch,t);
-    bp.frequency.exponentialRampToValueAtTime(pitch*.68,t+duration);
-    const gain=Math.min(.28,.11*level);
-    amp.gain.setValueAtTime(.0001,t);
-    const contacts=[0,.011,.024,.041].filter(x=>x<duration-.012);
-    contacts.forEach((offset,i)=>{
-      const time=t+offset;
-      amp.gain.setValueAtTime(Math.max(.0001,gain*(.21+.15*i)),time);
-      amp.gain.linearRampToValueAtTime(gain*(i===0?1:.65),time+.0012);
-      amp.gain.exponentialRampToValueAtTime(.001,time+.009);
-    });
-    amp.gain.setTargetAtTime(.0001,t+duration-.011,.008);
-    s.connect(bp);const stereo=this.uiRoute(bp,amp,pan);
-    s.onended=()=>{s.disconnect();bp.disconnect();amp.disconnect();stereo?.disconnect();};
-    s.start(t,Math.random()*Math.max(.1,this.noise.duration-duration-.1));
-    s.stop(t+duration+.012);
-  }
-  uiStrike(t,{pitch=370,force=1,pan=0,bright=.75,duration=.085,tail=false}={}) {
-    this.uiImpulse(t,force,bright,pan,Math.min(.037,duration*.32));
-    this.uiBody(t+.003,pitch,force,pan,duration);
-    this.uiScrape(t+.002,force*.95,pitch*2.6,pan,Math.min(.12,duration*.85));
-    if(tail)this.uiWisp(t+.017,force*.82,pitch*3.5,-pan,.095);
+    if(peak>.0001){
+      const scale=Math.min(1.35,.74/peak);
+      for(let i=0;i<n;i++)out[i]*=scale;
+    }
+    this.uiFoleyCache.set(key,buffer);
+    return buffer;
   }
   interfaceSound(kind='press',position=.5,control='') {
     if(this.mode==='off'||!this.ctx||!rain.interfaceSounds||rain.interfaceLevel<=0)return;
-    if(this.ctx.state!=='running') {
-      // Resume only after interaction; ordinary panel gestures qualify.
-      this.ctx.resume().catch(()=>{});
-    }
-    const now=this.ctx.currentTime+.009;
+    if(this.ctx.state!=='running')this.ctx.resume().catch(()=>{});
     const p=Math.max(0,Math.min(1,Number(position)||0));
-    const slider=kind==='slider';
-    if(slider) {
-      const bucket=Math.round(p*28);
-      if(control===this.lastSliderControl &&
-          (now-(this.lastSliderAt??-Infinity)<.058||bucket===this.lastSliderBucket))return;
+    const bucket=Math.round(p*28);
+    const now=this.ctx.currentTime;
+    if(kind==='slider'){
+      if(control===this.lastSliderControl&&
+        (now-(this.lastSliderAt??-Infinity)<.055||bucket===this.lastSliderBucket))return;
       this.lastSliderAt=now;this.lastSliderBucket=bucket;this.lastSliderControl=control;
     }
-    // Perceptual curve provides a useful mid setting. Peak energy is managed by
-    // the dedicated UI bus limiter and the application's existing master gain.
-    // Calibration: new 50% exactly matches old 25% in the same amplitude
-    // curve. Cinematic SFX and the score are unaffected.
-    const lev=Math.pow(Math.max(.01,rain.interfaceLevel*.5),.73);
-    const hit=(offset,pitch,force=1,pan=0,bright=.75,dur=.085,tail=false)=>
-      this.uiStrike(now+offset,{pitch,force:force*lev,pan,bright,duration:dur,tail});
-    switch(kind) {
-      case 'panel-open':
-        this.uiWisp(now,lev*.95,1070,-.15,.16,true);
-        hit(.056,340,.94,.04,.85,.115,true);
-        break;
-      case 'panel-close':
-        hit(0,280,.88,.08,.65,.087);
-        this.uiWisp(now+.023,lev*.57,1300,-.13,.11,false);
-        break;
-      case 'select':
-        // Two physical relay contacts. Firm selection, tiny confirmation.
-        hit(0,455,.95,-.10,.9,.078);
-        hit(.052,640,.42,.12,.75,.058);
-        break;
-      case 'toggle-on':
-        hit(0,380,.82,-.10,.65,.075);
-        hit(.052,570,.93,.13,.87,.12,true);
-        break;
-      case 'toggle-off':
-        hit(0,490,.77,.12,.67,.068);
-        hit(.043,315,.80,-.12,.62,.08);
-        break;
-      case 'slider':
-        // A single tangible detent, not a continuous synth glissando.
-        hit(0,300+p*320,.54,(p-.5)*.35,.8,.04);
-        break;
-      case 'slider-end':
-        hit(0,360+p*240,.76,(p-.5)*.24,.9,.069);
-        break;
-      case 'commit':
-        hit(0,350,1.07,-.09,.97,.11);
-        hit(.059,290,.48,.10,.68,.108,true);
-        break;
-      case 'reset':
-        this.uiWisp(now,lev*.85,1450,.09,.18,false);
-        hit(.037,275,1.03,-.1,.85,.14,true);
-        hit(.126,410,.52,.11,.66,.096);
-        break;
-      case 'pause':
-        hit(0,320,.94,-.06,.67,.12);
-        break;
-      case 'resume':
-        hit(0,340,.78,-.08,.7,.072);
-        hit(.049,475,.61,.07,.8,.093);
-        break;
-      case 'record':
-        hit(0,315,1,-.06,.83,.12);
-        hit(.11,315,.52,.06,.64,.075);
-        break;
-      default:
-        hit(0,385,.94,0,.84,.094,true);
-    }
+    const src=this.ctx.createBufferSource();
+    src.buffer=this.uiFoleySample(kind,kind==='slider'||kind==='slider-end'?bucket:14);
+    // Very small variations keep repeated buttons from sounding identical.
+    src.playbackRate.value=.985+Math.random()*.03;
+    const gain=this.ctx.createGain();
+    // Keep the established UI volume calibration: 50% has the amplitude
+    // curve of the previous 25% setting. Score and cinematic SFX bypass it.
+    const level=Math.pow(Math.max(.001,rain.interfaceLevel*.5),.73);
+    gain.gain.value=.79*level;
+    src.connect(gain).connect(this.uiBus);
+    src.onended=()=>{src.disconnect();gain.disconnect();};
+    src.start(now+.006);
   }
   // Retain compatibility with old editor-side calls.
   ui() { this.interfaceSound('press'); }
