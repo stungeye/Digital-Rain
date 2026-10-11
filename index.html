@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 08</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 09</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 08<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 09<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -118,7 +118,7 @@ kbd{font:inherit;color:#e3ffe6}
   <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
   <div class="switch"><label for="interfaceSounds">INTERFACE FEEDBACK SFX</label><input id="interfaceSounds" type="checkbox" checked></div>
   <div class="control"><div class="control-head"><label for="interfaceLevel">UI FEEDBACK LEVEL</label><output id="interfaceLevel-value"></output></div><input id="interfaceLevel" type="range" min="0" max="1" step="0.05" value="0.75"></div>
-  <p class="dsc">Short, tactile sounds for controls. Independent of rain ripples, surges and breach effects; no sound in Muted mode.</p>
+  <p class="dsc">Mechanical contact, resonant confirmation and a restrained electric tail. Designed to cut through the score. Silent in Muted mode.</p>
   <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in either audio-enabled mode.</p>
   <div class="control"><div class="control-head"><label for="beatStrength">BEAT IMPACT</label><output id="beatStrength-value"></output></div><input id="beatStrength" type="range" min="0" max="2" step="0.05" value="0.75"></div>
@@ -1175,6 +1175,15 @@ class SignalAudio {
     this.compressor.release.value = .2;
     this.master = ac.createGain(); this.master.gain.value = 0;
     this.master.connect(this.compressor); this.compressor.connect(ac.destination);
+    // UI Foley has its own small mastering stage before the shared master.
+    // The old UI used only narrow-band noise and vanished beneath the score.
+    this.uiBus=ac.createGain();this.uiBus.gain.value=1.12;
+    this.uiHP=ac.createBiquadFilter();this.uiHP.type='highpass';this.uiHP.frequency.value=125;
+    this.uiLimiter=ac.createDynamicsCompressor();
+    this.uiLimiter.threshold.value=-16;this.uiLimiter.knee.value=10;
+    this.uiLimiter.ratio.value=3;this.uiLimiter.attack.value=.003;
+    this.uiLimiter.release.value=.085;
+    this.uiBus.connect(this.uiHP).connect(this.uiLimiter).connect(this.master);
     this.noise = this.noiseBuffer(27.7);
     // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
     this.droneGain = ac.createGain(); this.droneGain.gain.value = .135;
@@ -1453,98 +1462,145 @@ class SignalAudio {
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
     this.filteredNoise(t+1.52,.64,.095,580,.27);
   }
-  // Interface Foley is deliberately distinct from cinematic intervention FX.
-  // Short, nearly-redundant slices of the long organic noise bed get slightly
-  // offset attacks and opposing filter movements: the feel of an electromechanical
-  // latch, rather than computer-game beeps. The small delays evoke the editing
-  // approach Dane A. Davis described, not any sampled Matrix recording.
-  uiFragment(at, duration, level, startHz, endHz, pan=0, attack=.004) {
+  // ─── INTERFACE FOLEY / 09 ──────────────────────────────────────────────
+  // Not musical UI beeps. Every action consists of an audible point of
+  // contact, a short mechanical resonance and an electrical material tail.
+  // Same acoustic palette, distinct motion for each control class.
+  // All voices use short envelopes, are routed through a dedicated bounded
+  // UI bus, and stop automatically. No film samples or external assets.
+  uiEnvelope(g,t,peak,duration,attack=.0025) {
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.linearRampToValueAtTime(Math.max(.0002,peak),t+attack);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  }
+  uiRoute(node,g,pan=0) {
     const ac=this.ctx;
-    const src=ac.createBufferSource(),filter=ac.createBiquadFilter();
-    const gain=ac.createGain();
-    src.buffer=this.noise;
-    filter.type='bandpass';filter.Q.value=.72;
-    filter.frequency.setValueAtTime(startHz,at);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(100,endHz),at+duration*.79);
-    gain.gain.setValueAtTime(.0001,at);
-    gain.gain.exponentialRampToValueAtTime(Math.max(.0002,level),at+attack);
-    gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
-    src.connect(filter);
-    filter.connect(gain);
-    let out=gain,stereo;
-    if (ac.createStereoPanner) {
-      stereo=ac.createStereoPanner();stereo.pan.value=pan;
-      gain.connect(stereo);out=stereo;
+    node.connect(g);
+    if(ac.createStereoPanner){
+      const s=ac.createStereoPanner();s.pan.value=Math.max(-.6,Math.min(.6,pan));
+      g.connect(s).connect(this.uiBus);return s;
     }
-    out.connect(this.master);
-    // No new buffers per gesture, and each tiny voice releases its audio graph.
-    src.onended=()=>{
-      try{src.disconnect();filter.disconnect();gain.disconnect();stereo?.disconnect();}catch{}
-    };
-    const offset=Math.random()*Math.max(.1,this.noise.duration-duration-.1);
-    src.start(at,offset);
-    src.stop(at+duration+.005);
+    g.connect(this.uiBus);return null;
+  }
+  uiImpulse(t,level=1,brightness=1,pan=0,length=.026) {
+    // Broadband snap and midrange 'material' rather than a faint narrow-band hiss.
+    const ac=this.ctx,source=ac.createBufferSource(),hp=ac.createBiquadFilter(),
+      lp=ac.createBiquadFilter(),g=ac.createGain();
+    source.buffer=this.noise;
+    hp.type='highpass';hp.frequency.value=650+brightness*620;
+    lp.type='lowpass';lp.frequency.value=4200+brightness*2300;
+    this.uiEnvelope(g,t,Math.min(.95,.53*level),length,.0012);
+    source.connect(hp).connect(lp);const stereo=this.uiRoute(lp,g,pan);
+    source.onended=()=>{source.disconnect();hp.disconnect();lp.disconnect();g.disconnect();stereo?.disconnect();};
+    source.start(t,Math.random()*Math.max(.1,this.noise.duration-length-.1));
+    source.stop(t+length+.012);
+  }
+  uiBody(t,pitch=350,level=1,pan=0,duration=.085) {
+    // Two non-octave resonances sound more like a loaded relay than a note.
+    // Pitch is almost stationary to avoid cartoonish computer noises.
+    const ac=this.ctx;
+    for(const [ratio,kind,amp,span] of [[1,'triangle',.36,1],[2.67,'sine',.18,.67]]) {
+      const o=ac.createOscillator(),g=ac.createGain(),
+        f=ac.createBiquadFilter();
+      o.type=kind;
+      o.frequency.setValueAtTime(pitch*ratio,t);
+      o.frequency.exponentialRampToValueAtTime(pitch*ratio*.975,t+duration*span);
+      f.type='lowpass';f.frequency.value=kind==='triangle'?1800:3400;
+      this.uiEnvelope(g,t,Math.min(.8,amp*level),duration*span,.0025);
+      o.connect(f);const stereo=this.uiRoute(f,g,pan);
+      o.onended=()=>{o.disconnect();f.disconnect();g.disconnect();stereo?.disconnect();};
+      o.start(t);o.stop(t+duration*span+.014);
+    }
+  }
+  uiWisp(t,level=1,pitch=1700,pan=0,duration=.10,rising=false) {
+    // Small asymmetrical electrical trail. Present but shorter than a ripple.
+    const ac=this.ctx,s=ac.createBufferSource(),bp=ac.createBiquadFilter(),
+      g=ac.createGain();
+    s.buffer=this.noise;bp.type='bandpass';bp.Q.value=.48;
+    bp.frequency.setValueAtTime(pitch,t);
+    bp.frequency.exponentialRampToValueAtTime(pitch*(rising?1.33:.75),t+duration*.85);
+    this.uiEnvelope(g,t,Math.min(.6,.12*level),duration,.014);
+    s.connect(bp);const stereo=this.uiRoute(bp,g,pan);
+    s.onended=()=>{s.disconnect();bp.disconnect();g.disconnect();stereo?.disconnect();};
+    s.start(t,Math.random()*Math.max(.1,this.noise.duration-duration-.1));
+    s.stop(t+duration+.012);
+  }
+  uiStrike(t,{pitch=370,force=1,pan=0,bright=.75,duration=.085,tail=false}={}) {
+    this.uiImpulse(t,force,bright,pan,Math.min(.037,duration*.32));
+    this.uiBody(t+.003,pitch,force,pan,duration);
+    if(tail)this.uiWisp(t+.017,force*.82,pitch*3.5,-pan,.095);
   }
   interfaceSound(kind='press',position=.5,control='') {
     if(this.mode==='off'||!this.ctx||!rain.interfaceSounds||rain.interfaceLevel<=0)return;
-    const now=this.ctx.currentTime;
+    if(this.ctx.state!=='running') {
+      // Resume only after interaction; ordinary panel gestures qualify.
+      this.ctx.resume().catch(()=>{});
+    }
+    const now=this.ctx.currentTime+.009;
+    const p=Math.max(0,Math.min(1,Number(position)||0));
     const slider=kind==='slider';
-    // Drag gestures can produce hundreds of input events per second. Quantized,
-    // rate-limited grains create subtle tactile steps instead of a buzzing zipper.
     if(slider) {
-      const bucket=Math.round(Math.max(0,Math.min(1,position))*32);
+      const bucket=Math.round(p*28);
       if(control===this.lastSliderControl &&
-         (now-(this.lastSliderAt??-Infinity)<.078||bucket===this.lastSliderBucket))return;
+          (now-(this.lastSliderAt??-Infinity)<.058||bucket===this.lastSliderBucket))return;
       this.lastSliderAt=now;this.lastSliderBucket=bucket;this.lastSliderControl=control;
     }
-    const p=Math.max(0,Math.min(1,Number(position)||0));
-    // A modest gain boost keeps tiny UI transients audible beneath the breakbeat.
-    const level=rain.interfaceLevel*1.4;
-    const f=(d,a,b,amp,offset=0,pan=0,attack=.004)=>
-      this.uiFragment(now+.006+offset,d,amp*level,a,b,pan,attack);
+    // Perceptual curve provides a useful mid setting. Peak energy is managed by
+    // the dedicated UI bus limiter and the application's existing master gain.
+    const lev=Math.pow(Math.max(.01,rain.interfaceLevel),.73);
+    const hit=(offset,pitch,force=1,pan=0,bright=.75,dur=.085,tail=false)=>
+      this.uiStrike(now+offset,{pitch,force:force*lev,pan,bright,duration:dur,tail});
     switch(kind) {
       case 'panel-open':
-        f(.078,850,2050,.16,0,-.13,.016);
-        f(.055,1350,750,.055,.027,.12);break;
+        this.uiWisp(now,lev*.95,1070,-.15,.16,true);
+        hit(.056,340,.94,.04,.85,.115,true);
+        break;
       case 'panel-close':
-        f(.064,2100,710,.14,0,.12);
-        f(.039,760,530,.07,.020,-.10);break;
+        hit(0,280,.88,.08,.65,.087);
+        this.uiWisp(now+.023,lev*.57,1300,-.13,.11,false);
+        break;
       case 'select':
-        f(.033,2500,1320,.16,0,-.07);
-        f(.052,1140,1900,.078,.018,.09);break;
+        // Two physical relay contacts. Firm selection, tiny confirmation.
+        hit(0,455,.95,-.10,.9,.078);
+        hit(.052,640,.42,.12,.75,.058);
+        break;
       case 'toggle-on':
-        f(.053,1200,2600,.18,0,-.06);
-        f(.032,2600,1400,.063,.029,.09);break;
+        hit(0,380,.82,-.10,.65,.075);
+        hit(.052,570,.93,.13,.87,.12,true);
+        break;
       case 'toggle-off':
-        f(.052,2500,1040,.16,0,.08);
-        f(.030,850,600,.078,.022,-.09);break;
-      case 'slider': {
-        const freq=1050+p*2300;
-        f(.024,freq*1.16,freq*.75,.078,0,(p-.5)*.22,.003);break;
-      }
-      case 'slider-end': {
-        const freq=950+p*1650;
-        f(.045,freq*1.12,freq*.79,.115,0,(p-.5)*.15);
-        f(.027,freq*.63,freq*.51,.036,.018);break;
-      }
+        hit(0,490,.77,.12,.67,.068);
+        hit(.043,315,.80,-.12,.62,.08);
+        break;
+      case 'slider':
+        // A single tangible detent, not a continuous synth glissando.
+        hit(0,300+p*320,.54,(p-.5)*.35,.8,.04);
+        break;
+      case 'slider-end':
+        hit(0,360+p*240,.76,(p-.5)*.24,.9,.069);
+        break;
       case 'commit':
-        f(.042,1850,1100,.18,0,-.10);
-        f(.076,620,360,.090,.020,.12);break;
+        hit(0,350,1.07,-.09,.97,.11);
+        hit(.059,290,.48,.10,.68,.108,true);
+        break;
       case 'reset':
-        f(.092,2400,440,.18,0,.08,.010);
-        f(.053,1080,630,.087,.046,-.08);break;
+        this.uiWisp(now,lev*.85,1450,.09,.18,false);
+        hit(.037,275,1.03,-.1,.85,.14,true);
+        hit(.126,410,.52,.11,.66,.096);
+        break;
       case 'pause':
-        f(.049,1700,570,.15);
-        f(.038,440,300,.077,.023);break;
+        hit(0,320,.94,-.06,.67,.12);
+        break;
       case 'resume':
-        f(.046,670,1600,.13);
-        f(.044,1100,2000,.085,.021);break;
+        hit(0,340,.78,-.08,.7,.072);
+        hit(.049,475,.61,.07,.8,.093);
+        break;
       case 'record':
-        f(.052,1200,830,.16);
-        f(.071,810,540,.083,.032);break;
-      default: // discrete command button; two microscopic related fragments.
-        f(.035,1850,1200,.16,0,-.06);
-        f(.041,1180,790,.070,.016,.08);
+        hit(0,315,1,-.06,.83,.12);
+        hit(.11,315,.52,.06,.64,.075);
+        break;
+      default:
+        hit(0,385,.94,0,.84,.094,true);
     }
   }
   // Retain compatibility with old editor-side calls.
@@ -1689,7 +1745,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-08-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-09-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -1714,7 +1770,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-08-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-09-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
