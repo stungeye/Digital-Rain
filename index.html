@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000402">
 <meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Built with p5.js.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 09</title>
+<title>DIGITAL RAIN // SIGNAL ENGINE 10</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@ kbd{font:inherit;color:#e3ffe6}
  <section id="panel" aria-label="Signal engine controls">
   <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
   <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 09<br>Film-inspired code, no intersecting streams.</p>
+  <p class="sub">SIGNAL ENGINE / 10<br>Film-inspired code, no intersecting streams.</p>
   <div class="rule"></div>
   <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
   <div class="triad quad" role="group" aria-label="Color profiles">
@@ -110,14 +110,14 @@ kbd{font:inherit;color:#e3ffe6}
   <div class="rule"></div>
   <p class="tag">04 / ORIGINAL AUDIO</p>
   <div class="triad quad" role="group" aria-label="Original audio modes">
-   <button data-audio="off" class="active" aria-pressed="true">MUTED</button>
-   <button data-audio="effects" aria-pressed="false">SFX ONLY</button>
+   <button data-audio="off" aria-pressed="false">MUTED</button>
+   <button data-audio="effects" class="active" aria-pressed="true">SFX ONLY</button>
    <button data-audio="ambience" aria-pressed="false">CODE HUM</button>
    <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
   </div>
-  <p class="dsc" id="audio-help">Audio is off until you enable it. No copyrighted film recordings.</p>
+  <p class="dsc" id="audio-help">SFX Only is ready. Sound starts on your first interaction; Muted remains available.</p>
   <div class="switch"><label for="interfaceSounds">INTERFACE FEEDBACK SFX</label><input id="interfaceSounds" type="checkbox" checked></div>
-  <div class="control"><div class="control-head"><label for="interfaceLevel">UI FEEDBACK LEVEL</label><output id="interfaceLevel-value"></output></div><input id="interfaceLevel" type="range" min="0" max="1" step="0.05" value="0.75"></div>
+  <div class="control"><div class="control-head"><label for="interfaceLevel">UI FEEDBACK LEVEL</label><output id="interfaceLevel-value"></output></div><input id="interfaceLevel" type="range" min="0" max="1" step="0.05" value="0.5"></div>
   <p class="dsc">Mechanical contact, resonant confirmation and a restrained electric tail. Designed to cut through the score. Silent in Muted mode.</p>
   <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
   <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in either audio-enabled mode.</p>
@@ -146,7 +146,7 @@ kbd{font:inherit;color:#e3ffe6}
    <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
    <kbd>H</kbd> panel<br>
    <kbd>R</kbd> reseed · <kbd>G</kbd> glow · <kbd>S</kbd> frame · <kbd>V</kbd> video</p>
-  <p class="note">Pure WebAudio generative composition. Audio begins only on activation; video exports include audio when it is enabled. Best enjoyed with headphones.</p>
+  <p class="note">SFX Only is ready on load. Audio unlocks on your first click, tap or keyboard action; selecting Muted silences all sounds. Video exports include audio when enabled.</p>
  </section>
  <button id="toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM PANEL</button>
 </div>
@@ -156,7 +156,7 @@ kbd{font:inherit;color:#e3ffe6}
  <div class="dir-desc" id="dir-desc">A transmission stirs in the darkness</div>
  <div class="dir-track"><div id="dir-fill"></div></div>
 </div>
-<div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // MUTED</div><div id="beat-leds" aria-label="Sound-responsive pulse"><i></i><i></i><i></i><i></i></div></div>
+<div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // SFX ARMED</div><div id="beat-leds" aria-label="Sound-responsive pulse"><i></i><i></i><i></i><i></i></div></div>
 <div id="rec-label">REC / SIGNAL</div>
 <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
 <script>
@@ -227,7 +227,7 @@ const DEPTHS = [
 const defaults = {
   density: 1.05, speed: 1, glow: 1, persistence: 1,
   mutation: 1, texture: true, grain: .75, grade: 'cinema', bloom: true, paused: false,
-  fontSize: 1, crt: 'off', scanStrength: .75, scanBrightness: 1, audio: 'off', volume: .5, director: false, beatReactive: true, beatStrength: .75, interfaceSounds: true, interfaceLevel: .75,
+  fontSize: 1, crt: 'off', scanStrength: .75, scanBrightness: 1, audio: 'effects', volume: .5, director: false, beatReactive: true, beatStrength: .75, interfaceSounds: true, interfaceLevel: .5,
 };
 const rain = { ...defaults };
 let planes = [];
@@ -907,7 +907,8 @@ function resetRain() {
   directorAt=millis();directorScene=-1;directorSaved=null;directorPulseDone=false;
   window.dispatchEvent(new CustomEvent('rain-director-toggle',{detail:{on:false}}));
   displayEngine?.setMode(rain.crt);
-  soundEngine?.setMode('off');
+  // Restore the default SFX-only mode. Reset is a user gesture; keep mute optional.
+  soundEngine?.setMode(rain.audio);
   soundEngine?.setVolume(rain.volume);
   emitState();
 }
@@ -921,7 +922,14 @@ function systemBreach() {
   breachAt = simulationTime;
   soundEngine?.breach();
 }
+// The standalone UI activates audio on capture, but the p5.js Web Editor
+// has no HTML panel. Both versions must play the *first* canvas ripple.
+function activateRainAudio() {
+  if (rain.audio !== 'off' && soundEngine && !soundEngine.ctx)
+    soundEngine.setMode(rain.audio);
+}
 function addPulse(x,y,power=1,fromDirector=false) {
+  if(!fromDirector) activateRainAudio();
   const realNow=millis();
   if (realNow - lastClickTime < 65) return;
   lastClickTime = realNow;
@@ -952,6 +960,7 @@ function mouseMoved() {
 function keyPressed() {
   // Let HTML range sliders and buttons use their ordinary keyboard behavior.
   if (document.activeElement?.matches?.('input, button, select')) return;
+  activateRainAudio();
   const k = String(key).toLowerCase();
   if (key === ' ') { setRainOption('paused',!rain.paused); return false; }
   if (k === 'f') fullscreen(!fullscreen());
@@ -960,7 +969,7 @@ function keyPressed() {
   if (k === 'e') signalBurst();
   if (k === 'b') systemBreach();
   if (k === 'd') setRainOption('director',!rain.director);
-  if (k === 'm') setRainOption('audio', rain.audio==='off'?'ambience':'off');
+  if (k === 'm') setRainOption('audio', rain.audio==='off'?'effects':'off');
   if (k === '1') setRainOption('crt','off');
   if (k === '2') setRainOption('crt','scan');
   if (k === '3') setRainOption('crt','glass');
@@ -978,6 +987,7 @@ function windowResized() {
   displayEngine?.resize();
 }
 
+window.activateRainAudio = activateRainAudio;
 window.setRainOption = setRainOption;
 window.getRainOptions = () => ({...rain});
 window.resetRain = resetRain;
@@ -1150,7 +1160,7 @@ class CRTDisplay {
 
 // ─── ORIGINAL GENERATIVE SCORE / SOUNDS ────────────────────────────────
 // WebAudio only. No streamed tracks, samples from the films, or external
-// assets. Starts only after an explicit user gesture; OFF is the default.
+// assets. SFX Only is armed by default; audio starts on the first gesture.
 // Arrangement: low minor drone; granular electrical rain; spacious, sparse
 // industrial/trip-hop percussion and an original minor ostinato.
 // ─── SIGNAL ENGINE AUDIO / ORIGINAL PROCEDURAL SCORE ─────────────────────
@@ -1186,7 +1196,9 @@ class SignalAudio {
     this.uiBus.connect(this.uiHP).connect(this.uiLimiter).connect(this.master);
     this.noise = this.noiseBuffer(27.7);
     // Three slow, non-harmonic oscillator movements prevent a short, obvious loop.
-    this.droneGain = ac.createGain(); this.droneGain.gain.value = .135;
+    // Start silent until the selected mode has been applied. In SFX-only mode
+    // the ambient beds must not leak through during the first activation.
+    this.droneGain = ac.createGain(); this.droneGain.gain.value = 0;
     this.droneLP = ac.createBiquadFilter(); this.droneLP.type = 'lowpass';
     this.droneLP.frequency.value = 180;
     this.droneGain.connect(this.droneLP).connect(this.master);
@@ -1196,13 +1208,13 @@ class SignalAudio {
       osc.type = type; osc.frequency.value = f; g.gain.value = amp;
       osc.connect(g).connect(this.droneGain); osc.start(); this.nodes.push(osc);
     }
-    this.airGain = ac.createGain(); this.airGain.gain.value = .042;
+    this.airGain = ac.createGain(); this.airGain.gain.value = 0;
     this.airLP = ac.createBiquadFilter(); this.airLP.type = 'bandpass';
     this.airLP.frequency.value = 760; this.airLP.Q.value = .37;
     const air = ac.createBufferSource(); air.buffer = this.noise; air.loop = true;
     air.connect(this.airLP).connect(this.airGain).connect(this.master);
     air.start(0, 3.71); this.nodes.push(air);
-    this.underGain = ac.createGain(); this.underGain.gain.value = .019;
+    this.underGain = ac.createGain(); this.underGain.gain.value = 0;
     const underFilter = ac.createBiquadFilter(); underFilter.type = 'lowpass';
     underFilter.frequency.value = 220;
     const under = ac.createBufferSource(); under.buffer = this.noise; under.loop = true;
@@ -1243,13 +1255,15 @@ class SignalAudio {
     if (this.ctx) this.master.gain.setTargetAtTime(this.mode === 'off' ? 0 : this.volume * .52,
       this.ctx.currentTime, .07);
   }
-  async setMode(mode) {
+  setMode(mode) {
     if (mode !== 'off' && !this.ctx && !this.init()) { this.mode = 'off'; return; }
     this.mode = mode;
     if (!this.ctx) return;
-    try { await this.ctx.resume(); } catch { return; }
+    // Resume during the actual user gesture. Do not await a promise before
+    // scheduling gain/voices, or the first click's sound can be lost.
+    if (mode !== 'off') this.ctx.resume().catch(()=>{});
     const ac = this.ctx, active = mode !== 'off';
-    this.master.gain.setTargetAtTime(active ? this.volume * .52 : 0, ac.currentTime, .15);
+    this.master.gain.setTargetAtTime(active ? this.volume * .52 : 0, ac.currentTime, active ? .018 : .12);
     this.droneGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .072 : .135, ac.currentTime, .25);
     this.airGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .019 : .043, ac.currentTime, .35);
     this.underGain.gain.setTargetAtTime(mode === 'effects' ? 0 : .019, ac.currentTime, .35);
@@ -1547,7 +1561,9 @@ class SignalAudio {
     }
     // Perceptual curve provides a useful mid setting. Peak energy is managed by
     // the dedicated UI bus limiter and the application's existing master gain.
-    const lev=Math.pow(Math.max(.01,rain.interfaceLevel),.73);
+    // Calibration: new 50% exactly matches old 25% in the same amplitude
+    // curve. Cinematic SFX and the score are unaffected.
+    const lev=Math.pow(Math.max(.01,rain.interfaceLevel*.5),.73);
     const hit=(offset,pitch,force=1,pan=0,bright=.75,dur=.085,tail=false)=>
       this.uiStrike(now+offset,{pitch,force:force*lev,pan,bright,duration:dur,tail});
     switch(kind) {
@@ -1623,6 +1639,22 @@ window.signalSound = () => soundEngine;
   const $=id=>document.getElementById(id);
   const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
   const notify=s=>notice.textContent=s;
+  // Browser autoplay policy: do not create or resume WebAudio on page load.
+  // The first pointer/key gesture arms the selected default, before the UI
+  // handler plays its sound (and before the rain's native pointer ripple).
+  const activateOnGesture=(event)=>{
+    if(getRainOptions().audio==='off')return;
+    if(event.target?.closest?.('[data-audio="off"]'))return;
+    const sound=window.signalSound();
+    if(!sound||sound.ctx)return;
+    window.activateRainAudio?.();
+    sync();
+  };
+  document.addEventListener('pointerdown',activateOnGesture,{capture:true});
+  document.addEventListener('keydown',event=>{
+    if(event.repeat||['Shift','Control','Alt','Meta','CapsLock'].includes(event.key))return;
+    activateOnGesture(event);
+  },{capture:true});
   const feedback=(kind,value=.5,control='')=>window.signalSound()?.interfaceSound(kind,value,control);
   window.toggleRainPanel=()=>{
     const open=panel.classList.toggle('open');
@@ -1669,8 +1701,8 @@ window.signalSound = () => soundEngine;
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Much stronger raster modulation; 100% draws distinctly dark scanning gaps.',
       glass:'Subtle barrel curve with minimal edge padding, and pronounced scanlines.'},
-    audio:{off:'Silent until you explicitly enable it. No film audio is used.',
-      effects:'Only the new layered, swelling code-ripple effects and interface sounds; no score or drone.',
+    audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
+      effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
       score:'134-BPM big beat / breakbeat: chopped kicks, swung hi-hats, ghost snares, gritty backbeat and evolving 32-bar arrangement.'}
   };
@@ -1691,7 +1723,8 @@ window.signalSound = () => soundEngine;
     $('pause-btn').textContent=st.paused?'RESUME SIGNAL':'PAUSE SIGNAL';
     $('status').textContent=st.paused?'// PAUSED':'// ONLINE';
     $('audio-status').textContent=st.audio==='off'?'AUDIO // MUTED':
-      st.audio==='score'?'AUDIO // SCORE + SFX':st.audio==='effects'?'AUDIO // SFX ONLY':'AUDIO // CODE HUM';
+      st.audio==='score'?'AUDIO // SCORE + SFX':
+      st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // CODE HUM';
     $('scanStrength').disabled=st.crt==='off';
     $('scanBrightness').disabled=st.crt==='off';
     $('grain').disabled=!st.texture;
@@ -1737,7 +1770,7 @@ window.signalSound = () => soundEngine;
   });
   $('reseed-btn').addEventListener('click',()=>{reseedRain();feedback('commit');notify('SIGNAL FIELD RESEEDED');});
   $('defaults-btn').addEventListener('click',()=>{
-    feedback('reset');resetRain();notify('ORIGINAL SIGNAL CONFIG RESTORED');
+    resetRain();feedback('reset');notify('ORIGINAL SIGNAL CONFIG RESTORED');
   });
   window.captureRain=()=>{
     const canvas=getVisibleRainCanvas();
@@ -1745,7 +1778,7 @@ window.signalSound = () => soundEngine;
     canvas.toBlob(blob=>{
       if(!blob){notify('IMAGE EXPORT UNAVAILABLE');return;}
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download='digital-rain-09-'+Date.now()+'.png';
+      const a=document.createElement('a');a.href=url;a.download='digital-rain-10-'+Date.now()+'.png';
       document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
       notify('RASTER CAPTURE SAVED');
     },'image/png');
@@ -1770,7 +1803,7 @@ window.signalSound = () => soundEngine;
         $('rec-label').classList.remove('on');$('record-btn').textContent='RECORD 8s';
         if(chunks.length){
           const b=new Blob(chunks,{type:'video/webm'}),url=URL.createObjectURL(b);
-          const a=document.createElement('a');a.href=url;a.download='digital-rain-09-'+Date.now()+'.webm';
+          const a=document.createElement('a');a.href=url;a.download='digital-rain-10-'+Date.now()+'.webm';
           document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
           notify('VIDEO CAPTURE SAVED'+(audioTap?' WITH AUDIO':''));
         }
