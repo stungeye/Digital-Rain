@@ -1,7 +1,7 @@
 /* The interface follows the signal's phosphor palette. Keep text nearly white
    and the panel opaque: even Deep's muted code should remain easy to read. */
 :root{
- --hud-left:calc(2 * max(12px,env(safe-area-inset-left)));--hud-top:calc(2 * max(12px,env(safe-area-inset-top)));--hud-gap:10px;--hud-button:43px;
+ --hud-left:24px;--hud-top:24px;--hud-gap:10px;--hud-button:43px;
  color-scheme:dark;
  --ui-page:#000401;--ui-panel:rgba(2,19,10,.97);--ui-hud:rgba(1,16,8,.88);
  --ui-base:36,94,53;--ui-surface:rgba(35,88,48,.24);--ui-hover:rgba(43,110,61,.34);
@@ -98,6 +98,7 @@ kbd{font:inherit;color:var(--ui-text)}
 /* Phones and coarse-pointer devices keep touch guidance, without advertising
    shortcuts that require a physical keyboard. */
 @media(max-width:560px),(pointer:coarse){
+ :root{--hud-left:12px;--hud-top:12px}
  .keyhelp,.keyboard-only{display:none}
 }
 @media(max-width:560px){
