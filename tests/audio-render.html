@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Signal score audition and render check</title>
+<style>body{background:#09120e;color:#dce9e0;font:16px system-ui;max-width:800px;margin:40px auto;padding:20px}audio{width:100%}pre{white-space:pre-wrap}section{margin:30px 0}</style>
+<h1>Signal score audition</h1>
+<p>Renders each full arrangement through real Web Audio, including its final note tails. Players contain the whole score at the app's default volume, without the continuous hum or interface effects.</p>
+<pre id="results">Rendering…</pre>
+<div id="players"></div>
+<script>window.RainApp={state:{grade:'cinema',volume:.5,paused:false}};</script>
+<script src="../js/audio.js"></script>
+<script>
+function wav(buffer) {
+  const length=buffer.length, data=new ArrayBuffer(44+length*4), view=new DataView(data);
+  const text=(at,value)=>{for(let i=0;i<value.length;i++)view.setUint8(at+i,value.charCodeAt(i));};
+  text(0,'RIFF');view.setUint32(4,data.byteLength-8,true);text(8,'WAVE');text(12,'fmt ');
+  view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,2,true);
+  view.setUint32(24,buffer.sampleRate,true);view.setUint32(28,buffer.sampleRate*4,true);
+  view.setUint16(32,4,true);view.setUint16(34,16,true);text(36,'data');view.setUint32(40,length*4,true);
+  for(let channel=0;channel<2;channel++) {
+    const samples=buffer.getChannelData(channel);
+    for(let i=0;i<length;i++)view.setInt16(44+i*4+channel*2,Math.max(-1,Math.min(1,samples[i]))*32767,true);
+  }
+  return new Blob([data],{type:'audio/wav'});
+}
+(async()=>{
+  const results=[];
+  for(const [profile,score] of Object.entries(SignalAudio.scores)) {
+    RainApp.state.grade=profile;
+    const duration=score.bars*4*60/score.bpm;
+    const ctx=new OfflineAudioContext(2,Math.ceil((duration+4)*22050),22050);
+    // Run the production instrument graph and compressor in an offline context.
+    window.AudioContext=function(){return ctx;};
+    const engine=new SignalAudio();engine.mode='score';engine.init();
+    engine.schedulingScore=true;
+    for(let tick=0;tick<score.bars*16;tick++)engine.scoreStep(.07+tick*60/score.bpm/4,tick);
+    const buffer=await ctx.startRendering();
+    let peak=0,sum=0,invalid=0,clipped=0;
+    for(let channel=0;channel<2;channel++)for(const sample of buffer.getChannelData(channel)) {
+      if(!Number.isFinite(sample))invalid++;
+      peak=Math.max(peak,Math.abs(sample));sum+=sample*sample;if(Math.abs(sample)>=1)clipped++;
+    }
+    const result={profile,title:score.title,bpm:score.bpm,seconds:+duration.toFixed(2),peak:+peak.toFixed(4),rms:+Math.sqrt(sum/(buffer.length*2)).toFixed(4),invalid,clipped};
+    results.push(result);
+    const section=document.createElement('section'),heading=document.createElement('h2'),audio=document.createElement('audio');
+    heading.textContent=`${score.title} — ${profile} — ${score.bpm} BPM`;
+    audio.controls=true;audio.src=URL.createObjectURL(wav(buffer));
+    section.append(heading,audio);document.getElementById('players').append(section);
+    document.getElementById('results').textContent=JSON.stringify(results,null,2);
+  }
+  document.getElementById('results').dataset.complete='true';
+})().catch(error=>{document.getElementById('results').textContent=error.stack;});
+</script>
+</html>

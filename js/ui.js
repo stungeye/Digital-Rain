@@ -162,7 +162,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
       effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
       ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
-      score:'134-BPM big beat / breakbeat with chopped kicks, swung hats, ghost snares and evolving 32-bar arrangement. Pause freezes the beat, while low atmospheric hum remains.'}
+      score:'Original music follows the signal profile. Pause freezes the score; atmospheric hum remains.'}
   };
   function sync(){
     const st=getRainOptions();
@@ -182,6 +182,10 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
         b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
       });
       $(key+'-help').textContent=details[key][st[key]];
+    }
+    if(st.audio==='score') {
+      const track=SignalAudio.scores[st.grade];
+      $('audio-help').textContent=`${track.title} / ${track.bpm} BPM. ${track.style} Pause freezes the score; atmospheric hum remains.`;
     }
     $('pause-btn').textContent=st.paused?'RESUME SIGNAL':'PAUSE SIGNAL';
     $('status').textContent=st.paused?'// PAUSED':'// ONLINE';

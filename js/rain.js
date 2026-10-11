@@ -939,6 +939,7 @@ function setRainOption(name, value, {userChoice=true}={}) {
   if (name === 'density') for (const plane of planes) plane.updateDensity();
   // Zoom transforms the existing world: no reseeding, no horizontal slipping.
   if (name === 'audio') soundEngine?.setMode(value);
+  if (name === 'grade') soundEngine?.setProfile(value);
   // Freeze the breakbeat engine on pause. The continuous ambient drone is
   // intentionally unaffected; UI and cinematic effects remain responsive.
   if (name === 'paused') soundEngine?.setPaused(value);
@@ -966,6 +967,7 @@ function resetRain() {
   buildScene();
   displayEngine?.setMode(rain.crt);
   // Restore the default SFX-only mode. Reset is a user gesture; keep mute optional.
+  soundEngine?.setProfile(rain.grade);
   soundEngine?.setMode(rain.audio);
   soundEngine?.setVolume(rain.volume);
   soundEngine?.setPaused(rain.paused);

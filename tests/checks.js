@@ -75,6 +75,7 @@ function harness({coarse = false, reduced = false, ready = 'loading'} = {}) {
     createGain(){return this.node('gain');}createDynamicsCompressor(){return this.node('compressor');}
     createBiquadFilter(){return this.node('filter');}createOscillator(){return this.node('oscillator');}
     createBufferSource(){return this.node('buffer');}createStereoPanner(){return this.node('panner');}
+    createWaveShaper(){return this.node('waveshaper');}
     createBuffer(channels,length,sampleRate=this.sampleRate){return {duration:length/sampleRate,getChannelData:()=>new Float32Array(length)};}
     resume(){return Promise.resolve();}
   }
@@ -239,6 +240,48 @@ check('SFX Only gates every ambient source independently of LFO modulation', () 
   engine.setMode('off');assert.equal(engine.master.gain.value,0);assert.equal(engine.ambientBus.gain.value,0);
   h.run('setRainOption("audio","ambience"); RainApp.toggleMute()');
   assert.equal(h.run('rain.audio'),'off');h.run('RainApp.toggleMute()');assert.equal(h.run('rain.audio'),'ambience');
+});
+
+check('profile scores change tempo, retire old voices and preserve mode/pause/reset behavior', () => {
+  const h=harness();h.run('setup();setRainOption("grade","abyss")');
+  const engine=h.run('soundEngine');
+  assert.equal(engine.ctx,null,'profile selection does not activate audio');
+  assert.equal(engine.score.id,'undertow');
+  h.run('setRainOption("audio","score")');
+  const context=engine.ctx, titles=new Set(), tempos=new Set();
+  for(const profile of ['abyss','voltage','anomaly','cinema']) {
+    const oldBus=engine.scoreBus, previous=engine.profile;
+    h.run(`setRainOption('grade','${profile}')`);
+    assert.equal(engine.ctx,context,'profile switches reuse the audio context');
+    if(previous!==profile) {
+      assert.notEqual(engine.scoreBus,oldBus);
+      assert.equal(oldBus.gain.value,0,'scheduled notes from the old track fade away');
+      assert.equal(engine.step,0);
+    }
+    titles.add(engine.score.title);tempos.add(engine.score.bpm);
+    const first=engine.nextStep;
+    engine.schedule();
+    assert.ok(Math.abs(engine.nextStep-first-engine.step*60/engine.score.bpm/4)<1e-8,'scheduler follows selected tempo');
+    // Exercise every section and the wraparound of each actual arrangement.
+    engine.schedulingScore=true;
+    for(let tick=0;tick<=engine.score.bars*16;tick++)engine.scoreStep(1+tick*60/engine.score.bpm/4,tick);
+    engine.schedulingScore=false;
+    for(const node of context.createdNodes)for(const key of ['gain','frequency','Q','pan'])
+      for(const call of node[key].calls)assert.ok(call.slice(1).every(Number.isFinite),'all scheduled parameters are finite');
+    context.createdNodes=[];
+  }
+  assert.equal(titles.size,4);assert.equal(tempos.size,4);
+  h.run('setRainOption("paused",true);setRainOption("grade","voltage")');
+  assert.equal(engine.scoreBus.gain.value,0);
+  const step=engine.step;context.currentTime+=10;engine.schedule();assert.equal(engine.step,step);
+  h.run('setRainOption("paused",false)');assert.equal(engine.scoreBus.gain.value,1);
+  const outgoing=engine.scoreBus;
+  h.run('setRainOption("audio","effects")');
+  assert.equal(outgoing.gain.value,0);assert.equal(engine.scoreBus.gain.value,0,'SFX Only cannot replay sustained score voices');
+  h.run('setRainOption("audio","score");RainApp.toggleMute();setRainOption("grade","anomaly");RainApp.toggleMute()');
+  assert.equal(engine.mode,'score');assert.equal(engine.score.id,'fracture');
+  h.run('resetRain()');assert.equal(engine.profile,'cinema');assert.equal(engine.mode,'effects');
+  assert.equal(typeof engine.legacyScoreStep,'function','approved original remains available');
 });
 
 check('public settings reject invalid values and clamp every numeric boundary', () => {

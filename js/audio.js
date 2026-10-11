@@ -6,9 +6,16 @@ const rain = RainApp.state;
 // Arrangement: low minor drone; granular electrical rain; spacious, sparse
 // industrial/trip-hop percussion and an original minor ostinato.
 // ─── SIGNAL ENGINE AUDIO / ORIGINAL PROCEDURAL SCORE ─────────────────────
-// No recordings, samples or third-party sound libraries. A 134 BPM breakbeat
-// with 32-bar arrangement, continuously varying drones, and restrained Foley.
+// Four original profile scores; Source uses the approved 134 BPM score,
+// kept intact as legacyScoreStep.
+const PROFILE_SCORES = Object.freeze({
+  abyss: Object.freeze({id:'undertow', title:'Undertow', bpm:92, bars:48, style:'Orchestral trip-hop: felt piano, suspended strings and a slow, heavy backbeat.'}),
+  voltage: Object.freeze({id:'iron-protocol', title:'Iron Protocol', bpm:126, bars:64, style:'Industrial metal / EBM: palm-muted power riffs, machine kicks and acid synth.'}),
+  anomaly: Object.freeze({id:'fracture', title:'Fracture', bpm:164, bars:64, style:'Dub / jungle: sliced breaks, half-time sub bass and scattered tape echoes.'}),
+  cinema: Object.freeze({id:'source-original', title:'Source / Original Score', bpm:134, bars:32, style:'Big beat / breakbeat: chopped kicks, swung hats, ghost snares and a minor bass ostinato.'})
+});
 window.SignalAudio = class SignalAudio {
+  static scores = PROFILE_SCORES;
   constructor() {
     this.ctx = null; this.mode = 'off'; this.volume = rain.volume;
     this.step = 0; this.nextStep = 0; this.nextAmbient = 0;
@@ -16,6 +23,29 @@ window.SignalAudio = class SignalAudio {
     this.scorePaused = rain.paused;
     this.schedulingScore = false;
     this.schedulingAmbient = false;
+    this.profile = rain.grade;
+  }
+  get score() { return PROFILE_SCORES[this.profile] || PROFILE_SCORES.cinema; }
+  setProfile(profile) {
+    if (!PROFILE_SCORES[profile] || profile === this.profile) return;
+    this.profile = profile;
+    this.step = 0;
+    this.recentHits.length = 0;
+    if (!this.ctx) return;
+    this.retireScoreBus();
+    this.nextStep = this.ctx.currentTime + .12;
+  }
+  retireScoreBus() {
+    // Retire the old score bus, including its already scheduled notes and
+    // sustained chords. New voices start after its short fade, without
+    // cross-key overlap. UI, hum and cinematic effects keep their own buses.
+    const oldBus = this.scoreBus, t = this.ctx.currentTime;
+    oldBus.gain.cancelScheduledValues(t);
+    oldBus.gain.setTargetAtTime(0, t, .025);
+    setTimeout(() => oldBus.disconnect(), 400);
+    this.scoreBus = this.ctx.createGain();
+    this.scoreBus.gain.value = this.scorePaused || this.mode !== 'score' ? 0 : 1;
+    this.scoreBus.connect(this.master);
   }
   init() {
     const Context = window.AudioContext || window.webkitAudioContext;
@@ -117,6 +147,7 @@ window.SignalAudio = class SignalAudio {
     const previousMode=this.mode;
     this.mode = mode;
     if (!this.ctx) return;
+    if(previousMode==='score' && mode!=='score')this.retireScoreBus();
     // Resume during the actual user gesture. Do not await a promise before
     // scheduling gain/voices, or the first click's sound can be lost.
     if (mode !== 'off') this.ctx.resume().catch(()=>{});
@@ -147,14 +178,14 @@ window.SignalAudio = class SignalAudio {
     this.recentHits.length=0;
     if(!this.ctx)return;
     const t=this.ctx.currentTime;
-    this.scoreBus.gain.setTargetAtTime(this.scorePaused?0:1,t,.012);
+    this.scoreBus.gain.setTargetAtTime(this.scorePaused||this.mode!=='score'?0:1,t,.012);
     // The sequencing position stays fixed while paused. The next note is
     // resynchronized to audio time on resume (no burst of skipped beats).
     this.nextStep=t+.075;
   }
   schedule() {
     if (!this.ctx || this.mode === 'off' || this.ctx.state !== 'running') return;
-    const ac = this.ctx, beat = 60 / 134 / 4;
+    const ac = this.ctx, beat = 60 / this.score.bpm / 4;
     if(this.mode==='score' && this.scorePaused) {
       this.nextStep=ac.currentTime+.075;
       return;
@@ -249,7 +280,134 @@ window.SignalAudio = class SignalAudio {
       this.tone(t,root*mult,.23,'sawtooth',strength*emphasis,null,720,.22);
     }
   }
-  scoreStep(t, tick) {
+  // Shared synthesis vocabulary, deliberately different envelopes/spectra.
+  note(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+  scoreVoice(t, midi, dur, instrument, amp=.1, pan=0) {
+    const ac=this.ctx, freq=this.note(midi), g=ac.createGain();
+    const presets={
+      piano:{partials:[[1,1],[2,.31],[3,.12],[4.01,.055]],type:'sine',attack:.004,release:.42,hz:3600},
+      strings:{partials:[[1,.48],[1.003,.3],[.998,.22]],type:'sawtooth',attack:.28,release:.65,hz:1350},
+      organ:{partials:[[1,.56],[2,.27],[3,.12],[4,.05]],type:'sine',attack:.008,release:.045,hz:2200},
+      brass:{partials:[[1,.65],[1.006,.35]],type:'sawtooth',attack:.025,release:.09,hz:1500},
+      riff:{partials:[[1,.65],[2,.23],[3,.12]],type:'sawtooth',attack:.003,release:.035,hz:1700},
+      acid:{partials:[[1,1]],type:'sawtooth',attack:.006,release:.09,hz:2400},
+      sub:{partials:[[1,.85],[2,.15]],type:'sine',attack:.012,release:.2,hz:320},
+      bell:{partials:[[1,.7],[2.76,.2],[4.13,.1]],type:'sine',attack:.003,release:.32,hz:4300}
+    };
+    const p=presets[instrument], filter=ac.createBiquadFilter();
+    filter.type='lowpass';filter.Q.value=instrument==='acid'?5:.6;
+    filter.frequency.setValueAtTime(p.hz,t);
+    if(instrument==='acid'||instrument==='brass'||instrument==='riff')
+      filter.frequency.exponentialRampToValueAtTime(instrument==='acid'?180:420,t+dur);
+    const attack=Math.min(dur*.45,p.attack);
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(amp,t+attack);
+    g.gain.exponentialRampToValueAtTime(instrument==='strings'?amp*.75:amp*.26,t+dur);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur+p.release);
+    let input=filter;
+    if(instrument==='riff') {
+      if(!this.riffCurve) {
+        this.riffCurve=new Float32Array(1024);
+        for(let i=0;i<1024;i++)this.riffCurve[i]=Math.tanh((i/1023*2-1)*4);
+      }
+      const drive=ac.createWaveShaper();drive.curve=this.riffCurve;drive.oversample='2x';
+      drive.connect(filter);input=drive;
+    }
+    this.connectVoice(filter,g,pan);
+    for(const [multiple,level] of p.partials) {
+      const o=ac.createOscillator(), partial=ac.createGain();
+      o.type=p.type;o.frequency.value=freq*multiple;partial.gain.value=level;
+      o.connect(partial).connect(input);o.start(t);o.stop(t+dur+p.release+.02);
+      o.onended=()=>{o.disconnect();partial.disconnect();};
+    }
+  }
+  echoNote(t,midi,dur,instrument,amp,pan,delay) {
+    this.scoreVoice(t,midi,dur,instrument,amp,pan);
+    this.scoreVoice(t+delay,midi,dur*.7,instrument,amp*.28,-pan);
+    this.scoreVoice(t+delay*2,midi,dur*.5,instrument,amp*.10,pan);
+  }
+  scoreStep(t,tick) {
+    switch(this.score.id) {
+      case 'undertow': this.undertowStep(t,tick);break;
+      case 'iron-protocol': this.ironStep(t,tick);break;
+      case 'fracture': this.fractureStep(t,tick);break;
+      default: this.legacyScoreStep(t,tick);
+    }
+  }
+  undertowStep(t,tick) {
+    const s=tick%16,bar=Math.floor(tick/16)%48, beat=60/92;
+    // D minor -> Bb major7 -> G minor9 -> A suspended/dominant.
+    // A piano prologue, two long builds and an exposed middle-eight.
+    const chords=[[50,57,65,69],[46,53,62,65],[43,50,58,65],[45,52,62,64]];
+    const chord=chords[Math.floor(bar/4)%4], intro=bar<4;
+    const bridge=bar>=24&&bar<32, full=bar>=12&&!bridge;
+    const hit=t+(s%2?.024:0);
+    if(s===0) {
+      for(let i=1;i<4;i++)this.scoreVoice(t,chord[i],beat*3.4,'strings',full?.055:.032,(i-2)*.4);
+      this.scoreVoice(t,chord[0]-12,beat*2.2,'sub',.14);
+    }
+    const melody=[0,7,12,10,5,3,7,2];
+    if([0,6,10,14].includes(s)) {
+      const index=(Math.floor(bar%2)*4+[0,6,10,14].indexOf(s));
+      this.echoNote(hit,62+melody[index]+(bar>=32?12:0),.42,'piano',.11,-.3,beat*.75);
+    }
+    if(!intro&&!bridge) {
+      if([0,7,10].includes(s))this.kick(hit,s===0?.82:.48);
+      if(s===4||s===12)this.snare(hit,.65);
+      if(s%2===0)this.hat(hit,.27,s%4?-.3:.25);
+      if(bar%4===3&&s===15)this.snare(hit,.17);
+    } else if(bridge&&s===8)this.kick(hit,.4);
+    if(full&&s===8)this.scoreVoice(hit,chord[2]+12,beat*1.5,'strings',.05,.32);
+  }
+  ironStep(t,tick) {
+    const s=tick%16,bar=Math.floor(tick/16)%64,beat=60/126;
+    const bridge=bar>=32&&bar<40, intro=bar<4, lift=bar>=48;
+    const root=[40,40,41,38][Math.floor(bar/4)%4];
+    // Straight sixteenth-note chugs and rests, no swung breakbeat. A
+    // Phrygian semitone and power fifths give this its mechanical identity.
+    const riffs=[[0,0,null,0,7,null,0,0,null,1,0,null,7,0,null,0],
+      [0,null,0,0,12,null,7,null,0,0,null,1,0,null,7,3]];
+    const note=riffs[bar%2][s];
+    if(note!==null&&!bridge) {
+      this.scoreVoice(t,root+note,.07,'riff',.10,-.48);
+      this.scoreVoice(t+.004,root+note+7,.085,'riff',.064,.48);
+      if(s%4===0)this.scoreVoice(t,root-12,.18,'sub',.12);
+    }
+    if([0,4,8,12].includes(s)||(!intro&&!bridge&&[3,10].includes(s)))
+      this.kick(t,bridge?.42:s%4===0?.9:.52);
+    if(!intro&&(s===4||s===12))this.snare(t,bridge?.48:.88);
+    if(s%2===0)this.hat(t,bridge?.19:.38,s%4?.28:-.25);
+    if(!intro&&[2,6,10,14].includes(s))
+      this.scoreVoice(t,root+24+[0,1,7,12][(s-2)/4],.12,'acid',lift?.065:.043,.15);
+    if(bridge&&s===0)for(const offset of [0,7,13])
+      this.scoreVoice(t,root+12+offset,beat*3,'strings',.035,(offset-6)/12);
+    if(bar%8===7&&s>=13)this.snare(t,.2+(s-13)*.10);
+    if(lift&&s===0)this.filteredNoise(t,.6,.075,5200,.5,.1,true);
+  }
+  fractureStep(t,tick) {
+    const s=tick%16,bar=Math.floor(tick/16)%64,beat=60/164;
+    const intro=bar<4, dub=bar>=24&&bar<32||bar>=56;
+    const root=[36,39,34,37][Math.floor(bar/4)%4];
+    const hit=t+((tick*7)%5)*.001;
+    // Four unlike break edits; every eighth bar folds into a snare splice.
+    const kicks=[[0,6,10],[0,3,8,14],[0,7,10,15],[0,2,8,11]];
+    const snares=[[4,12],[4,11,14],[4,12],[4,10,12]];
+    if((dub?[0,10]:kicks[bar%4]).includes(s))this.kick(hit,.73);
+    if((dub?[8]:snares[bar%4]).includes(s)&&!intro)this.snare(hit,dub?.72:.68);
+    if(!dub&&!intro&&[3,7,9,15].includes(s))this.snare(hit,.14);
+    if(!dub&&!intro)this.hat(hit,s%2?.20:.32,s%2?.45:-.35);
+    if([0,7,10].includes(s))this.scoreVoice(hit,root+(s===7?7:s===10?-2:0),beat*.9,'sub',.24);
+    if(s===2&&bar%2===0)for(const offset of [12,15,22])
+      this.echoNote(hit,root+offset,.095,'organ',.045,-.5,beat*.75);
+    if(s===13&&bar%4===3)this.echoNote(hit,root+37,.07,'bell',.07,.6,beat*.75);
+    if(!dub&&!intro&&bar%8===7&&s>=12) {
+      this.snare(hit,.24);
+      this.snare(hit+beat/8,.12);
+      this.filteredNoise(hit,.026,.035,2300+(s-12)*900,.9,s%2?.65:-.65);
+    }
+    if(s===0&&bar%8===0)this.filteredNoise(hit,beat*1.8,.045,380,.9,-.4);
+  }
+  legacyScoreStep(t, tick) {
     const s=tick%16, bar=Math.floor(tick/16), phrase=bar%32;
     const section=Math.floor(phrase/8), root=[82.407,65.406,73.416,61.735][section];
     const fill=bar%8===7, dropout=phrase===15||phrase===31;
