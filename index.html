@@ -4,345 +4,427 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000401">
-  <meta name="description" content="A cinematic p5.js reconstruction of the original Matrix digital rain.">
-  <title>Digital Rain — The Matrix</title>
+  <meta name="description" content="Matrix-inspired digital rain: cinematic fixed-cell glyphs, collision-free streams and living phosphor glow. Built with p5.js.">
+  <title>DIGITAL RAIN / CINEMA ENGINE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
   <style>
-    :root { color-scheme: dark; --green: #85e6a5; --muted: #5b926e; }
+    :root { color-scheme: dark; --green:#b1e9bc; --accent:#84e49b; --quiet:#62836b; --line:rgba(108,215,129,.19); }
     * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000201; }
-    #rain { position: fixed; inset: 0; width: 100%; height: 100%; }
-    #rain canvas { display: block; }
-    button, input { font: inherit; }
-    .interface { position: fixed; z-index: 3; left: clamp(14px, 3vw, 36px); bottom: clamp(14px, 3vw, 32px);
-      font: 11px/1.55 Consolas, "Courier New", monospace; letter-spacing: .12em;
-      color: var(--green); user-select: none; }
-    #menu-toggle { cursor: pointer; background: rgba(2, 22, 10, .53); color: #8ed5a1;
-      border: 1px solid rgba(91, 183, 115, .24); border-radius: 0; padding: 10px 14px;
-      letter-spacing: .2em; text-transform: uppercase; opacity: .52; transition: opacity .25s, background .25s; }
-    #menu-toggle:hover, #menu-toggle:focus-visible { opacity: 1; background: rgba(4, 30, 13, .85); }
-    #panel { display: none; position: absolute; left: 0; bottom: 48px; width: min(335px, calc(100vw - 28px));
-      padding: 20px 20px 17px; border: 1px solid rgba(105, 214, 124, .35);
-      background: rgba(0, 12, 5, .92); box-shadow: 0 0 45px rgba(0, 30, 4, .8), 0 0 0 1px rgba(0, 0, 0, .7) inset;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-    #panel.show { display: block; }
-    .eyebrow { color: #5eaa73; font-size: 10px; letter-spacing: .32em; }
-    h1 { font-size: 17px; font-weight: 500; line-height: 1.25; letter-spacing: .18em; margin: 4px 0 6px; }
-    .lede { margin: 0 0 21px; color: #759c7d; font-size: 10px; letter-spacing: .02em; line-height: 1.6; }
-    .setting { display: grid; grid-template-columns: 1fr auto; margin: 17px 0 6px; align-items: center; }
-    .setting label { text-transform: uppercase; }
-    output { color: #d3f7d9; font-variant-numeric: tabular-nums; }
-    input[type="range"] { width: 100%; accent-color: #79e398; cursor: pointer; }
-    .toggle-row { display: flex; justify-content: space-between; align-items: center; margin: 19px 0 22px; }
-    input[type="checkbox"] { width: 16px; height: 16px; accent-color: #65cc7e; cursor: pointer; }
-    .actions { display: flex; gap: 8px; }
-    .actions button { flex: 1; padding: 8px 6px; border: 1px solid rgba(115, 194, 119, .38);
-      background: rgba(19, 60, 28, .37); color: #b2efba; font-size: 10px; cursor: pointer; letter-spacing: .13em; }
-    .actions button:hover { background: rgba(33, 101, 45, .47); }
-    .help { border-top: 1px solid rgba(67, 153, 84, .28); margin: 20px 0 0; padding-top: 13px;
-      font-size: 10px; line-height: 1.9; color: #679673; letter-spacing: .015em; }
-    kbd { font: inherit; color: #c1eec8; }
-    #status { position: fixed; z-index: 2; right: 27px; bottom: 21px;
-      font: 10px Consolas, monospace; letter-spacing: .15em; color: rgba(105, 162, 113, .38);
-      pointer-events: none; }
-    #status span { display: inline-block; height: 5px; width: 5px; margin: 0 7px 1px 0;
-      border-radius: 50%; background: #51c773; box-shadow: 0 0 8px #51c773; }
-    @media (max-width: 560px) {
-      .interface { left: 12px; bottom: 12px; }
-      #status { right: 12px; bottom: 13px; font-size: 9px; }
-      #menu-toggle { padding: 9px 11px; }
-    }
-    @media (prefers-reduced-motion: reduce) { #menu-toggle { transition: none; } }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#000301; }
+    #rain {position:fixed; inset:0; overflow:hidden;}
+    #rain canvas {display:block; touch-action:manipulation;}
+    button,input,select {font:inherit;}
+    button {cursor:pointer;}
+    button:focus-visible, input:focus-visible, select:focus-visible {outline:2px solid #b0ffc8;outline-offset:2px;}
+    .hud {position:fixed;z-index:4;left:clamp(13px,2.2vw,32px);bottom:clamp(13px,2.5vw,33px);
+      font:11px/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;color:var(--green);letter-spacing:.09em;
+      user-select:none;}
+    #system-toggle {border:1px solid rgba(120,211,131,.3);background:rgba(0,16,7,.66);color:#9ccfac;
+      min-width:137px;padding:12px 14px;letter-spacing:.17em;text-align:left;
+      transition:background .2s, border-color .2s;color .2s;}
+    #system-toggle:hover, #system-toggle:focus-visible {background:rgba(10,36,17,.94);border-color:rgba(133,239,154,.75);color:#effff0;}
+    #panel {display:none;position:absolute;bottom:52px;left:0;width:min(362px,calc(100vw - 26px));
+      max-height:min(79vh,720px);overflow:auto;overscroll-behavior:contain;padding:25px 23px 22px;
+      border:1px solid rgba(104,199,121,.4);background:rgba(0,13,6,.965);
+      box-shadow:0 22px 95px rgba(0,0,0,.7),0 0 55px rgba(16,93,42,.1),inset 0 0 0 1px rgba(0,0,0,.75);
+      scrollbar-color:#2c6b39 #001306;backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);}
+    #panel.open {display:block;}
+    .eyebrow {display:flex;align-items:center;justify-content:space-between;gap:7px;color:#599967;font-size:9px;letter-spacing:.23em;}
+    .eyebrow .live {color:#8ee7a1;}
+    .live::before {content:"";display:inline-block;width:5px;height:5px;margin:0 8px 1px 0;background:#76d892;box-shadow:0 0 8px #6bea8d;border-radius:100%;}
+    .title {margin:16px 0 5px;font-size:23px;line-height:1.1;font-weight:400;letter-spacing:.17em;color:#ebffee;text-shadow:0 0 22px rgba(71,224,109,.25);}
+    .subtitle {margin:0 0 18px;color:#658a6b;letter-spacing:.025em;font-size:10px;line-height:1.75;}
+    .divider {height:1px;background:linear-gradient(90deg,rgba(122,220,135,.43),rgba(122,220,135,0));margin:17px 0;}
+    .section-tag {color:#638b6c;font-size:9px;letter-spacing:.24em;margin:0 0 10px;}
+    .grade-picker {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+    .grade-picker button {padding:10px 4px;border:1px solid var(--line);color:#719f7a;background:rgba(18,53,27,.25);
+      font-size:9px;letter-spacing:.11em;}
+    .grade-picker button.active {border-color:#89d7a0;color:#e2ffe8;background:rgba(44,119,59,.26);box-shadow:inset 0 0 15px rgba(50,126,72,.15);}
+    .grade-picker button:hover {border-color:#89d7a0;}
+    .control {margin:15px 0 0;}
+    .control-head {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
+    label {color:#a0c7a6;font-size:10px;letter-spacing:.105em;}
+    output {font-size:10px;color:#dbffe1;font-variant-numeric:tabular-nums;}
+    input[type=range] {width:100%;height:14px;margin:0;cursor:pointer;accent-color:#86db95;}
+    .switches {display:flex;align-items:center;justify-content:space-between;margin:15px 0 0;gap:15px;}
+    input[type=checkbox] {width:15px;height:15px;accent-color:#77c78a;cursor:pointer;}
+    .buttons {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:17px;}
+    .buttons button {border:1px solid var(--line);padding:11px 5px;background:rgba(19,58,28,.29);
+      color:#b3e4bb;letter-spacing:.1em;font-size:9px;}
+    .buttons button:hover {background:rgba(30,99,44,.52);border-color:#81cc96;color:white;}
+    .buttons button[data-active="true"] {border-color:#acffbd;color:#edfff0;}
+    .buttons button:disabled {opacity:.35;cursor:default;}
+    #notification {min-height:18px;margin:10px 0 0;color:#8dc79b;font-size:9px;letter-spacing:.04em;}
+    .keyhelp {color:#638f6f;line-height:1.95;font-size:9px;letter-spacing:.025em;}
+    kbd {font:inherit;color:#bbe4c2;}
+    .corner {position:fixed;z-index:2;right:clamp(13px,2.2vw,32px);bottom:clamp(13px,2.5vw,33px);
+      color:rgba(101,181,121,.36);font:9px Consolas,monospace;letter-spacing:.23em;pointer-events:none;}
+    .corner b {font-weight:400;color:rgba(128,200,141,.5);}
+    .corner::before {content:"";display:inline-block;height:4px;width:4px;background:#6fe697;border-radius:50%;
+      vertical-align:middle;margin:0 9px 1px 0;box-shadow:0 0 7px rgba(92,255,138,.7);}
+    #rec-indicator {display:none;position:fixed;right:24px;top:23px;z-index:5;pointer-events:none;
+      color:#deffe2;font:10px Consolas,monospace;letter-spacing:.18em;text-shadow:0 0 6px #0a3d15;}
+    #rec-indicator.on {display:block;}
+    #rec-indicator.on::before {content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#ee746e;
+      margin-right:10px;box-shadow:0 0 10px rgba(255,70,60,.7);animation:blink 1s infinite;}
+    @keyframes blink {50% {opacity:.25;}}
+    @media(max-width:560px) {#panel {padding:20px 17px;max-height:73vh;}.corner {display:none;}#system-toggle {padding:10px 12px;}}
+    @media(prefers-reduced-motion:reduce) {*,*::before,*::after {animation:none!important;transition:none!important;}}
   </style>
 </head>
 <body>
-  <div id="rain" aria-label="Animated Matrix digital rain"></div>
-  <div class="interface">
-    <section id="panel" aria-label="Rain controls">
-      <div class="eyebrow">SYS.// 01 — LIVE SIMULATION</div>
-      <h1>DIGITAL RAIN</h1>
-      <p class="lede">53 film-inspired glyphs · exclusive code lanes · three phosphor treatments</p>
-      <div class="setting"><label for="density">Stream density</label><output id="density-out">100%</output></div>
-      <input id="density" type="range" min="0.35" max="1.65" value="1" step="0.05">
-      <div class="setting"><label for="speed">Code velocity</label><output id="speed-out">100%</output></div>
-      <input id="speed" type="range" min="0.2" max="2.4" value="1" step="0.05">
-      <div class="toggle-row"><label for="bloom">Phosphor bloom</label><input id="bloom" type="checkbox" checked></div>
-      <div class="actions">
-        <button id="pause-btn">PAUSE</button>
-        <button id="reset-btn">RESEED</button>
-        <button id="capture-btn">CAPTURE</button>
+  <main id="rain" aria-label="Animated digital rain"></main>
+  <div class="hud">
+    <section id="panel" aria-label="Digital rain settings">
+      <div class="eyebrow"><span>M// SIGNAL CONFIGURATION</span><span class="live">LIVE</span></div>
+      <h1 class="title">DIGITAL RAIN</h1>
+      <p class="subtitle">CINEMA ENGINE / 03<br>Exclusive glyph lanes. Living phosphor. No collisions.</p>
+      <div class="divider"></div>
+      <p class="section-tag">01 / PHOSPHOR PROFILE</p>
+      <div class="grade-picker" role="group" aria-label="Color grade">
+        <button type="button" data-grade="cinema" class="active" aria-pressed="true">CINEMA</button>
+        <button type="button" data-grade="abyss" aria-pressed="false">ABYSS</button>
+        <button type="button" data-grade="voltage" aria-pressed="false">VOLTAGE</button>
       </div>
-      <p class="help"><kbd>SPACE</kbd> pause &nbsp; · &nbsp; <kbd>F</kbd> fullscreen &nbsp; · &nbsp; <kbd>G</kbd> glow<br>
-        <kbd>R</kbd> reseed &nbsp; · &nbsp; <kbd>S</kbd> screenshot &nbsp; · &nbsp; <kbd>H</kbd> controls<br>
-        Click the rain to send a disturbance through the code.</p>
+      <div class="divider"></div>
+      <p class="section-tag">02 / THE RAIN</p>
+      <div class="control"><div class="control-head"><label for="density">COLUMN DENSITY</label><output id="density-value">105%</output></div>
+        <input id="density" type="range" min="0.3" max="1.65" step="0.05" value="1.05"></div>
+      <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value">100%</output></div>
+        <input id="speed" type="range" min="0.2" max="2.4" step="0.05" value="1"></div>
+      <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value">100%</output></div>
+        <input id="persistence" type="range" min="0.55" max="1.55" step="0.05" value="1"></div>
+      <div class="control"><div class="control-head"><label for="mutation">GLYPH MUTATION</label><output id="mutation-value">100%</output></div>
+        <input id="mutation" type="range" min="0.25" max="2.5" step="0.05" value="1"></div>
+      <div class="control"><div class="control-head"><label for="glow">PHOSPHOR GLOW</label><output id="glow-value">100%</output></div>
+        <input id="glow" type="range" min="0" max="1.8" step="0.05" value="1"></div>
+      <div class="switches"><label for="bloom">BLOOM LIGHTING</label><input type="checkbox" id="bloom" checked></div>
+      <div class="switches"><label for="texture">ANALOG FILM TEXTURE</label><input type="checkbox" id="texture" checked></div>
+      <div class="divider"></div>
+      <p class="section-tag">03 / SIGNAL COMMANDS</p>
+      <div class="buttons">
+        <button id="pause-btn" type="button">PAUSE</button>
+        <button id="burst-btn" type="button">SIGNAL BURST</button>
+        <button id="reseed-btn" type="button">RESEED</button>
+        <button id="snapshot-btn" type="button">SAVE FRAME</button>
+        <button id="record-btn" type="button">RECORD 8s</button>
+        <button id="defaults-btn" type="button">RESET CONFIG</button>
+      </div>
+      <p id="notification" role="status" aria-live="polite"></p>
+      <div class="divider"></div>
+      <p class="keyhelp"><kbd>CLICK / TOUCH</kbd> disturbance &nbsp; · &nbsp; <kbd>SHIFT+CLICK</kbd> stronger<br>
+        <kbd>SPACE</kbd> pause &nbsp; <kbd>F</kbd> fullscreen &nbsp; <kbd>R</kbd> reseed &nbsp; <kbd>E</kbd> surge<br>
+        <kbd>C</kbd> grade &nbsp; <kbd>G</kbd> glow &nbsp; <kbd>T</kbd> grain &nbsp; <kbd>H</kbd> hide<br>
+        <kbd>S</kbd> screenshot &nbsp; <kbd>V</kbd> record &nbsp; <kbd>+ / −</kbd> density</p>
     </section>
-    <button id="menu-toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM</button>
+    <button type="button" id="system-toggle" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM</button>
   </div>
-  <div id="status"><span></span><b id="state">SYSTEM ONLINE</b></div>
+  <div class="corner">MATRIX SIGNAL <b id="hud-state">// ONLINE</b></div>
+  <div id="rec-indicator">CAPTURING SIGNAL</div>
   <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
   <script>
 /*
-  THE MATRIX — DIGITAL RAIN
-  A p5.js 2.x sketch. Paste this entire file into editor.p5js.org.
+  DIGITAL RAIN // CINEMA ENGINE v3
+  p5.js 2.x · Copy into editor.p5js.org
 
-  The glyphs do NOT scroll. Each stream writes new cells farther down a
-  fixed lattice. Existing cells glow, mutate and extinguish in place.
+  Not scrolling text: glyphs are born, age and extinguish in stationary cells.
+  One physical horizontal lane per stream depth, and all segments in that lane
+  have the same velocity. Stream glyphs therefore cannot overwrite one another.
 
-  Controls: SPACE pause · F fullscreen · G bloom · R regenerate
-            S screenshot · H panel (in standalone page) · click to ripple
+  SPACE pause   F fullscreen   R reseed   G glow   C color grade
+  E signal surge   T film texture   S screenshot   H system panel
+  + / - density   Click / touch to ripple (SHIFT + click: stronger)
 */
 
-const KATAKANA = 'ﾊﾋｼﾂｳｰﾅﾐﾓﾆｻﾜｵﾘﾎﾏｴｷﾑﾃｹﾒｶﾕﾗｾﾈｽﾀﾇ';
+const HALF_KATAKANA = 'ﾊﾋｼﾂｳｰﾅﾐﾓﾆｻﾜｵﾘﾎﾏｴｷﾑﾃｹﾒｶﾕﾗｾﾈｽﾀﾇ';
 const GLYPHS = [
-  ...[...KATAKANA].map(char => ({ char, mirrorX: true, mirrorY: false })),
-  { char: '日', mirrorX: false, mirrorY: false },
-  ...[...'0123456789'].map(char => ({
-    char,
-    mirrorX: '259'.includes(char),
-    mirrorY: '36'.includes(char),
-  })),
-  { char: 'Z', mirrorX: false, mirrorY: false },
-  ...['*', '+', ':', '=', '.', '<', '>', '"', '｜', '¦', '_']
-    .map(char => ({ char, mirrorX: false, mirrorY: false })),
+  ...[...HALF_KATAKANA].map(char => ({ char, flipX: true, flipY: false })),
+  { char: '日', flipX: false, flipY: false },
+  ...[...'0123456789'].map(char => ({ char, flipX: '259'.includes(char), flipY: '36'.includes(char) })),
+  ...[...'Z*+:=.<>"¦_|'].map(char => ({ char, flipX: false, flipY: false })),
 ];
 
-// Dark bottle-glass green through phosphor white. The brightest tint is
-// reserved almost entirely for the leading glyph of a near stream.
-const INK = [
-  [3, 22, 11, .76],
-  [4, 39, 16, .86],
-  [6, 60, 22, .93],
-  [7, 85, 28, .96],
-  [8, 116, 40, 1],
-  [19, 155, 58, 1],
-  [44, 204, 86, 1],
-  [123, 246, 159, 1],
-  [232, 255, 237, 1],
-];
-
-// Three glyph treatments share ONE global column grid. Each column belongs
-// to exactly one depth, so no foreground stream can paint over another.
-const DEPTHS = [
-  { size: 12, density: .48, lowSpeed: 4, highSpeed: 9,
-    minLength: 15, maxLength: 30, maxInk: 5, alpha: .62, bloom: .26 },
-  { size: 16, density: .73, lowSpeed: 6, highSpeed: 14,
-    minLength: 14, maxLength: 35, maxInk: 7, alpha: .87, bloom: .65 },
-  { size: 20, density: .47, lowSpeed: 9, highSpeed: 19,
-    minLength: 12, maxLength: 29, maxInk: 8, alpha: 1, bloom: 1 },
-];
-
-const rain = {
-  density: 1,
-  speed: 1,
-  bloom: true,
-  paused: false,
+// The original effect was never a uniform phosphor-green. It's nearly black
+// at the tail, clear green near the head, and occasionally porcelain white.
+const GRADES = {
+  cinema: {
+    name: 'CINEMA', bg: [0, 3, 1],
+    ink: [
+      [3,19,9], [3,30,12], [4,44,17], [5,65,23], [7,91,31],
+      [12,124,42], [24,161,59], [48,207,92], [120,249,162], [235,255,238],
+    ],
+    halo: ['rgba(217,255,225,.52)', 'rgba(67,255,113,.3)', 'rgba(6,132,45,.11)'],
+  },
+  abyss: {
+    name: 'ABYSS', bg: [0, 3, 2],
+    ink: [
+      [3,16,12], [3,26,17], [4,38,24], [4,54,33], [5,76,46],
+      [8,105,63], [16,146,82], [48,199,126], [135,246,188], [233,255,247],
+    ],
+    halo: ['rgba(206,255,237,.4)', 'rgba(55,240,152,.25)', 'rgba(8,119,70,.1)'],
+  },
+  voltage: {
+    name: 'VOLTAGE', bg: [0, 3, 0],
+    ink: [
+      [5,24,6], [6,36,9], [8,53,13], [11,75,17], [16,109,23],
+      [24,154,35], [50,200,59], [90,238,105], [165,255,174], [251,255,245],
+    ],
+    halo: ['rgba(243,255,216,.62)', 'rgba(123,255,62,.36)', 'rgba(51,159,10,.14)'],
+  },
 };
+const GRADE_NAMES = Object.keys(GRADES);
 
+// Exclusive 22px global lanes; each lane gets one of these treatments.
+// The size differences create visual depth without letting planes interpenetrate.
+const DEPTHS = [
+  { size: 12, advanceMin: 4.1, advanceMax: 8.5, lengthMin: 17, lengthMax: 33,
+    ink: 5, alpha: .77, bloom: .18, headChance: .26 },
+  { size: 16, advanceMin: 6.2, advanceMax: 12.5, lengthMin: 17, lengthMax: 40,
+    ink: 8, alpha: .92, bloom: .52, headChance: .58 },
+  { size: 19, advanceMin: 9.1, advanceMax: 18.2, lengthMin: 15, lengthMax: 36,
+    ink: 9, alpha: 1, bloom: 1, headChance: .8 },
+];
+
+const defaults = {
+  density: 1.05, speed: 1, glow: 1, persistence: 1,
+  mutation: 1, texture: true, grade: 'cinema', bloom: true, paused: false,
+};
+const rain = { ...defaults };
 let planes = [];
-let haloSprite;
-let verticalGlow;
+let glows = {};
 let vignette;
-let noiseTile;
-let noisePattern;
+let filmTile;
+let filmPattern;
 let pulses = [];
-let frameClock = 0;
+let pulseSeq = 0;
+let signalAt = -Infinity;
+let hover = { x: -999, y: -999, at: -Infinity };
+let simulationTime = 0;
+let lastRealTime = 0;
+let lastClickTime = -Infinity;
+let frameNumber = 0;
 
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
-  pixelDensity(1); // Much cheaper on large/high-DPI displays.
+  pixelDensity(1);
+  frameRate(60);
   const mount = document.getElementById('rain');
   if (mount) canvas.parent(mount);
-  frameRate(60);
+  lastRealTime = millis();
   buildScene();
-  document.fonts?.ready.then(() => {
-    // An optional web font can arrive after setup. Refresh only the atlas;
-    // don't reset the rain animation when it finishes loading.
+  // The optional film font downloads after p5 initializes. Rebuilding the
+  // glyph atlases (only) switches the glyphs without resetting animation.
+  if (document.fonts?.ready) document.fonts.ready.then(() => {
     for (const plane of planes) plane.buildAtlas();
   });
 }
 
 function buildScene() {
-  haloSprite = buildHalo();
-  verticalGlow = buildVerticalGlow();
+  for (const plane of planes) plane.dispose();
+  for (const resource of Object.values(glows)) resource.remove?.();
+  vignette?.remove?.();
+
+  buildLighting();
   vignette = buildVignette();
-  noiseTile = buildNoiseTile();
-  noisePattern = drawingContext.createPattern(noiseTile, 'repeat');
-  // The character width of the largest depth fits inside a global lane.
-  // Lanes are assigned once; they never share screen-space with another depth.
-  const lanePitch = Math.ceil(Math.max(...DEPTHS.map(d => d.size)) * 1.12);
+  if (!filmTile) filmTile = buildFilmTile();
+  filmPattern = drawingContext.createPattern(filmTile, 'repeat');
+
+  const lanePitch = 22.5;
   const laneCount = Math.ceil(width / lanePitch) + 2;
-  const assignments = DEPTHS.map(() => []);
-  for (let column = -1; column < laneCount; column++) {
+  const columns = DEPTHS.map(() => []);
+  for (let col = -1; col < laneCount; col++) {
     const roll = Math.random();
-    const depth = roll < .23 ? 0 : roll < .72 ? 1 : 2;
-    assignments[depth].push(column);
+    const depth = roll < .21 ? 0 : roll < .74 ? 1 : 2;
+    columns[depth].push(col);
   }
-  planes = DEPTHS.map((config, i) =>
-    new Plane(config, i, assignments[i], lanePitch));
+  planes = DEPTHS.map((config, depth) => new CodePlane(config, depth, columns[depth], lanePitch));
   pulses = [];
-  background(0);
+  signalAt = -Infinity;
+  background(...GRADES[rain.grade].bg);
 }
 
 function draw() {
-  if (rain.paused) return;
-
-  const dt = Math.min(deltaTime / 1000 || 1 / 60, .075);
   const now = millis();
-  frameClock += dt;
+  const dt = Math.min((now - lastRealTime) / 1000 || 1/60, .055);
+  lastRealTime = now; // Pause doesn't accumulate a backlog of movement.
+  if (rain.paused) return;
+  simulationTime += dt * 1000;
+  frameNumber++;
+  const t = simulationTime;
+  const grade = GRADES[rain.grade];
+  background(...grade.bg);
   const ctx = drawingContext;
+  pulses = pulses.filter(p => t - p.at < 1550);
+  for (const plane of planes) plane.update(dt, t);
 
-  background(0, 2, 1);
-  pulses = pulses.filter(p => now - p.started < 1250);
+  if (rain.bloom && rain.glow > 0) {
+    for (const plane of planes) plane.drawBloom(ctx, t);
+  }
+  for (const plane of planes) plane.drawGlyphs(ctx, t);
 
-  for (const plane of planes) plane.advance(dt, now);
-  // All glows are behind ALL glyphs, so even bloom cannot wash across
-  // characters of another depth when the columns are packed together.
-  if (rain.bloom) for (const plane of planes) plane.drawBloom(ctx);
-  for (const plane of planes) plane.drawGlyphs(ctx, now);
-
-  // Optical finishing: not a green overlay; true black still stays black.
   ctx.globalAlpha = 1;
   ctx.drawImage(vignette.canvas, 0, 0, width, height);
-
-  // Very fine stationary grain avoids the artificial 'perfect vector' look.
-  if (noisePattern) {
-    ctx.globalAlpha = .10;
-    ctx.fillStyle = noisePattern;
+  if (rain.texture && filmPattern) {
+    ctx.globalAlpha = .19;
+    ctx.fillStyle = filmPattern;
     ctx.fillRect(0, 0, width, height);
     ctx.globalAlpha = 1;
   }
 }
 
-// Each column gets just one lane. A lane can contain multiple *separated*
-// streams, but they all advance at the same speed, so none can catch up to
-// and overwrite another stream below it.
-class Plane {
-  constructor(config, depth, columns, lanePitch) {
+class CodePlane {
+  constructor(config, depth, columns, pitch) {
     this.config = config;
     this.depth = depth;
-    this.lineHeight = Math.round(config.size * 1.16);
+    this.lineHeight = Math.round(config.size * 1.19);
     this.rows = Math.ceil(height / this.lineHeight) + 2;
     this.buildAtlas();
-    this.lanes = columns.map(column => new CodeLane(this, column, lanePitch));
+    this.lanes = columns.map(column => new CodeLane(this, column, pitch));
   }
 
   buildAtlas() {
-    // Cache each glyph in nine intensity levels. Native drawImage copies
-    // a tiny atlas tile, rather than redrawing thousands of strings.
-    this.tileW = Math.ceil(this.config.size * 1.55);
-    this.tileH = Math.ceil(this.lineHeight * 1.4);
-    if (this.atlas && typeof this.atlas.remove === 'function') this.atlas.remove();
-    this.atlas = createGraphics(this.tileW * GLYPHS.length, this.tileH * INK.length);
-    this.atlas.pixelDensity(1);
-    this.atlas.clear();
-
-    const c = this.atlas.drawingContext;
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.font = `700 ${this.config.size * 1.01}px "Noto Sans JP", "Yu Gothic", Meiryo, "MS Gothic", sans-serif`;
-
-    for (let tone = 0; tone < INK.length; tone++) {
-      const [r, g, b, a] = INK[tone];
-      c.fillStyle = `rgba(${r},${g},${b},${a})`;
-      for (let index = 0; index < GLYPHS.length; index++) {
-        const glyph = GLYPHS[index];
-        c.save();
-        c.translate(index * this.tileW + this.tileW / 2,
-                    tone * this.tileH + this.tileH / 2);
-        if (glyph.mirrorX) c.scale(-1, 1);
-        if (glyph.mirrorY) c.scale(1, -1);
-        c.fillText(glyph.char, 0, -this.config.size * .025);
-        c.restore();
+    // A 2x source atlas produces high-quality edges on ordinary 1x canvas
+    // without multiplying every framebuffer pixel on a Retina / 4K screen.
+    const scale = 2;
+    const count = GRADES[rain.grade].ink.length;
+    this.tileW = Math.ceil(this.config.size * 1.16);
+    this.tileH = Math.ceil(this.lineHeight * 1.15);
+    this.sourceW = this.tileW * scale;
+    this.sourceH = this.tileH * scale;
+    this.atlas?.remove?.();
+    const g = createGraphics(this.sourceW * GLYPHS.length, this.sourceH * count);
+    g.pixelDensity(1);
+    g.clear();
+    const ctx = g.drawingContext;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${this.config.size * scale}px "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif`;
+    for (let ink = 0; ink < count; ink++) {
+      const [r, gCol, b] = GRADES[rain.grade].ink[ink];
+      ctx.fillStyle = `rgb(${r},${gCol},${b})`;
+      for (let i = 0; i < GLYPHS.length; i++) {
+        const glyph = GLYPHS[i];
+        ctx.save();
+        ctx.translate(i * this.sourceW + this.sourceW/2,
+                      ink * this.sourceH + this.sourceH/2);
+        if (glyph.flipX) ctx.scale(-1, 1);
+        if (glyph.flipY) ctx.scale(1, -1);
+        ctx.fillText(glyph.char, 0, -this.config.size * .04 * scale);
+        ctx.restore();
       }
     }
+    this.atlas = g;
   }
 
-  updateDensity() {
-    for (const lane of this.lanes) {
-      const shouldLive = lane.lottery < laneDensity();
-      if (shouldLive && !lane.active) lane.reset(true);
-      lane.active = shouldLive;
-      // Shorten or lengthen upcoming gaps immediately; already-written
-      // streams retain their intact geometry.
-      lane.nextGap = lane.randomGap();
-    }
-  }
+  dispose() { this.atlas?.remove?.(); }
+  update(dt, now) { for (const lane of this.lanes) lane.update(dt, now); }
+  updateDensity() { for (const lane of this.lanes) lane.updateDensity(); }
 
-  advance(dt, now) {
-    for (const lane of this.lanes) if (lane.active) lane.update(dt, now);
-  }
-
-  drawBloom(ctx) {
-    const scale = this.config.size;
+  drawBloom(ctx, now) {
+    const c = this.config;
+    const scale = c.size;
+    const strength = rain.glow * c.bloom;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
-      for (const s of lane.streams) {
-        if (!s.brightHead || s.head < 0 || s.head >= this.rows) continue;
+      for (const stream of lane.streams) {
+        if (!stream.whiteHead || stream.head < 0 || stream.head >= this.rows) continue;
         const x = lane.x;
-        const y = s.head * this.lineHeight + this.lineHeight / 2;
-        if (x < -60 || x > width + 60 || y < -60 || y > height + 60) continue;
-        ctx.globalAlpha = this.config.bloom * s.glowStrength;
-        const radius = scale * 3.7;
-        ctx.drawImage(haloSprite.canvas, x - radius, y - radius,
-                      radius * 2, radius * 2);
-        ctx.globalAlpha = this.config.bloom * s.glowStrength * .37;
-        ctx.drawImage(verticalGlow.canvas, x - scale * .8,
-                      y - scale * 5.9, scale * 1.6, scale * 6.4);
+        const y = (stream.head + .5) * this.lineHeight;
+        if (x < -40 || x > width+40 || y < -40 || y > height+40) continue;
+        const haloR = scale * 3.1;
+        ctx.globalAlpha = Math.min(1, strength * stream.glow);
+        ctx.drawImage(glows.halo.canvas,
+          x - haloR, y - haloR, haloR*2, haloR*2);
+        ctx.globalAlpha = Math.min(1, strength * .63 * stream.glow);
+        ctx.drawImage(glows.column.canvas,
+          x - scale*.79, y - scale*6.7, scale*1.58, scale*7.2);
       }
     }
     ctx.globalAlpha = 1;
   }
 
   drawGlyphs(ctx, now) {
-    const tileW = this.tileW;
-    const tileH = this.tileH;
+    const c = this.config;
+    const src = this.atlas.canvas;
+    const sw = this.sourceW;
+    const sh = this.sourceH;
+    const tw = this.tileW;
+    const th = this.tileH;
     const lineHeight = this.lineHeight;
-    const atlas = this.atlas.canvas;
-    const maxInk = this.config.maxInk;
-    ctx.globalAlpha = this.config.alpha;
+    const pulseCount = pulses.length;
+    const surgeAge = now - signalAt;
+    const surgeY = surgeAge * .8 - 170;
+    const surgeOn = surgeAge >= 0 && surgeAge < (height + 500)/.8;
+    const hoverAge = now - hover.at;
+    const hoverOn = hoverAge < 950;
 
+    ctx.globalAlpha = c.alpha;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       const x = lane.x;
-      for (const s of lane.streams) {
-        for (const [row, cell] of s.cells) {
-          if (row < 0 || row >= this.rows) continue;
-          const age = s.head - row; // Cells are fixed in space, never scrolled.
-          if (age < 0 || age >= s.length) continue;
+      if (x < -tw || x > width+tw) continue;
+      for (const stream of lane.streams) {
+        for (const [row, cell] of stream.cells) {
+          const age = stream.head - row;
+          if (age < 0 || age >= stream.length || row < 0 || row >= this.rows) continue;
+          const y = (row + .5)*lineHeight;
+          if (y < -th || y > height + th) continue;
+          if (cell.blank && age > 4) continue;
 
-          if (now > cell.mutateAt) {
+          // Stationary cells can change their *content* and light intensity.
+          if (now >= cell.nextChange) {
             cell.glyph = randomGlyph();
-            cell.mutateAt = now + between(320, 2400);
+            cell.nextChange = now + between(380, 3700)/rain.mutation;
+          }
+          if (now >= cell.nextTwinkle) {
+            cell.twinkleUntil = now + between(40, 160);
+            cell.nextTwinkle = now + between(1600, 6300);
           }
 
-          const t = 1 - age / s.length;
-          const shape = Math.pow(t, 1.52);
-          let tone = Math.round((.3 + 7.4 * shape) * cell.energy);
-          if (age === 0) tone = s.brightHead ? 8 : 7;
-          else if (age === 1 && s.brightHead) tone = Math.max(tone, 7);
-          tone = Math.max(0, Math.min(maxInk, tone));
+          const fraction = 1 - age/stream.length;
+          const falloff = Math.pow(fraction, 1.5 / rain.persistence);
+          let tone = Math.floor((.2 + 8.8*falloff) * cell.energy);
+          if (age === 0) tone = stream.whiteHead ? 9 : 7;
+          else if (age === 1 && stream.whiteHead) tone = Math.max(tone, 7);
+          else if (age === 2 && stream.whiteHead) tone = Math.max(tone, 6);
+          if (now < cell.twinkleUntil && age > 2) tone += 2;
 
-          const y = row * lineHeight + lineHeight / 2;
-          if (x < -tileW || x > width + tileW || y < -tileH || y > height + tileH) continue;
-
-          // Preserve the original click disturbance: a light wave and a
-          // few local code mutations, never an opaque circle.
-          for (const pulse of pulses) {
-            const elapsed = (now - pulse.started) / 1000;
-            const waveRadius = elapsed * 900;
-            const distance = Math.hypot(x - pulse.x, y - pulse.y);
-            const proximity = Math.abs(distance - waveRadius);
-            if (proximity < 50) {
-              tone = Math.min(maxInk, tone + Math.round(3 * (1 - proximity / 50)));
-              if (proximity < 12 && Math.random() < .035) cell.glyph = randomGlyph();
+          // Two nested wavefronts, all executed as changes to glyph cells.
+          for (let p = 0; p < pulseCount; p++) {
+            const pulse = pulses[p];
+            const elapsed = (now - pulse.at)/1000;
+            const distance = Math.hypot(x-pulse.x, y-pulse.y);
+            const ring = Math.abs(distance - elapsed * 930);
+            const echo = Math.abs(distance - elapsed * 640);
+            const strength = Math.max(0, 1-ring/43) + Math.max(0, 1-echo/26)*.42;
+            if (strength > 0) {
+              tone += Math.ceil(strength * (3 + pulse.power));
+              // Exactly once per wavefront/cell, not one random mutation per frame.
+              if (ring < 19 && cell.lastPulse !== pulse.id) {
+                cell.lastPulse = pulse.id;
+                if (Math.random() < .5) cell.glyph = randomGlyph();
+                cell.twinkleUntil = now + 130;
+              }
             }
           }
+          // Pointer proximity is a quiet disturbance, not an opaque spotlight.
+          if (hoverOn) {
+            const distance2 = (x-hover.x)**2 + (y-hover.y)**2;
+            if (distance2 < 125*125) {
+              tone += Math.ceil(2.1 * (1-Math.sqrt(distance2)/125) * (1-hoverAge/950));
+            }
+          }
+          // A rare user-triggered electrical scan through the live code.
+          if (surgeOn) {
+            const dy = Math.abs(y - surgeY);
+            if (dy < 130) tone += Math.ceil(4 * (1-dy/130));
+          }
+          tone = Math.max(0, Math.min(c.ink, tone));
 
-          ctx.drawImage(atlas,
-            cell.glyph * tileW, tone * tileH, tileW, tileH,
-            Math.round(x - tileW / 2), Math.round(y - tileH / 2), tileW, tileH);
+          ctx.drawImage(src, cell.glyph*sw, tone*sh, sw, sh,
+            Math.round(x-tw/2), Math.round(y-th/2), tw, th);
         }
       }
     }
@@ -350,44 +432,40 @@ class Plane {
   }
 }
 
-// Density always increases the number of occupied lanes; unlike the old
-// three overlapping grids, it can never increase the number of streams
-// physically occupying a glyph cell.
+// Density ONLY switches whole horizontal lanes on and off. The scheduler
+// never inserts a second stream into an occupied cell in the same lane.
 function laneDensity() {
-  return Math.min(1, Math.max(.12, .35 + .65 * (rain.density / 1.65)));
+  return Math.max(.13, Math.min(1, .23 + .77 * ((rain.density-.3)/1.35)));
 }
 
 class CodeLane {
   constructor(plane, column, pitch) {
     this.plane = plane;
-    this.column = column;
-    this.x = (column + .5) * pitch;
+    this.x = (column+.5)*pitch;
     this.lottery = Math.random();
     this.active = this.lottery < laneDensity();
-    this.speed = between(plane.config.lowSpeed, plane.config.highSpeed);
+    this.speed = between(plane.config.advanceMin, plane.config.advanceMax);
     this.progress = Math.random();
-    this.phase = between(0, Math.PI * 2);
-    this.rhythm = between(.5, 1.25);
+    this.phase = between(0, Math.PI*2);
+    this.rhythm = between(.25, 1.2);
     this.streams = [];
+    this.nextGap = 0;
     this.reset(true);
   }
 
   randomGap() {
-    // Higher densities fill *gaps*, never overlay glyphs. Even at the
-    // maximum there is at least one dark row between successive streams.
-    const f = Math.min(1, Math.max(0, (rain.density - .35) / 1.3));
-    return Math.floor(between(4 - 3 * f, 23 - 15 * f));
+    const tightness = Math.max(0, Math.min(1, (rain.density-.3)/1.35));
+    // Even at maximum density there's at least a 2-row dark separation.
+    return Math.floor(between(5-3*tightness, 25-17*tightness));
   }
 
-  reset(fillScreen = false) {
+  reset(fill) {
     this.streams.length = 0;
     this.progress = Math.random();
-    if (fillScreen) {
-      let head = Math.floor(between(this.plane.rows * .45,
-                                    this.plane.rows + this.plane.config.maxLength * .4));
-      // Pre-fill the screen with spatially separated streams. Their heads
-      // are offset by the full length of the previous stream PLUS a gap.
-      while (head > -this.plane.config.maxLength && this.streams.length < 12) {
+    if (fill) {
+      let head = Math.floor(between(this.plane.rows*.3,
+                                  this.plane.rows + this.plane.config.lengthMax*.8));
+      while (head > -this.plane.config.lengthMax && this.streams.length < 15) {
         const stream = new CodeStream(this.plane, head);
         this.streams.push(stream); // Bottommost stream first.
         head -= stream.length + this.randomGap();
@@ -398,30 +476,31 @@ class CodeLane {
     this.nextGap = this.randomGap();
   }
 
+  updateDensity() {
+    const enabled = this.lottery < laneDensity();
+    if (enabled && !this.active) this.reset(true);
+    this.active = enabled;
+    this.nextGap = this.randomGap();
+  }
+
   update(dt, now) {
-    const tempo = 1 + .085 * Math.sin(now * .001 * this.rhythm + this.phase);
-    this.progress += dt * this.speed * rain.speed * tempo;
-    const steps = Math.min(8, Math.floor(this.progress));
+    if (!this.active) return;
+    const cadence = 1 + .075*Math.sin(now*.00085*this.rhythm + this.phase);
+    this.progress += dt*this.speed*rain.speed*cadence;
+    const steps = Math.min(12, Math.floor(this.progress));
     this.progress -= steps;
-
-    for (let i = 0; i < steps; i++) {
+    for (let i=0; i<steps; i++) {
       for (const stream of this.streams) stream.advanceRow();
-
-      // Remove a stream only after its entire tail has left the bottom.
       while (this.streams.length &&
-             this.streams[0].head - this.streams[0].length >= this.plane.rows) {
+             this.streams[0].head-this.streams[0].length >= this.plane.rows) {
         this.streams.shift();
       }
-
       if (!this.streams.length) {
         this.streams.push(new CodeStream(this.plane, -1));
         this.nextGap = this.randomGap();
       }
-
-      // Spawn above the previous tail, with a genuine black gap. All
-      // streams in the lane move together, so the spacing never collapses.
       const top = this.streams[this.streams.length - 1];
-      if (top.head - top.length - this.nextGap >= -1) {
+      if (top.head-top.length-this.nextGap >= -1) {
         this.streams.push(new CodeStream(this.plane, -1));
         this.nextGap = this.randomGap();
       }
@@ -432,181 +511,282 @@ class CodeLane {
 class CodeStream {
   constructor(plane, head) {
     this.plane = plane;
-    const c = plane.config;
-    this.length = Math.floor(between(c.minLength, c.maxLength + 1));
+    const cfg = plane.config;
+    this.length = Math.floor(between(cfg.lengthMin, cfg.lengthMax+1));
     this.head = head;
-    this.brightHead = Math.random() < (plane.depth === 2 ? .78 : .56);
-    this.glowStrength = between(.52, 1);
+    this.whiteHead = Math.random() < cfg.headChance;
+    this.glow = between(.6, 1);
     this.cells = new Map();
-    for (let row = head - this.length + 1; row <= head; row++) {
-      if (row >= 0 && row < plane.rows) this.cells.set(row, this.makeCell());
+    for (let row=head-this.length+1; row<=head; row++) {
+      if (row>=0 && row<plane.rows) this.cells.set(row, this.makeCell());
     }
   }
 
   makeCell() {
     return {
-      glyph: randomGlyph(),
-      energy: between(.76, 1.1),
-      mutateAt: millis() + between(180, 2500),
+      glyph: randomGlyph(), energy: between(.74, 1.13),
+      blank: Math.random()<.055,
+      nextChange: simulationTime + between(160, 3500)/rain.mutation,
+      nextTwinkle: simulationTime + between(600, 5400),
+      twinkleUntil: -Infinity, lastPulse: -1,
     };
   }
 
   advanceRow() {
     this.head++;
-    if (this.head >= 0 && this.head < this.plane.rows) {
+    if (this.head>=0 && this.head<this.plane.rows)
       this.cells.set(this.head, this.makeCell());
-    }
-    this.cells.delete(this.head - this.length);
+    this.cells.delete(this.head-this.length);
   }
 }
 
-function randomGlyph() {
-  return Math.floor(Math.random() * GLYPHS.length);
-}
-
-function between(a, b) {
-  return a + Math.random() * (b - a);
-}
-
-function buildHalo() {
-  const size = 160;
-  const g = createGraphics(size, size);
+function buildLighting() {
+  const grade = GRADES[rain.grade];
+  let g = createGraphics(160, 160);
   g.pixelDensity(1);
-  const c = g.drawingContext;
-  const rad = c.createRadialGradient(80, 80, 0, 80, 80, 80);
-  rad.addColorStop(0, 'rgba(225,255,223,.52)');
-  rad.addColorStop(.13, 'rgba(82,255,125,.33)');
-  rad.addColorStop(.35, 'rgba(10,180,55,.15)');
-  rad.addColorStop(.7, 'rgba(5,80,30,.045)');
-  rad.addColorStop(1, 'rgba(0,20,6,0)');
-  c.fillStyle = rad;
-  c.fillRect(0, 0, size, size);
-  return g;
-}
+  let ctx = g.drawingContext;
+  let gradient = ctx.createRadialGradient(80,80,0,80,80,80);
+  gradient.addColorStop(0, grade.halo[0]);
+  gradient.addColorStop(.19, grade.halo[1]);
+  gradient.addColorStop(.51, grade.halo[2]);
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,160,160);
+  glows.halo = g;
 
-function buildVerticalGlow() {
-  const g = createGraphics(32, 192);
+  g = createGraphics(48, 220);
   g.pixelDensity(1);
-  const c = g.drawingContext;
-  const horizontal = c.createLinearGradient(0, 0, 32, 0);
-  horizontal.addColorStop(0, 'rgba(10,180,40,0)');
-  horizontal.addColorStop(.5, 'rgba(60,255,100,.15)');
-  horizontal.addColorStop(1, 'rgba(10,180,40,0)');
-  c.fillStyle = horizontal;
-  c.fillRect(0, 0, 32, 192);
-  c.globalCompositeOperation = 'destination-in';
-  const vertical = c.createLinearGradient(0, 0, 0, 192);
-  vertical.addColorStop(0, 'rgba(0,0,0,0)');
-  vertical.addColorStop(.7, 'rgba(0,0,0,.45)');
-  vertical.addColorStop(1, 'rgba(0,0,0,1)');
-  c.fillStyle = vertical;
-  c.fillRect(0, 0, 32, 192);
-  c.globalCompositeOperation = 'source-over';
-  return g;
+  ctx = g.drawingContext;
+  gradient = ctx.createLinearGradient(0,0,48,0);
+  gradient.addColorStop(0,'rgba(4,90,22,0)');
+  gradient.addColorStop(.5, grade.halo[1]);
+  gradient.addColorStop(1,'rgba(4,90,22,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,48,220);
+  ctx.globalCompositeOperation = 'destination-in';
+  gradient = ctx.createLinearGradient(0,0,0,220);
+  gradient.addColorStop(0,'rgba(0,0,0,0)');
+  gradient.addColorStop(.4,'rgba(0,0,0,.12)');
+  gradient.addColorStop(.87,'rgba(0,0,0,.6)');
+  gradient.addColorStop(1,'rgba(0,0,0,1)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,48,220);
+  ctx.globalCompositeOperation = 'source-over';
+  glows.column = g;
 }
 
 function buildVignette() {
   const g = createGraphics(width, height);
   g.pixelDensity(1);
-  const c = g.drawingContext;
-  const bigRadius = Math.hypot(width, height) * .57;
-  const vignetteGradient = c.createRadialGradient(
-    width * .5, height * .46, bigRadius * .17,
-    width * .5, height * .46, bigRadius);
-  vignetteGradient.addColorStop(0, 'rgba(0,0,0,0)');
-  vignetteGradient.addColorStop(.62, 'rgba(0,0,0,.035)');
-  vignetteGradient.addColorStop(1, 'rgba(0,0,0,.49)');
-  c.fillStyle = vignetteGradient;
-  c.fillRect(0, 0, width, height);
+  const ctx = g.drawingContext;
+  const radius = Math.hypot(width, height)*.59;
+  const gradient = ctx.createRadialGradient(width*.5,height*.47,radius*.12,
+                                            width*.5,height*.47,radius);
+  gradient.addColorStop(0,'rgba(0,0,0,0)');
+  gradient.addColorStop(.59,'rgba(0,0,0,.012)');
+  gradient.addColorStop(.85,'rgba(0,0,0,.23)');
+  gradient.addColorStop(1,'rgba(0,0,0,.64)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,width,height);
   return g;
 }
 
-function buildNoiseTile() {
-  // One low-contrast texture, tiled, rather than random pixels every frame.
+function buildFilmTile() {
+  // Stable organic analog grain + extremely faint scanlines. A tiny cached
+  // texture is cheaper and gentler than generating fullscreen noise each frame.
   const tile = document.createElement('canvas');
   tile.width = tile.height = 128;
-  const c = tile.getContext('2d');
-  const pixels = c.createImageData(128, 128);
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    const value = Math.floor(between(20, 80));
-    pixels.data[i] = value * .33;
-    pixels.data[i + 1] = value;
-    pixels.data[i + 2] = value * .45;
-    pixels.data[i + 3] = Math.floor(between(0, 28));
+  const ctx = tile.getContext('2d');
+  const imageData = ctx.createImageData(128,128);
+  for (let y=0; y<128; y++) for (let x=0; x<128; x++) {
+    const i = (y*128+x)*4;
+    const grit = between(20, 90);
+    imageData.data[i] = grit*.33;
+    imageData.data[i+1] = grit;
+    imageData.data[i+2] = grit*.43;
+    imageData.data[i+3] = (y%3 === 0 ? 30 : 15) + Math.floor(Math.random()*20);
   }
-  c.putImageData(pixels, 0, 0);
+  ctx.putImageData(imageData,0,0);
   return tile;
 }
 
-function mousePressed(event) {
-  if (event && event.target && event.target.tagName !== 'CANVAS') return;
-  if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-    pulses.push({ x: mouseX, y: mouseY, started: millis() });
-    if (pulses.length > 3) pulses.shift();
-  }
-}
-
-function keyPressed() {
-  const k = String(key).toLowerCase();
-  if (key === ' ') {
-    rain.paused = !rain.paused;
-    window.dispatchEvent(new CustomEvent('rain-state', { detail: rain }));
-    return false;
-  }
-  if (k === 'f') fullscreen(!fullscreen());
-  if (k === 'g') setRainOption('bloom', !rain.bloom);
-  if (k === 'r') buildScene();
-  if (k === 's') saveCanvas('matrix-digital-rain', 'png');
-  if (k === 'h') window.toggleRainPanel?.();
-  if (key === '+' || key === '=') setRainOption('density', Math.min(1.65, rain.density + .1));
-  if (key === '-') setRainOption('density', Math.max(.35, rain.density - .1));
-}
-
+function randomGlyph() { return Math.floor(Math.random()*GLYPHS.length); }
+function between(a,b) { return a + Math.random()*(b-a); }
 function setRainOption(name, value) {
   if (!(name in rain)) return;
+  if (name === 'grade' && !GRADES[value]) return;
+  const old = rain[name];
   rain[name] = value;
   if (name === 'density') for (const plane of planes) plane.updateDensity();
-  window.dispatchEvent(new CustomEvent('rain-state', { detail: rain }));
+  if (name === 'grade' && old !== value) {
+    // Preserve stream positions while recoloring the entire signal.
+    for (const g of Object.values(glows)) g.remove?.();
+    buildLighting();
+    for (const plane of planes) plane.buildAtlas();
+  }
+  emitState();
 }
-
+function emitState() {
+  window.dispatchEvent(new CustomEvent('rain-state', {detail: {...rain}}));
+}
+function resetRain() {
+  for (const key of Object.keys(defaults)) rain[key] = defaults[key];
+  buildScene();
+  emitState();
+}
+function signalBurst() { signalAt = simulationTime; }
+function addPulse(x,y,power=1) {
+  if (simulationTime - lastClickTime < 180) return;
+  lastClickTime = simulationTime;
+  pulses.push({x,y,at:simulationTime,id:++pulseSeq,power});
+  if (pulses.length>4) pulses.shift();
+}
+function mousePressed(event) {
+  if (event?.target?.tagName !== 'CANVAS') return;
+  if (mouseX>=0 && mouseX<=width && mouseY>=0 && mouseY<=height)
+    addPulse(mouseX,mouseY,event?.shiftKey?3:1);
+}
+function touchStarted(event) {
+  if (event?.target?.tagName !== 'CANVAS') return;
+  if (touches.length) addPulse(touches[0].x,touches[0].y,1);
+  return false;
+}
+function mouseMoved() {
+  hover = {x:mouseX,y:mouseY,at:simulationTime};
+}
+function keyPressed() {
+  // Let HTML range sliders and buttons use their ordinary keyboard behavior.
+  if (document.activeElement?.matches?.('input, button, select')) return;
+  const k = String(key).toLowerCase();
+  if (key === ' ') { setRainOption('paused',!rain.paused); return false; }
+  if (k === 'f') fullscreen(!fullscreen());
+  if (k === 'g') setRainOption('bloom',!rain.bloom);
+  if (k === 'r') buildScene();
+  if (k === 'e') signalBurst();
+  if (k === 't') setRainOption('texture',!rain.texture);
+  if (k === 'c') setRainOption('grade',GRADE_NAMES[(GRADE_NAMES.indexOf(rain.grade)+1)%GRADE_NAMES.length]);
+  if (k === 's') saveCanvas('digital-rain-cinema','png');
+  if (k === 'h') window.toggleRainPanel?.();
+  if (k === 'v') window.recordRain?.();
+  if (key === '+' || key === '=') setRainOption('density',Math.min(1.65,rain.density+.1));
+  if (key === '-') setRainOption('density',Math.max(.3,rain.density-.1));
+}
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(windowWidth,windowHeight);
   buildScene();
 }
 
-// These two functions are intentionally global, for the optional HTML UI.
 window.setRainOption = setRainOption;
-window.getRainOptions = () => rain;
-
-
+window.getRainOptions = () => ({...rain});
+window.resetRain = resetRain;
+window.reseedRain = buildScene;
+window.signalRain = signalBurst;
   </script>
   <script>
-    const panel = document.getElementById('panel');
-    const toggle = document.getElementById('menu-toggle');
-    window.toggleRainPanel = () => {
-      const showing = panel.classList.toggle('show');
-      toggle.setAttribute('aria-expanded', String(showing));
-      toggle.textContent = showing ? '[ − ] SYSTEM' : '[ + ] SYSTEM';
-    };
-    toggle.addEventListener('click', window.toggleRainPanel);
-    const density = document.getElementById('density');
-    const speed = document.getElementById('speed');
-    const bloom = document.getElementById('bloom');
-    density.addEventListener('input', () => setRainOption('density', Number(density.value)));
-    speed.addEventListener('input', () => setRainOption('speed', Number(speed.value)));
-    bloom.addEventListener('change', () => setRainOption('bloom', bloom.checked));
-    document.getElementById('reset-btn').addEventListener('click', () => buildScene());
-    document.getElementById('capture-btn').addEventListener('click', () => saveCanvas('matrix-digital-rain', 'png'));
-    document.getElementById('pause-btn').addEventListener('click', () => setRainOption('paused', !rain.paused));
-    window.addEventListener('rain-state', () => {
-      density.value = rain.density;
-      speed.value = rain.speed;
-      bloom.checked = rain.bloom;
-      document.getElementById('density-out').textContent = Math.round(rain.density * 100) + '%';
-      document.getElementById('speed-out').textContent = Math.round(rain.speed * 100) + '%';
-      document.getElementById('pause-btn').textContent = rain.paused ? 'RESUME' : 'PAUSE';
-      document.getElementById('state').textContent = rain.paused ? 'SYSTEM FROZEN' : 'SYSTEM ONLINE';
-    });
+    (() => {
+      const panel = document.getElementById('panel');
+      const toggle = document.getElementById('system-toggle');
+      const notice = document.getElementById('notification');
+      const setNotice = text => {notice.textContent = text;};
+      window.toggleRainPanel = () => {
+        const open = panel.classList.toggle('open');
+        toggle.textContent = open ? '[ − ] SYSTEM' : '[ + ] SYSTEM';
+        toggle.setAttribute('aria-expanded', String(open));
+      };
+      toggle.addEventListener('click', window.toggleRainPanel);
+      const controls = ['density','speed','persistence','mutation','glow'];
+      const percentages = new Set(controls);
+      for (const name of controls) {
+        const slider = document.getElementById(name);
+        slider.addEventListener('input', () => setRainOption(name, Number(slider.value)));
+      }
+      for (const name of ['bloom','texture']) {
+        document.getElementById(name).addEventListener('change',event => setRainOption(name,event.target.checked));
+      }
+      for (const button of document.querySelectorAll('[data-grade]')) {
+        button.addEventListener('click', () => setRainOption('grade',button.dataset.grade));
+      }
+      document.getElementById('pause-btn').addEventListener('click', () => setRainOption('paused', !getRainOptions().paused));
+      document.getElementById('burst-btn').addEventListener('click', () => {signalRain(); setNotice('SIGNAL BURST SENT');});
+      document.getElementById('reseed-btn').addEventListener('click', () => {reseedRain();setNotice('NEW SEED INITIALIZED');});
+      document.getElementById('snapshot-btn').addEventListener('click', () => saveCanvas('digital-rain-cinema','png'));
+      document.getElementById('defaults-btn').addEventListener('click', () => {resetRain();setNotice('DEFAULT CONFIG RESTORED');});
+      function syncUI() {
+        const state = getRainOptions();
+        for (const name of controls) {
+          document.getElementById(name).value = state[name];
+          document.getElementById(name+'-value').textContent = Math.round(state[name]*100)+'%';
+        }
+        for (const name of ['bloom','texture']) document.getElementById(name).checked = state[name];
+        for (const button of document.querySelectorAll('[data-grade]')) {
+          const selected = button.dataset.grade === state.grade;
+          button.classList.toggle('active',selected);
+          button.setAttribute('aria-pressed',String(selected));
+        }
+        document.getElementById('pause-btn').textContent = state.paused ? 'RESUME' : 'PAUSE';
+        document.getElementById('hud-state').textContent = state.paused ? '// PAUSED' : '// ONLINE';
+      }
+      window.addEventListener('rain-state',syncUI);
+      syncUI();
+
+      // Real 8-second WebM export, not a sequence of screenshots.
+      // Chrome / Firefox work well. Other browsers receive a useful message.
+      let recorder = null;
+      let stopTimer = null;
+      window.recordRain = () => {
+        if (recorder && recorder.state === 'recording') {
+          recorder.stop();
+          return;
+        }
+        const canvas = document.querySelector('#rain canvas');
+        if (!canvas?.captureStream || !window.MediaRecorder) {
+          setNotice('VIDEO RECORDING IS NOT SUPPORTED HERE');
+          return;
+        }
+        const stream = canvas.captureStream(30);
+        const types = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+        const mimeType = types.find(type => MediaRecorder.isTypeSupported(type));
+        if (!mimeType) {
+          stream.getTracks().forEach(track => track.stop());
+          setNotice('WEBM ENCODER UNAVAILABLE');
+          return;
+        }
+        const chunks = [];
+        try {
+          recorder = new MediaRecorder(stream,{mimeType,videoBitsPerSecond:6500000});
+          recorder.addEventListener('dataavailable',event => {if(event.data?.size)chunks.push(event.data);});
+          recorder.addEventListener('stop', () => {
+            clearTimeout(stopTimer);
+            stream.getTracks().forEach(track => track.stop());
+            document.getElementById('rec-indicator').classList.remove('on');
+            document.getElementById('record-btn').textContent = 'RECORD 8s';
+            if (chunks.length) {
+              const blob = new Blob(chunks,{type:'video/webm'});
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'digital-rain-'+Date.now()+'.webm';
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 30000);
+              setNotice('SIGNAL CAPTURE SAVED');
+            }
+            recorder = null;
+          });
+          recorder.start(250);
+          document.getElementById('rec-indicator').classList.add('on');
+          document.getElementById('record-btn').textContent = 'STOP RECORD';
+          setNotice('CAPTURING 8 SECOND SIGNAL…');
+          stopTimer = setTimeout(() => {if(recorder?.state==='recording') recorder.stop();},8000);
+        } catch(error) {
+          stream.getTracks().forEach(track => track.stop());
+          recorder = null;
+          setNotice('COULD NOT BEGIN VIDEO CAPTURE');
+        }
+      };
+      document.getElementById('record-btn').addEventListener('click',window.recordRain);
+    })();
   </script>
 </body>
 </html>
