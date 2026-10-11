@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000401">
+  <meta name="description" content="A cinematic p5.js reconstruction of the original Matrix digital rain.">
+  <title>Digital Rain — The Matrix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --green: #85e6a5; --muted: #5b926e; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000201; }
+    #rain { position: fixed; inset: 0; width: 100%; height: 100%; }
+    #rain canvas { display: block; }
+    button, input { font: inherit; }
+    .interface { position: fixed; z-index: 3; left: clamp(14px, 3vw, 36px); bottom: clamp(14px, 3vw, 32px);
+      font: 11px/1.55 Consolas, "Courier New", monospace; letter-spacing: .12em;
+      color: var(--green); user-select: none; }
+    #menu-toggle { cursor: pointer; background: rgba(2, 22, 10, .53); color: #8ed5a1;
+      border: 1px solid rgba(91, 183, 115, .24); border-radius: 0; padding: 10px 14px;
+      letter-spacing: .2em; text-transform: uppercase; opacity: .52; transition: opacity .25s, background .25s; }
+    #menu-toggle:hover, #menu-toggle:focus-visible { opacity: 1; background: rgba(4, 30, 13, .85); }
+    #panel { display: none; position: absolute; left: 0; bottom: 48px; width: min(335px, calc(100vw - 28px));
+      padding: 20px 20px 17px; border: 1px solid rgba(105, 214, 124, .35);
+      background: rgba(0, 12, 5, .92); box-shadow: 0 0 45px rgba(0, 30, 4, .8), 0 0 0 1px rgba(0, 0, 0, .7) inset;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    #panel.show { display: block; }
+    .eyebrow { color: #5eaa73; font-size: 10px; letter-spacing: .32em; }
+    h1 { font-size: 17px; font-weight: 500; line-height: 1.25; letter-spacing: .18em; margin: 4px 0 6px; }
+    .lede { margin: 0 0 21px; color: #759c7d; font-size: 10px; letter-spacing: .02em; line-height: 1.6; }
+    .setting { display: grid; grid-template-columns: 1fr auto; margin: 17px 0 6px; align-items: center; }
+    .setting label { text-transform: uppercase; }
+    output { color: #d3f7d9; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: #79e398; cursor: pointer; }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; margin: 19px 0 22px; }
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: #65cc7e; cursor: pointer; }
+    .actions { display: flex; gap: 8px; }
+    .actions button { flex: 1; padding: 8px 6px; border: 1px solid rgba(115, 194, 119, .38);
+      background: rgba(19, 60, 28, .37); color: #b2efba; font-size: 10px; cursor: pointer; letter-spacing: .13em; }
+    .actions button:hover { background: rgba(33, 101, 45, .47); }
+    .help { border-top: 1px solid rgba(67, 153, 84, .28); margin: 20px 0 0; padding-top: 13px;
+      font-size: 10px; line-height: 1.9; color: #679673; letter-spacing: .015em; }
+    kbd { font: inherit; color: #c1eec8; }
+    #status { position: fixed; z-index: 2; right: 27px; bottom: 21px;
+      font: 10px Consolas, monospace; letter-spacing: .15em; color: rgba(105, 162, 113, .38);
+      pointer-events: none; }
+    #status span { display: inline-block; height: 5px; width: 5px; margin: 0 7px 1px 0;
+      border-radius: 50%; background: #51c773; box-shadow: 0 0 8px #51c773; }
+    @media (max-width: 560px) {
+      .interface { left: 12px; bottom: 12px; }
+      #status { right: 12px; bottom: 13px; font-size: 9px; }
+      #menu-toggle { padding: 9px 11px; }
+    }
+    @media (prefers-reduced-motion: reduce) { #menu-toggle { transition: none; } }
+  </style>
+</head>
+<body>
+  <div id="rain" aria-label="Animated Matrix digital rain"></div>
+  <div class="interface">
+    <section id="panel" aria-label="Rain controls">
+      <div class="eyebrow">SYS.// 01 — LIVE SIMULATION</div>
+      <h1>DIGITAL RAIN</h1>
+      <p class="lede">53 film-inspired glyphs · fixed-cell code propagation · three phosphor layers</p>
+      <div class="setting"><label for="density">Stream density</label><output id="density-out">100%</output></div>
+      <input id="density" type="range" min="0.35" max="1.65" value="1" step="0.05">
+      <div class="setting"><label for="speed">Code velocity</label><output id="speed-out">100%</output></div>
+      <input id="speed" type="range" min="0.2" max="2.4" value="1" step="0.05">
+      <div class="toggle-row"><label for="bloom">Phosphor bloom</label><input id="bloom" type="checkbox" checked></div>
+      <div class="actions">
+        <button id="pause-btn">PAUSE</button>
+        <button id="reset-btn">RESEED</button>
+        <button id="capture-btn">CAPTURE</button>
+      </div>
+      <p class="help"><kbd>SPACE</kbd> pause &nbsp; · &nbsp; <kbd>F</kbd> fullscreen &nbsp; · &nbsp; <kbd>G</kbd> glow<br>
+        <kbd>R</kbd> reseed &nbsp; · &nbsp; <kbd>S</kbd> screenshot &nbsp; · &nbsp; <kbd>H</kbd> controls<br>
+        Click the rain to send a disturbance through the code.</p>
+    </section>
+    <button id="menu-toggle" type="button" aria-expanded="false" aria-controls="panel">[ + ] SYSTEM</button>
+  </div>
+  <div id="status"><span></span><b id="state">SYSTEM ONLINE</b></div>
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
+  <script>
+/*
+  THE MATRIX — DIGITAL RAIN
+  A p5.js 2.x sketch. Paste this entire file into editor.p5js.org.
+
+  The glyphs do NOT scroll. Each stream writes new cells farther down a
+  fixed lattice. Existing cells glow, mutate and extinguish in place.
+
+  Controls: SPACE pause · F fullscreen · G bloom · R regenerate
+            S screenshot · H panel (in standalone page) · click to ripple
+*/
+
+const KATAKANA = 'ﾊﾋｼﾂｳｰﾅﾐﾓﾆｻﾜｵﾘﾎﾏｴｷﾑﾃｹﾒｶﾕﾗｾﾈｽﾀﾇ';
+const GLYPHS = [
+  ...[...KATAKANA].map(char => ({ char, mirrorX: true, mirrorY: false })),
+  { char: '日', mirrorX: false, mirrorY: false },
+  ...[...'0123456789'].map(char => ({
+    char,
+    mirrorX: '259'.includes(char),
+    mirrorY: '36'.includes(char),
+  })),
+  { char: 'Z', mirrorX: false, mirrorY: false },
+  ...['*', '+', ':', '=', '.', '<', '>', '"', '｜', '¦', '_']
+    .map(char => ({ char, mirrorX: false, mirrorY: false })),
+];
+
+// Dark bottle-glass green through phosphor white. The brightest tint is
+// reserved almost entirely for the leading glyph of a near stream.
+const INK = [
+  [3, 22, 11, .76],
+  [4, 39, 16, .86],
+  [6, 60, 22, .93],
+  [7, 85, 28, .96],
+  [8, 116, 40, 1],
+  [19, 155, 58, 1],
+  [44, 204, 86, 1],
+  [123, 246, 159, 1],
+  [232, 255, 237, 1],
+];
+
+// Three superimposed character lattices give the image its depth. These
+// values also serve as practical performance/quality settings.
+const DEPTHS = [
+  { size: 12, density: .48, lowSpeed: 4, highSpeed: 9,
+    minLength: 15, maxLength: 30, maxInk: 5, alpha: .62, bloom: .26, shift: .27 },
+  { size: 16, density: .73, lowSpeed: 6, highSpeed: 14,
+    minLength: 14, maxLength: 35, maxInk: 7, alpha: .87, bloom: .65, shift: .64 },
+  { size: 20, density: .47, lowSpeed: 9, highSpeed: 19,
+    minLength: 12, maxLength: 29, maxInk: 8, alpha: 1, bloom: 1, shift: .16 },
+];
+
+const rain = {
+  density: 1,
+  speed: 1,
+  bloom: true,
+  paused: false,
+};
+
+let planes = [];
+let haloSprite;
+let verticalGlow;
+let vignette;
+let noiseTile;
+let noisePattern;
+let pulses = [];
+let frameClock = 0;
+
+function setup() {
+  const canvas = createCanvas(windowWidth, windowHeight);
+  pixelDensity(1); // Much cheaper on large/high-DPI displays.
+  const mount = document.getElementById('rain');
+  if (mount) canvas.parent(mount);
+  frameRate(60);
+  buildScene();
+  document.fonts?.ready.then(() => {
+    // An optional web font can arrive after setup. Refresh only the atlas;
+    // don't reset the rain animation when it finishes loading.
+    for (const plane of planes) plane.buildAtlas();
+  });
+}
+
+function buildScene() {
+  haloSprite = buildHalo();
+  verticalGlow = buildVerticalGlow();
+  vignette = buildVignette();
+  noiseTile = buildNoiseTile();
+  noisePattern = drawingContext.createPattern(noiseTile, 'repeat');
+  planes = DEPTHS.map((config, i) => new Plane(config, i));
+  pulses = [];
+  background(0);
+}
+
+function draw() {
+  if (rain.paused) return;
+
+  const dt = Math.min(deltaTime / 1000 || 1 / 60, .075);
+  const now = millis();
+  frameClock += dt;
+  const ctx = drawingContext;
+
+  background(0, 2, 1);
+  pulses = pulses.filter(p => now - p.started < 1250);
+
+  for (const plane of planes) {
+    plane.advance(dt, now);
+    if (rain.bloom) plane.drawBloom(ctx);
+    plane.drawGlyphs(ctx, now);
+  }
+
+  // Optical finishing: not a green overlay; true black still stays black.
+  ctx.globalAlpha = 1;
+  ctx.drawImage(vignette.canvas, 0, 0, width, height);
+
+  // Very fine stationary grain avoids the artificial 'perfect vector' look.
+  if (noisePattern) {
+    ctx.globalAlpha = .10;
+    ctx.fillStyle = noisePattern;
+    ctx.fillRect(0, 0, width, height);
+    ctx.globalAlpha = 1;
+  }
+}
+
+class Plane {
+  constructor(config, depth) {
+    this.config = config;
+    this.depth = depth;
+    this.pitch = Math.round(config.size * .92);
+    this.lineHeight = Math.round(config.size * 1.16);
+    this.columns = Math.ceil(width / this.pitch) + 2;
+    this.rows = Math.ceil(height / this.lineHeight) + 2;
+    this.shift = config.shift * this.pitch;
+    this.buildAtlas();
+
+    this.streams = [];
+    for (let column = -1; column < this.columns; column++) {
+      const stream = new CodeStream(this, column);
+      stream.active = stream.lottery < this.config.density * rain.density;
+      this.streams.push(stream);
+    }
+  }
+
+  buildAtlas() {
+    // Cache every glyph in nine intensity levels. Native drawImage copies
+    // a tiny atlas tile, rather than measuring/drawing thousands of strings.
+    this.tileW = Math.ceil(this.config.size * 1.55);
+    this.tileH = Math.ceil(this.lineHeight * 1.4);
+    if (this.atlas && typeof this.atlas.remove === 'function') this.atlas.remove();
+    this.atlas = createGraphics(this.tileW * GLYPHS.length, this.tileH * INK.length);
+    this.atlas.pixelDensity(1);
+    this.atlas.clear();
+
+    const c = this.atlas.drawingContext;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.font = `700 ${this.config.size * 1.01}px "Noto Sans JP", "Yu Gothic", Meiryo, "MS Gothic", sans-serif`;
+
+    for (let tone = 0; tone < INK.length; tone++) {
+      const [r, g, b, a] = INK[tone];
+      c.fillStyle = `rgba(${r},${g},${b},${a})`;
+      for (let index = 0; index < GLYPHS.length; index++) {
+        const glyph = GLYPHS[index];
+        c.save();
+        c.translate(index * this.tileW + this.tileW / 2,
+                    tone * this.tileH + this.tileH / 2);
+        if (glyph.mirrorX) c.scale(-1, 1);
+        if (glyph.mirrorY) c.scale(1, -1);
+        c.fillText(glyph.char, 0, -this.config.size * .025);
+        c.restore();
+      }
+    }
+  }
+
+  updateDensity() {
+    for (const s of this.streams) {
+      const shouldLive = s.lottery < this.config.density * rain.density;
+      if (shouldLive && !s.active) s.reset(true);
+      s.active = shouldLive;
+    }
+  }
+
+  advance(dt, now) {
+    for (const s of this.streams) if (s.active) s.update(dt, now);
+  }
+
+  drawBloom(ctx) {
+    const scale = this.config.size;
+    for (const s of this.streams) {
+      if (!s.active || !s.brightHead || s.head < 0 || s.head >= this.rows) continue;
+      const x = s.x;
+      const y = s.head * this.lineHeight + this.lineHeight / 2;
+      if (x < -60 || x > width + 60 || y < -60 || y > height + 60) continue;
+      ctx.globalAlpha = this.config.bloom * s.glowStrength;
+      const radius = scale * 3.7;
+      ctx.drawImage(haloSprite.canvas, x - radius, y - radius,
+                    radius * 2, radius * 2);
+      ctx.globalAlpha = this.config.bloom * s.glowStrength * .37;
+      ctx.drawImage(verticalGlow.canvas, x - scale * .8,
+                    y - scale * 5.9, scale * 1.6, scale * 6.4);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawGlyphs(ctx, now) {
+    const tileW = this.tileW;
+    const tileH = this.tileH;
+    const lineHeight = this.lineHeight;
+    const atlas = this.atlas.canvas;
+    const maxInk = this.config.maxInk;
+    ctx.globalAlpha = this.config.alpha;
+
+    for (const s of this.streams) {
+      if (!s.active) continue;
+      for (const [row, cell] of s.cells) {
+        if (row < 0 || row >= this.rows) continue;
+        const age = s.head - row; // Whole number: coordinates never scroll.
+        if (age < 0 || age >= s.length) continue;
+
+        if (now > cell.mutateAt) {
+          cell.glyph = randomGlyph();
+          cell.mutateAt = now + between(320, 2400);
+        }
+
+        const t = 1 - age / s.length;
+        const shape = Math.pow(t, 1.52);
+        let tone = Math.round((.3 + 7.4 * shape) * cell.energy);
+        if (age === 0) tone = s.brightHead ? 8 : 7;
+        else if (age === 1 && s.brightHead) tone = Math.max(tone, 7);
+        tone = Math.max(0, Math.min(maxInk, tone));
+
+        const y = row * lineHeight + lineHeight / 2;
+        const x = s.x;
+        if (x < -tileW || x > width + tileW || y < -tileH || y > height + tileH) continue;
+
+        // An invisible code-change wave is revealed when the viewer clicks.
+        // It alters the local light level without introducing a drawn circle.
+        for (const pulse of pulses) {
+          const elapsed = (now - pulse.started) / 1000;
+          const waveRadius = elapsed * 900;
+          const distance = Math.hypot(x - pulse.x, y - pulse.y);
+          const proximity = Math.abs(distance - waveRadius);
+          if (proximity < 50) {
+            tone = Math.min(maxInk, tone + Math.round(3 * (1 - proximity / 50)));
+            if (proximity < 12 && Math.random() < .035) cell.glyph = randomGlyph();
+          }
+        }
+
+        ctx.drawImage(atlas,
+          cell.glyph * tileW, tone * tileH, tileW, tileH,
+          Math.round(x - tileW / 2), Math.round(y - tileH / 2), tileW, tileH);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+class CodeStream {
+  constructor(plane, column) {
+    this.plane = plane;
+    this.column = column;
+    this.x = (column + .5) * plane.pitch + plane.shift;
+    this.lottery = Math.random();
+    this.active = false;
+    this.cells = new Map();
+    this.reset(true);
+  }
+
+  reset(fillScreen = false) {
+    const c = this.plane.config;
+    const maxRow = this.plane.rows;
+    this.length = Math.floor(between(c.minLength, c.maxLength + 1));
+    this.speed = between(c.lowSpeed, c.highSpeed);
+    this.head = fillScreen
+      ? Math.floor(between(-this.length * .55, maxRow + this.length * .5))
+      : -Math.floor(between(this.length * .3, Math.max(this.length, maxRow * .65)));
+    this.progress = Math.random() * .9;
+    this.brightHead = Math.random() < (this.plane.depth === 2 ? .78 : .56);
+    this.glowStrength = between(.52, 1);
+    this.phase = between(0, Math.PI * 2);
+    this.rhythm = between(.5, 1.25);
+    this.cells.clear();
+
+    // Starting with partially written streams gives the first frame a
+    // fully developed atmosphere, instead of waiting for rain to arrive.
+    for (let row = this.head - this.length + 1; row <= this.head; row++) {
+      this.cells.set(row, this.makeCell());
+    }
+  }
+
+  makeCell() {
+    return {
+      glyph: randomGlyph(),
+      energy: between(.76, 1.1),
+      mutateAt: millis() + between(180, 2500),
+    };
+  }
+
+  update(dt, now) {
+    // Micro-variations make columns feel independently clocked, without
+    // randomizing each frame or breaking fixed-grid movement.
+    const tempo = 1 + .085 * Math.sin(now * .001 * this.rhythm + this.phase);
+    this.progress += dt * this.speed * rain.speed * tempo;
+    const steps = Math.min(8, Math.floor(this.progress));
+    this.progress -= steps;
+
+    for (let i = 0; i < steps; i++) {
+      this.head += 1;
+      this.cells.set(this.head, this.makeCell());
+      this.cells.delete(this.head - this.length);
+
+      // Once the whole tail has departed, begin a new stream following an
+      // irregular interval of black, rather than looping at the boundary.
+      if (this.head > this.plane.rows + this.length + Math.floor(this.length * .3)) {
+        this.reset(false);
+        break;
+      }
+    }
+  }
+}
+
+function randomGlyph() {
+  return Math.floor(Math.random() * GLYPHS.length);
+}
+
+function between(a, b) {
+  return a + Math.random() * (b - a);
+}
+
+function buildHalo() {
+  const size = 160;
+  const g = createGraphics(size, size);
+  g.pixelDensity(1);
+  const c = g.drawingContext;
+  const rad = c.createRadialGradient(80, 80, 0, 80, 80, 80);
+  rad.addColorStop(0, 'rgba(225,255,223,.52)');
+  rad.addColorStop(.13, 'rgba(82,255,125,.33)');
+  rad.addColorStop(.35, 'rgba(10,180,55,.15)');
+  rad.addColorStop(.7, 'rgba(5,80,30,.045)');
+  rad.addColorStop(1, 'rgba(0,20,6,0)');
+  c.fillStyle = rad;
+  c.fillRect(0, 0, size, size);
+  return g;
+}
+
+function buildVerticalGlow() {
+  const g = createGraphics(32, 192);
+  g.pixelDensity(1);
+  const c = g.drawingContext;
+  const horizontal = c.createLinearGradient(0, 0, 32, 0);
+  horizontal.addColorStop(0, 'rgba(10,180,40,0)');
+  horizontal.addColorStop(.5, 'rgba(60,255,100,.15)');
+  horizontal.addColorStop(1, 'rgba(10,180,40,0)');
+  c.fillStyle = horizontal;
+  c.fillRect(0, 0, 32, 192);
+  c.globalCompositeOperation = 'destination-in';
+  const vertical = c.createLinearGradient(0, 0, 0, 192);
+  vertical.addColorStop(0, 'rgba(0,0,0,0)');
+  vertical.addColorStop(.7, 'rgba(0,0,0,.45)');
+  vertical.addColorStop(1, 'rgba(0,0,0,1)');
+  c.fillStyle = vertical;
+  c.fillRect(0, 0, 32, 192);
+  c.globalCompositeOperation = 'source-over';
+  return g;
+}
+
+function buildVignette() {
+  const g = createGraphics(width, height);
+  g.pixelDensity(1);
+  const c = g.drawingContext;
+  const bigRadius = Math.hypot(width, height) * .57;
+  const vignetteGradient = c.createRadialGradient(
+    width * .5, height * .46, bigRadius * .17,
+    width * .5, height * .46, bigRadius);
+  vignetteGradient.addColorStop(0, 'rgba(0,0,0,0)');
+  vignetteGradient.addColorStop(.62, 'rgba(0,0,0,.035)');
+  vignetteGradient.addColorStop(1, 'rgba(0,0,0,.49)');
+  c.fillStyle = vignetteGradient;
+  c.fillRect(0, 0, width, height);
+  return g;
+}
+
+function buildNoiseTile() {
+  // One low-contrast texture, tiled, rather than random pixels every frame.
+  const tile = document.createElement('canvas');
+  tile.width = tile.height = 128;
+  const c = tile.getContext('2d');
+  const pixels = c.createImageData(128, 128);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    const value = Math.floor(between(20, 80));
+    pixels.data[i] = value * .33;
+    pixels.data[i + 1] = value;
+    pixels.data[i + 2] = value * .45;
+    pixels.data[i + 3] = Math.floor(between(0, 28));
+  }
+  c.putImageData(pixels, 0, 0);
+  return tile;
+}
+
+function mousePressed(event) {
+  if (event && event.target && event.target.tagName !== 'CANVAS') return;
+  if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+    pulses.push({ x: mouseX, y: mouseY, started: millis() });
+    if (pulses.length > 3) pulses.shift();
+  }
+}
+
+function keyPressed() {
+  const k = String(key).toLowerCase();
+  if (key === ' ') {
+    rain.paused = !rain.paused;
+    window.dispatchEvent(new CustomEvent('rain-state', { detail: rain }));
+    return false;
+  }
+  if (k === 'f') fullscreen(!fullscreen());
+  if (k === 'g') setRainOption('bloom', !rain.bloom);
+  if (k === 'r') buildScene();
+  if (k === 's') saveCanvas('matrix-digital-rain', 'png');
+  if (k === 'h') window.toggleRainPanel?.();
+  if (key === '+' || key === '=') setRainOption('density', Math.min(1.65, rain.density + .1));
+  if (key === '-') setRainOption('density', Math.max(.35, rain.density - .1));
+}
+
+function setRainOption(name, value) {
+  if (!(name in rain)) return;
+  rain[name] = value;
+  if (name === 'density') for (const plane of planes) plane.updateDensity();
+  window.dispatchEvent(new CustomEvent('rain-state', { detail: rain }));
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  buildScene();
+}
+
+// These two functions are intentionally global, for the optional HTML UI.
+window.setRainOption = setRainOption;
+window.getRainOptions = () => rain;
+
+  </script>
+  <script>
+    const panel = document.getElementById('panel');
+    const toggle = document.getElementById('menu-toggle');
+    window.toggleRainPanel = () => {
+      const showing = panel.classList.toggle('show');
+      toggle.setAttribute('aria-expanded', String(showing));
+      toggle.textContent = showing ? '[ − ] SYSTEM' : '[ + ] SYSTEM';
+    };
+    toggle.addEventListener('click', window.toggleRainPanel);
+    const density = document.getElementById('density');
+    const speed = document.getElementById('speed');
+    const bloom = document.getElementById('bloom');
+    density.addEventListener('input', () => setRainOption('density', Number(density.value)));
+    speed.addEventListener('input', () => setRainOption('speed', Number(speed.value)));
+    bloom.addEventListener('change', () => setRainOption('bloom', bloom.checked));
+    document.getElementById('reset-btn').addEventListener('click', () => buildScene());
+    document.getElementById('capture-btn').addEventListener('click', () => saveCanvas('matrix-digital-rain', 'png'));
+    document.getElementById('pause-btn').addEventListener('click', () => setRainOption('paused', !rain.paused));
+    window.addEventListener('rain-state', () => {
+      density.value = rain.density;
+      speed.value = rain.speed;
+      bloom.checked = rain.bloom;
+      document.getElementById('density-out').textContent = Math.round(rain.density * 100) + '%';
+      document.getElementById('speed-out').textContent = Math.round(rain.speed * 100) + '%';
+      document.getElementById('pause-btn').textContent = rain.paused ? 'RESUME' : 'PAUSE';
+      document.getElementById('state').textContent = rain.paused ? 'SYSTEM FROZEN' : 'SYSTEM ONLINE';
+    });
+  </script>
+</body>
+</html>
