@@ -63,7 +63,7 @@
     <section id="panel" aria-label="Rain controls">
       <div class="eyebrow">SYS.// 01 — LIVE SIMULATION</div>
       <h1>DIGITAL RAIN</h1>
-      <p class="lede">53 film-inspired glyphs · fixed-cell code propagation · three phosphor layers</p>
+      <p class="lede">53 film-inspired glyphs · exclusive code lanes · three phosphor treatments</p>
       <div class="setting"><label for="density">Stream density</label><output id="density-out">100%</output></div>
       <input id="density" type="range" min="0.35" max="1.65" value="1" step="0.05">
       <div class="setting"><label for="speed">Code velocity</label><output id="speed-out">100%</output></div>
@@ -122,15 +122,15 @@ const INK = [
   [232, 255, 237, 1],
 ];
 
-// Three superimposed character lattices give the image its depth. These
-// values also serve as practical performance/quality settings.
+// Three glyph treatments share ONE global column grid. Each column belongs
+// to exactly one depth, so no foreground stream can paint over another.
 const DEPTHS = [
   { size: 12, density: .48, lowSpeed: 4, highSpeed: 9,
-    minLength: 15, maxLength: 30, maxInk: 5, alpha: .62, bloom: .26, shift: .27 },
+    minLength: 15, maxLength: 30, maxInk: 5, alpha: .62, bloom: .26 },
   { size: 16, density: .73, lowSpeed: 6, highSpeed: 14,
-    minLength: 14, maxLength: 35, maxInk: 7, alpha: .87, bloom: .65, shift: .64 },
+    minLength: 14, maxLength: 35, maxInk: 7, alpha: .87, bloom: .65 },
   { size: 20, density: .47, lowSpeed: 9, highSpeed: 19,
-    minLength: 12, maxLength: 29, maxInk: 8, alpha: 1, bloom: 1, shift: .16 },
+    minLength: 12, maxLength: 29, maxInk: 8, alpha: 1, bloom: 1 },
 ];
 
 const rain = {
@@ -169,7 +169,18 @@ function buildScene() {
   vignette = buildVignette();
   noiseTile = buildNoiseTile();
   noisePattern = drawingContext.createPattern(noiseTile, 'repeat');
-  planes = DEPTHS.map((config, i) => new Plane(config, i));
+  // The character width of the largest depth fits inside a global lane.
+  // Lanes are assigned once; they never share screen-space with another depth.
+  const lanePitch = Math.ceil(Math.max(...DEPTHS.map(d => d.size)) * 1.12);
+  const laneCount = Math.ceil(width / lanePitch) + 2;
+  const assignments = DEPTHS.map(() => []);
+  for (let column = -1; column < laneCount; column++) {
+    const roll = Math.random();
+    const depth = roll < .23 ? 0 : roll < .72 ? 1 : 2;
+    assignments[depth].push(column);
+  }
+  planes = DEPTHS.map((config, i) =>
+    new Plane(config, i, assignments[i], lanePitch));
   pulses = [];
   background(0);
 }
@@ -185,11 +196,11 @@ function draw() {
   background(0, 2, 1);
   pulses = pulses.filter(p => now - p.started < 1250);
 
-  for (const plane of planes) {
-    plane.advance(dt, now);
-    if (rain.bloom) plane.drawBloom(ctx);
-    plane.drawGlyphs(ctx, now);
-  }
+  for (const plane of planes) plane.advance(dt, now);
+  // All glows are behind ALL glyphs, so even bloom cannot wash across
+  // characters of another depth when the columns are packed together.
+  if (rain.bloom) for (const plane of planes) plane.drawBloom(ctx);
+  for (const plane of planes) plane.drawGlyphs(ctx, now);
 
   // Optical finishing: not a green overlay; true black still stays black.
   ctx.globalAlpha = 1;
@@ -204,28 +215,22 @@ function draw() {
   }
 }
 
+// Each column gets just one lane. A lane can contain multiple *separated*
+// streams, but they all advance at the same speed, so none can catch up to
+// and overwrite another stream below it.
 class Plane {
-  constructor(config, depth) {
+  constructor(config, depth, columns, lanePitch) {
     this.config = config;
     this.depth = depth;
-    this.pitch = Math.round(config.size * .92);
     this.lineHeight = Math.round(config.size * 1.16);
-    this.columns = Math.ceil(width / this.pitch) + 2;
     this.rows = Math.ceil(height / this.lineHeight) + 2;
-    this.shift = config.shift * this.pitch;
     this.buildAtlas();
-
-    this.streams = [];
-    for (let column = -1; column < this.columns; column++) {
-      const stream = new CodeStream(this, column);
-      stream.active = stream.lottery < this.config.density * rain.density;
-      this.streams.push(stream);
-    }
+    this.lanes = columns.map(column => new CodeLane(this, column, lanePitch));
   }
 
   buildAtlas() {
-    // Cache every glyph in nine intensity levels. Native drawImage copies
-    // a tiny atlas tile, rather than measuring/drawing thousands of strings.
+    // Cache each glyph in nine intensity levels. Native drawImage copies
+    // a tiny atlas tile, rather than redrawing thousands of strings.
     this.tileW = Math.ceil(this.config.size * 1.55);
     this.tileH = Math.ceil(this.lineHeight * 1.4);
     if (this.atlas && typeof this.atlas.remove === 'function') this.atlas.remove();
@@ -255,31 +260,37 @@ class Plane {
   }
 
   updateDensity() {
-    for (const s of this.streams) {
-      const shouldLive = s.lottery < this.config.density * rain.density;
-      if (shouldLive && !s.active) s.reset(true);
-      s.active = shouldLive;
+    for (const lane of this.lanes) {
+      const shouldLive = lane.lottery < laneDensity();
+      if (shouldLive && !lane.active) lane.reset(true);
+      lane.active = shouldLive;
+      // Shorten or lengthen upcoming gaps immediately; already-written
+      // streams retain their intact geometry.
+      lane.nextGap = lane.randomGap();
     }
   }
 
   advance(dt, now) {
-    for (const s of this.streams) if (s.active) s.update(dt, now);
+    for (const lane of this.lanes) if (lane.active) lane.update(dt, now);
   }
 
   drawBloom(ctx) {
     const scale = this.config.size;
-    for (const s of this.streams) {
-      if (!s.active || !s.brightHead || s.head < 0 || s.head >= this.rows) continue;
-      const x = s.x;
-      const y = s.head * this.lineHeight + this.lineHeight / 2;
-      if (x < -60 || x > width + 60 || y < -60 || y > height + 60) continue;
-      ctx.globalAlpha = this.config.bloom * s.glowStrength;
-      const radius = scale * 3.7;
-      ctx.drawImage(haloSprite.canvas, x - radius, y - radius,
-                    radius * 2, radius * 2);
-      ctx.globalAlpha = this.config.bloom * s.glowStrength * .37;
-      ctx.drawImage(verticalGlow.canvas, x - scale * .8,
-                    y - scale * 5.9, scale * 1.6, scale * 6.4);
+    for (const lane of this.lanes) {
+      if (!lane.active) continue;
+      for (const s of lane.streams) {
+        if (!s.brightHead || s.head < 0 || s.head >= this.rows) continue;
+        const x = lane.x;
+        const y = s.head * this.lineHeight + this.lineHeight / 2;
+        if (x < -60 || x > width + 60 || y < -60 || y > height + 60) continue;
+        ctx.globalAlpha = this.config.bloom * s.glowStrength;
+        const radius = scale * 3.7;
+        ctx.drawImage(haloSprite.canvas, x - radius, y - radius,
+                      radius * 2, radius * 2);
+        ctx.globalAlpha = this.config.bloom * s.glowStrength * .37;
+        ctx.drawImage(verticalGlow.canvas, x - scale * .8,
+                      y - scale * 5.9, scale * 1.6, scale * 6.4);
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -292,81 +303,143 @@ class Plane {
     const maxInk = this.config.maxInk;
     ctx.globalAlpha = this.config.alpha;
 
-    for (const s of this.streams) {
-      if (!s.active) continue;
-      for (const [row, cell] of s.cells) {
-        if (row < 0 || row >= this.rows) continue;
-        const age = s.head - row; // Whole number: coordinates never scroll.
-        if (age < 0 || age >= s.length) continue;
+    for (const lane of this.lanes) {
+      if (!lane.active) continue;
+      const x = lane.x;
+      for (const s of lane.streams) {
+        for (const [row, cell] of s.cells) {
+          if (row < 0 || row >= this.rows) continue;
+          const age = s.head - row; // Cells are fixed in space, never scrolled.
+          if (age < 0 || age >= s.length) continue;
 
-        if (now > cell.mutateAt) {
-          cell.glyph = randomGlyph();
-          cell.mutateAt = now + between(320, 2400);
-        }
-
-        const t = 1 - age / s.length;
-        const shape = Math.pow(t, 1.52);
-        let tone = Math.round((.3 + 7.4 * shape) * cell.energy);
-        if (age === 0) tone = s.brightHead ? 8 : 7;
-        else if (age === 1 && s.brightHead) tone = Math.max(tone, 7);
-        tone = Math.max(0, Math.min(maxInk, tone));
-
-        const y = row * lineHeight + lineHeight / 2;
-        const x = s.x;
-        if (x < -tileW || x > width + tileW || y < -tileH || y > height + tileH) continue;
-
-        // An invisible code-change wave is revealed when the viewer clicks.
-        // It alters the local light level without introducing a drawn circle.
-        for (const pulse of pulses) {
-          const elapsed = (now - pulse.started) / 1000;
-          const waveRadius = elapsed * 900;
-          const distance = Math.hypot(x - pulse.x, y - pulse.y);
-          const proximity = Math.abs(distance - waveRadius);
-          if (proximity < 50) {
-            tone = Math.min(maxInk, tone + Math.round(3 * (1 - proximity / 50)));
-            if (proximity < 12 && Math.random() < .035) cell.glyph = randomGlyph();
+          if (now > cell.mutateAt) {
+            cell.glyph = randomGlyph();
+            cell.mutateAt = now + between(320, 2400);
           }
-        }
 
-        ctx.drawImage(atlas,
-          cell.glyph * tileW, tone * tileH, tileW, tileH,
-          Math.round(x - tileW / 2), Math.round(y - tileH / 2), tileW, tileH);
+          const t = 1 - age / s.length;
+          const shape = Math.pow(t, 1.52);
+          let tone = Math.round((.3 + 7.4 * shape) * cell.energy);
+          if (age === 0) tone = s.brightHead ? 8 : 7;
+          else if (age === 1 && s.brightHead) tone = Math.max(tone, 7);
+          tone = Math.max(0, Math.min(maxInk, tone));
+
+          const y = row * lineHeight + lineHeight / 2;
+          if (x < -tileW || x > width + tileW || y < -tileH || y > height + tileH) continue;
+
+          // Preserve the original click disturbance: a light wave and a
+          // few local code mutations, never an opaque circle.
+          for (const pulse of pulses) {
+            const elapsed = (now - pulse.started) / 1000;
+            const waveRadius = elapsed * 900;
+            const distance = Math.hypot(x - pulse.x, y - pulse.y);
+            const proximity = Math.abs(distance - waveRadius);
+            if (proximity < 50) {
+              tone = Math.min(maxInk, tone + Math.round(3 * (1 - proximity / 50)));
+              if (proximity < 12 && Math.random() < .035) cell.glyph = randomGlyph();
+            }
+          }
+
+          ctx.drawImage(atlas,
+            cell.glyph * tileW, tone * tileH, tileW, tileH,
+            Math.round(x - tileW / 2), Math.round(y - tileH / 2), tileW, tileH);
+        }
       }
     }
     ctx.globalAlpha = 1;
   }
 }
 
-class CodeStream {
-  constructor(plane, column) {
+// Density always increases the number of occupied lanes; unlike the old
+// three overlapping grids, it can never increase the number of streams
+// physically occupying a glyph cell.
+function laneDensity() {
+  return Math.min(1, Math.max(.12, .35 + .65 * (rain.density / 1.65)));
+}
+
+class CodeLane {
+  constructor(plane, column, pitch) {
     this.plane = plane;
     this.column = column;
-    this.x = (column + .5) * plane.pitch + plane.shift;
+    this.x = (column + .5) * pitch;
     this.lottery = Math.random();
-    this.active = false;
-    this.cells = new Map();
+    this.active = this.lottery < laneDensity();
+    this.speed = between(plane.config.lowSpeed, plane.config.highSpeed);
+    this.progress = Math.random();
+    this.phase = between(0, Math.PI * 2);
+    this.rhythm = between(.5, 1.25);
+    this.streams = [];
     this.reset(true);
   }
 
-  reset(fillScreen = false) {
-    const c = this.plane.config;
-    const maxRow = this.plane.rows;
-    this.length = Math.floor(between(c.minLength, c.maxLength + 1));
-    this.speed = between(c.lowSpeed, c.highSpeed);
-    this.head = fillScreen
-      ? Math.floor(between(-this.length * .55, maxRow + this.length * .5))
-      : -Math.floor(between(this.length * .3, Math.max(this.length, maxRow * .65)));
-    this.progress = Math.random() * .9;
-    this.brightHead = Math.random() < (this.plane.depth === 2 ? .78 : .56);
-    this.glowStrength = between(.52, 1);
-    this.phase = between(0, Math.PI * 2);
-    this.rhythm = between(.5, 1.25);
-    this.cells.clear();
+  randomGap() {
+    // Higher densities fill *gaps*, never overlay glyphs. Even at the
+    // maximum there is at least one dark row between successive streams.
+    const f = Math.min(1, Math.max(0, (rain.density - .35) / 1.3));
+    return Math.floor(between(4 - 3 * f, 23 - 15 * f));
+  }
 
-    // Starting with partially written streams gives the first frame a
-    // fully developed atmosphere, instead of waiting for rain to arrive.
-    for (let row = this.head - this.length + 1; row <= this.head; row++) {
-      this.cells.set(row, this.makeCell());
+  reset(fillScreen = false) {
+    this.streams.length = 0;
+    this.progress = Math.random();
+    if (fillScreen) {
+      let head = Math.floor(between(this.plane.rows * .45,
+                                    this.plane.rows + this.plane.config.maxLength * .4));
+      // Pre-fill the screen with spatially separated streams. Their heads
+      // are offset by the full length of the previous stream PLUS a gap.
+      while (head > -this.plane.config.maxLength && this.streams.length < 12) {
+        const stream = new CodeStream(this.plane, head);
+        this.streams.push(stream); // Bottommost stream first.
+        head -= stream.length + this.randomGap();
+      }
+    } else {
+      this.streams.push(new CodeStream(this.plane, -1));
+    }
+    this.nextGap = this.randomGap();
+  }
+
+  update(dt, now) {
+    const tempo = 1 + .085 * Math.sin(now * .001 * this.rhythm + this.phase);
+    this.progress += dt * this.speed * rain.speed * tempo;
+    const steps = Math.min(8, Math.floor(this.progress));
+    this.progress -= steps;
+
+    for (let i = 0; i < steps; i++) {
+      for (const stream of this.streams) stream.advanceRow();
+
+      // Remove a stream only after its entire tail has left the bottom.
+      while (this.streams.length &&
+             this.streams[0].head - this.streams[0].length >= this.plane.rows) {
+        this.streams.shift();
+      }
+
+      if (!this.streams.length) {
+        this.streams.push(new CodeStream(this.plane, -1));
+        this.nextGap = this.randomGap();
+      }
+
+      // Spawn above the previous tail, with a genuine black gap. All
+      // streams in the lane move together, so the spacing never collapses.
+      const top = this.streams[this.streams.length - 1];
+      if (top.head - top.length - this.nextGap >= -1) {
+        this.streams.push(new CodeStream(this.plane, -1));
+        this.nextGap = this.randomGap();
+      }
+    }
+  }
+}
+
+class CodeStream {
+  constructor(plane, head) {
+    this.plane = plane;
+    const c = plane.config;
+    this.length = Math.floor(between(c.minLength, c.maxLength + 1));
+    this.head = head;
+    this.brightHead = Math.random() < (plane.depth === 2 ? .78 : .56);
+    this.glowStrength = between(.52, 1);
+    this.cells = new Map();
+    for (let row = head - this.length + 1; row <= head; row++) {
+      if (row >= 0 && row < plane.rows) this.cells.set(row, this.makeCell());
     }
   }
 
@@ -378,26 +451,12 @@ class CodeStream {
     };
   }
 
-  update(dt, now) {
-    // Micro-variations make columns feel independently clocked, without
-    // randomizing each frame or breaking fixed-grid movement.
-    const tempo = 1 + .085 * Math.sin(now * .001 * this.rhythm + this.phase);
-    this.progress += dt * this.speed * rain.speed * tempo;
-    const steps = Math.min(8, Math.floor(this.progress));
-    this.progress -= steps;
-
-    for (let i = 0; i < steps; i++) {
-      this.head += 1;
+  advanceRow() {
+    this.head++;
+    if (this.head >= 0 && this.head < this.plane.rows) {
       this.cells.set(this.head, this.makeCell());
-      this.cells.delete(this.head - this.length);
-
-      // Once the whole tail has departed, begin a new stream following an
-      // irregular interval of black, rather than looping at the boundary.
-      if (this.head > this.plane.rows + this.length + Math.floor(this.length * .3)) {
-        this.reset(false);
-        break;
-      }
     }
+    this.cells.delete(this.head - this.length);
   }
 }
 
@@ -518,6 +577,7 @@ function windowResized() {
 // These two functions are intentionally global, for the optional HTML UI.
 window.setRainOption = setRainOption;
 window.getRainOptions = () => rain;
+
 
   </script>
   <script>
