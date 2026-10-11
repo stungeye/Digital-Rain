@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Rain — media music prototype</title>
+<style>
+:root{color-scheme:dark;font:16px/1.5 system-ui}body{max-width:48rem;margin:auto;padding:1.2rem;background:#101716;color:#e2ede7}
+label{display:block;margin:1rem 0}select,button{font:inherit;padding:.6rem;max-width:100%}button{margin:.3rem}audio{width:100%}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#182320;padding:1rem}a{color:#9de2c3}
+#beat{height:1rem;background:#9de2c3;transform-origin:left;transform:scaleX(0)}
+</style>
+<h1>Media music prototype</h1>
+<p>Prepare a score, then press Play. Music goes directly through the normal audio player.
+Preparation can take time on a phone. No live Web Audio runs unless you enable the comparison sounds.</p>
+<label>Music <select id="profile"><option value="cinema">Source</option><option value="abyss">Deep</option><option value="voltage">Overdrive</option><option value="anomaly">Anomaly</option></select></label>
+<label>Sample rate <select id="rate"><option value="48000">48,000 Hz</option><option value="22050">22,050 Hz (earlier audition)</option></select></label>
+<button id="prepare">Prepare / change score</button><button id="play" disabled>Play / resume</button><button id="pause" disabled>Pause</button><button id="stop">Stop / release</button>
+<audio id="player" controls loop></audio>
+<label>Music level <input id="volume" type="range" min="0" max="1" step=".01" value="1"> (100% matches the app's default rendered score level)</label>
+<label><input id="mute" type="checkbox"> Mute music and comparison sounds (music clock continues)</label>
+<div id="beat" aria-hidden="true"></div>
+<label>Live comparison sounds <select id="live"><option value="off">Off — media music alone</option><option value="effects">SFX only</option><option value="score">Score-level hum + SFX</option></select></label>
+<button id="click" disabled>UI click</button><button id="ripple" disabled>Ripple</button>
+<p id="status" role="status">Ready. Prepare a score first.</p><pre id="report"></pre>
+<p>Listen for crackling with music alone, then with hum and repeated clicks. Check pause/resume,
+mute, changing scores and at least one complete loop. You can seek near the end with the player controls.
+Changing scores stops the old one; the replacement needs preparation and a new Play gesture.
+Each loop repeats the rendered percussion noise and has a 3 ms edge taper. Listen for a gap or click at the seam.
+The rendered music and live comparison sounds have separate output compression, so their combined mix can differ from the app.
+This page has no rain animation and does not establish full-app performance.</p>
+<p><a href="audio-live.html">Live audio comparison</a> · <a href="../index.html">Rain app</a></p>
+<script>window.RainApp={state:{grade:'cinema',volume:.5,paused:false,interfaceSounds:true,interfaceLevel:.5}};</script>
+<script src="../js/audio.js"></script><script src="media-score.js"></script>
+<script>
+'use strict';
+const el=id=>document.getElementById(id);
+const music=new MediaScorePlayer(el('player'));
+let liveEngine=null, operation=0, requestedLive='off';
+function liveMode() {
+  if(!liveEngine)return;
+  // The score mode supplies the original hum gains, but pause suppresses score notes.
+  RainApp.state.paused=true;
+  liveEngine.setMode(el('mute').checked?'off':requestedLive);
+  el('click').disabled=el('ripple').disabled=el('mute').checked||requestedLive==='off'||!liveEngine.ctx;
+}
+function silenceLive() {
+  requestedLive='off';el('live').value='off';
+  if(liveEngine) {
+    liveEngine.setMode('off');liveEngine.ctx?.close().catch(()=>{});liveEngine=null;
+  }
+  el('click').disabled=el('ripple').disabled=true;
+}
+async function prepare() {
+  const current=++operation;
+  silenceLive();
+  el('play').disabled=el('pause').disabled=true;
+  const progress=message=>{if(current===operation)el('status').textContent=message;};
+  try {
+    if(await music.prepare(el('profile').value,+el('rate').value,progress)&&current===operation) {
+      el('play').disabled=el('pause').disabled=false;
+      el('status').textContent='Ready. Press Play to start the prepared score.';
+    }
+  } catch(error) {if(current===operation)el('status').textContent='Could not prepare: '+error.message;}
+}
+async function play() {
+  const current=operation;
+  try {await music.play();if(current===operation)el('status').textContent='Playing. Compare music alone first.';}
+  catch(error){if(current===operation)el('status').textContent='Could not play: '+error.message+' — press Play to retry.';}
+}
+el('prepare').onclick=prepare;
+for(const name of ['profile','rate'])el(name).onchange=()=>{
+  ++operation;music.stop();silenceLive();el('play').disabled=el('pause').disabled=true;
+  el('status').textContent='Selection changed. Prepare the new score.';
+};
+el('play').onclick=play;
+el('pause').onclick=()=>{music.pause();el('status').textContent='Music paused. Hum and UI sounds may continue.';};
+el('stop').onclick=()=>{
+  ++operation;music.stop();silenceLive();el('play').disabled=el('pause').disabled=true;
+  el('status').textContent='Stopped and released. Prepare a score to restart.';
+};
+el('volume').oninput=()=>{music.player.volume=+el('volume').value;};
+el('mute').onchange=()=>{music.player.muted=el('mute').checked;liveMode();};
+el('live').onchange=()=>{
+  requestedLive=el('live').value;
+  if(requestedLive==='off'){silenceLive();return;}
+  if(requestedLive!=='off'&&!liveEngine)liveEngine=new SignalAudio();
+  liveMode();
+};
+el('click').onclick=()=>liveEngine?.interfaceSound('press');
+el('ripple').onclick=()=>liveEngine?.ripple(.5);
+music.player.addEventListener('error',()=>{el('status').textContent='Player error: '+(music.player.error?.message||music.player.error?.code);});
+function update() {
+  el('beat').style.transform=`scaleX(${music.beatEnergy()})`;
+  el('report').textContent=JSON.stringify({browser:navigator.userAgent,profile:music.track?.profile,
+    fileSampleRate:music.track?.rate,loopSeconds:music.track?.period,peak:music.track?.peak,
+    invalidSamples:music.track?.invalid,clippedSamples:music.track?.clipped,
+    audioTimeSeconds:+music.player.currentTime.toFixed(2),paused:music.player.paused,
+    muted:music.player.muted,liveComparison:requestedLive,liveContextState:liveEngine?.ctx?.state,
+    pageVisibility:document.visibilityState},null,2);
+  requestAnimationFrame(update);
+}
+update();
+window.addEventListener('pagehide',()=>el('stop').click());
+</script>
+</html>
