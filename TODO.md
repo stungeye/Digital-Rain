@@ -6,16 +6,16 @@ Implementation for tasks 1–8 and the accessibility portion of task 10 is prese
 
 Live-server browser checks observed the Canvas adapter at a 1280×720 viewport, all four profiles, all three display modes, paused appearance changes, 65%/200% zoom, bloom/grain toggles, focused Space, mute/default controls, Escape panel closing with focus restoration, and manual surge/breach resuming animation. No warnings or errors were observed during these checks. These are component checks, not a matched runtime comparison or an audible evaluation.
 
-Implementation is complete for tasks 1–8 and 10. Separate acceptance boxes below remain open where the full criteria include unperformed checks; tasks 2, 4, 5 and 6 have full acceptance evidence. Checked integrated items identify their verification basis. Task 9 retains a provisional keep-both-runtimes recommendation in `RUNTIME_EVALUATION.md`. Desktop p5/direct-open/offline startup, updated resize appearance, updated curved-edge visual alignment, reduced-motion browser behavior, matched runtime performance comparisons remain unverified. User audio, phone gesture, maximum-density and delayed-font checks subsequently passed (see manual verification below). No runtime replacement, publication, deployment, or commit has occurred.
+Implementation is complete for tasks 1–10. Separate acceptance boxes below remain open where the full criteria include unperformed checks; tasks 2, 4, 5 and 6 have full acceptance evidence. Checked integrated items identify their verification basis. Task 9 now records the user-authorized removal of p5.js in `RUNTIME_EVALUATION.md`; Canvas is the sole rendering runtime. A fresh post-removal browser pass, direct-open startup, updated resize appearance, updated curved-edge visual alignment and reduced-motion browser behavior remain unverified. Matched runtime comparisons were not performed and are no longer required for the user-selected removal. User audio, phone gesture, maximum-density and delayed-font checks subsequently passed (see manual verification below). The external rendering dependency has been removed; no publication, deployment, or commit has occurred.
 
 ## Goal and authorized scope
 
 ### User manual verification — 2026-10-11
 
-- Latest user checks: Canvas renderer selected with and without network access; desktop p5 remains unverified. Camera consistency at different zoom levels, convex CRT curvature/full corner coverage, paused rain interactions, and Tab/Shift-Tab navigation passed. Curved-edge pointer alignment and reduced-motion behavior remain pending.
-- Desktop Firefox and Chrome both explicitly report Canvas selection because the browser reports touch/coarse-pointer capability. The current selection rule skips p5 for either a coarse primary pointer or any reported touch points, including touch-capable desktops; these checks do not exercise the p5 path or establish a CDN failure.
+- Latest user checks: Canvas renderer selected with and without network access. The user subsequently confirmed desktop browsers consistently use Canvas and authorized removal of p5.js. Camera consistency at different zoom levels, convex CRT curvature/full corner coverage, paused rain interactions, and Tab/Shift-Tab navigation passed. Curved-edge pointer alignment and reduced-motion behavior remain pending.
+- Desktop Firefox and Chrome both explicitly report Canvas selection because the browser reports touch/coarse-pointer capability. The previous selection rule skipped p5 for either a coarse primary pointer or any reported touch points, including touch-capable desktops; these checks do not exercise the p5 path or establish a CDN failure.
 - Resize preserves the world but the user observed flicker. Follow-up repaints source and CRT output synchronously after resizing, without advancing simulation; all twelve regression groups and rain.js syntax checks pass, including immediate repaint and retained state. Updated resize appearance remains pending user confirmation.
-- Font verification passed: the user confirmed Noto Sans JP reports loaded and the Slow 3G delayed-font test passes, including paused arrival without scene movement or reseeding, on the Canvas path. Desktop p5 font behavior remains outside this evidence.
+- Font verification passed: the user confirmed Noto Sans JP reports loaded and the Slow 3G delayed-font test passes, including paused arrival without scene movement or reseeding, on the Canvas path. The removed p5 path was not exercised by this evidence.
 - Resize produced no errors, but continual reseeding during window dragging was reported as a visual problem. Follow-up implementation preserves existing lanes/streams/cells and grows coverage around the fixed camera centre; identity and spacing regression checks pass.
 - Paused appearance controls passed. Hover and click/Shift-click disturbances while paused were reported as unwanted; follow-up implementation ignores these rain interactions while paused, preserving camera controls and explicit surge/breach actions. Regression checks confirm no ripple effects/audio while paused.
 - Audio verification passed, including the requested SFX Only, hum/score, mute, pause and Foley checks.
@@ -23,11 +23,11 @@ Implementation is complete for tasks 1–8 and 10. Separate acceptance boxes bel
 - The user reported concave curvature after the full-viewport change. Corrected Canvas strip overscan to stretch the centre more than the top/bottom, restoring convex outward bowing. Direction, coverage and pointer-mapping regression checks pass. The corrected curved frame was inspected through Live Server without warnings/errors; user visual confirmation remains pending.
 - Phone gesture tests passed on an actual device. Follow-up UI hides unavailable keyboard shortcut help, E/B prefixes and desktop keyboard hints on phones/coarse-pointer devices. Updated phone appearance remains pending.
 - Accessibility/reduced-motion verification remains untested by the user.
-- Maximum-density performance verification passed on the user's tested setup. Matched p5/Canvas timing and resource measurements for task 9 remain separate and unperformed.
+- Maximum-density performance verification passed on the user's tested setup. Matched p5/Canvas timing and resource measurements were not performed; the user chose removal based on the exercised Canvas path.
 
 Simplify Digital Rain and move it from one HTML file into a small set of maintainable files. The user explicitly wants to remove Story Director and all image/video export features. Preserve the remaining visual style, sound design, interactions, and mobile resilience.
 
-This document tracks implemented work and remaining acceptance checks. Implementation and acceptance completion are recorded separately. Tasks 1–5 are the first priority; tasks 6–10 are subsequent cleanup. Task 9 is an evaluation, not authorization to replace the rendering runtime without considering its results.
+This document tracks implemented work and remaining acceptance checks. Implementation and acceptance completion are recorded separately. Tasks 1–5 are the first priority; tasks 6–10 are subsequent cleanup. Task 9 began as an evaluation; the user subsequently authorized p5.js removal based on desktop and mobile Canvas testing.
 
 The future coordinating agent may delegate these tasks to sub-agents. Assign explicit file ownership and acceptance checks, and integrate their work before considering a task complete.
 
@@ -126,11 +126,11 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 - [x] Implementation complete
 - [ ] Acceptance complete
-- **Verification status:** Six-file extraction and Canvas startup verified; live desktop p5 and direct-open/offline startup remain unverified.
+- **Verification status:** Six-file extraction and Canvas startup verified; p5 has subsequently been removed. Fresh direct-open/offline browser startup remains unverified.
 - **Owner:** Integration owner, after tasks 1–2.
 - **Reason:** Reduce navigation and editing friction without creating a large project structure.
 - **Scope:** Extract CSS and the existing functional sections into the target layout. Establish a clear startup sequence and a small shared API. Preserve `setRainOption`/state synchronization behavior while later tasks improve their implementation. Move keyboard dispatch into `ui.js` with one owner for key events. Keep the loader/adapter compatible with the selected script-loading approach.
-- **Acceptance:** All six files load successfully through the supported opening workflow. Desktop p5 and Canvas fallback initialize once, with no dependency-order errors or duplicated listeners. No intentional visual/audio changes occur from extraction alone. README documents layout and how to run the app.
+- **Acceptance:** All six files load successfully through the supported opening workflow. The Canvas runtime initializes once on desktop and mobile, with no dependency-order errors or duplicated listeners. No intentional visual/audio changes occur from extraction alone. README documents layout and how to run the app.
 
 ### 4. Redraw appearance changes while paused
 
@@ -179,20 +179,22 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 
 - [x] Implementation complete
 - [ ] Acceptance complete
-- **Verification status:** Native mapping, gesture suppression/cancellation and Canvas CRT sampling checks passed; live p5 parity and updated full-bleed curved-edge visual alignment remain unverified; user curved CRT clicks and actual-device phone gestures passed before the follow-up changes.
+- **Verification status:** Native mapping, gesture suppression/cancellation and Canvas CRT sampling checks passed; updated full-bleed curved-edge visual alignment remains unverified; user curved CRT clicks and actual-device phone gestures passed before the follow-up changes.
 - **Owner:** Input/display owner; coordinate edits to `rain.js` with its owner.
 - **Reason:** The Canvas adapter updates pointer coordinates but never calls `mouseMoved`, so its hover disturbance differs from p5. Hover also bypasses the CRT correction used by ripple clicks.
 - **Scope:** Use a single native pointer path for relevant hover and gestures. Apply the proper visible-screen to source-canvas to world mapping for hover. Preserve viewport-space ripples, gesture thresholds, pointer capture/cancellation, and suppression of taps after pinch/pan. Restrict hover to the rain area rather than panel interactions. Share conversion helpers where appropriate.
 - **Starting locations:** Adapter pointer listener around 270; `installRainGestures` around 446; `addPulse` around 1199; `mouseMoved` around 1224; `CRTDisplay.screenToSource` around 1419.
 - **Acceptance:** Desktop and forced Canvas fallback have consistent hover behavior. Click/hover effects align with the pointer near curved edges at minimum/maximum zoom. Mobile taps ripple; pinch and pan do not emit false taps. Cancellation and lifting one finger do not leave stuck gestures. Panel interactions do not disturb the rain.
 
-### 9. Evaluate removing p5.js
+### 9. Remove p5.js after Canvas verification
 
-- [ ] Evaluation complete
+- [x] Evaluation complete — user decision supersedes the provisional keep-both recommendation.
+- [x] Implementation complete
+- **Verification status:** User desktop testing consistently selected Canvas, including online/offline checks; earlier Canvas appearance, audio, phone gesture, density and delayed-font checks passed. All twelve regression groups and JavaScript syntax checks pass after removal. A fresh post-removal browser pass remains pending; no matched runtime timing/pixel comparison is claimed.
 - **Owner:** Runtime/performance reviewer, after the main refactor is stable.
-- **Reason:** Rendering already uses Canvas extensively, and the fallback implements a small p5-style API. A single Canvas runtime could remove the CDN dependency, `document.write`, and duplicate runtime paths.
-- **Scope:** Compare the retained app on desktop p5 and Canvas paths. Inventory all p5 functions/callbacks actually used after cleanup. Identify adapter gaps, including desktop 60 FPS versus mobile 30 FPS, font readiness, graphics disposal, resize, and input. Use an isolated prototype if needed; do not replace the main runtime merely because the adapter exists.
-- **Acceptance:** Deliver a recommendation supported by appearance, timing, startup, resize, CPU/frame-time, and mobile checks. State remaining risks and whether direct-open/offline behavior improves. If replacement is subsequently chosen, implement and verify it as a separate change; otherwise retain the existing paths.
+- **Reason:** The tested Canvas path already drives the retained app. The user explicitly authorized removing the unused external runtime.
+- **Scope completed:** Removed the CDN script injection, p5 availability branch and fallback-only naming. Kept the native Canvas helpers, desktop 60 FPS/touch 30 FPS targets, graphics disposal, font readiness, resize repaint, native input and independent CRT processing. Startup is guarded against duplicate installation and readiness events.
+- **Decision:** Canvas is the sole rendering runtime. Direct-open/local-server rendering no longer depends on a library download; Google Fonts remain optional. `RUNTIME_EVALUATION.md` records the evidence and remaining verification limits.
 
 ### 10. Improve accessibility, verification, and documentation
 
@@ -208,7 +210,7 @@ Official OpenAI guidance describes medium as balanced for agentic coding and hig
 ## Integrated retained-behavior checklist
 
 - [ ] Supported direct-open/local-server startup and optional font loading.
-- [ ] Desktop renderer and forced Canvas fallback; mobile Canvas path.
+- [x] Desktop and mobile use the sole Canvas runtime. User desktop/mobile checks and automated startup checks passed; fresh post-removal browser verification remains pending.
 - [x] All four profiles, readable controls, bloom/grain settings, and all CRT modes. Verified in the live Canvas browser.
 - [x] Maximum density without stream collisions or unacceptable performance. Automated spacing checks and user manual performance check passed.
 - [ ] Zoom/pan/resize preserve the world; reseed rebuilds intentionally.

@@ -1,20 +1,9 @@
-// Normal desktop runs p5.js. Touch/mobile goes straight to the lean Canvas
-// adapter below: no external dependency or idle WebGL context on phones.
-// This avoids a blank page when the CDN or GPU path is blocked on mobile.
-if (!(window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0)) {
-  document.write('<script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></scr' + 'ipt>');
-}
-
-// Standalone resilience: some mobile browsers/privacy filters do not fetch
-// the external p5.js script. In that case, the SAME sketch can be driven by
-// this minimal Canvas 2D adapter instead of presenting an empty black page.
-// Desktop uses real p5.js when the CDN is available.
-function installRainCanvasAdapter() {
-  if (typeof window.p5 !== 'undefined') return;
-  const touchDevice=window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
-  console.info('Digital Rain: using resilient Canvas 2D renderer ('+
-    (touchDevice?'browser reports touch/coarse-pointer capability; p5 skipped':'p5 unavailable')+').');
-  window.__rainCanvasFallback = true;
+// One native Canvas runtime for desktop and mobile, with no external scripts.
+// Install after the ordered app scripts have defined the lifecycle callbacks.
+function installRainCanvasRuntime() {
+  if (window.__rainCanvasRuntime) return;
+  window.__rainCanvasRuntime = true;
+  console.info('Digital Rain: using Canvas 2D renderer.');
   const begun=performance.now();
   let main=null,ctx=null,desiredFPS=30,lastDraw=0;
   const screenSize=()=>({w:Math.max(1,document.documentElement.clientWidth||innerWidth),
@@ -60,18 +49,23 @@ function installRainCanvasAdapter() {
       desiredFPS=5;
     }
   }
-  document.addEventListener('DOMContentLoaded',()=>{
+  let started=false;
+  function start(){
+    if(started)return;
+    started=true;
     const {w,h}=screenSize();
     window.windowWidth=w;window.windowHeight=h;
     try{window.setup?.();requestAnimationFrame(tick);}catch(err){
-      console.error('Digital Rain fallback startup failed',err);
+      console.error('Digital Rain Canvas startup failed',err);
     }
-  });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
 }
 
 /*
   DIGITAL RAIN // SIGNAL ENGINE v16
-  Ordered classic scripts; desktop p5.js with a native Canvas fallback.
+  Ordered classic scripts; native Canvas rendering on every device.
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
   One physical horizontal lane per stream depth, and all segments in that lane
@@ -362,7 +356,7 @@ function setup() {
   buildScene();
   displayEngine = new CRTDisplay(canvas.elt);
   soundEngine = new SignalAudio();
-  // The optional film font downloads after p5 initializes. Rebuilding the
+  // The optional film font downloads after the scene initializes. Rebuilding the
   // glyph atlases (only) switches the glyphs without resetting animation.
   if (document.fonts?.ready) document.fonts.ready.then(() => {
     for (const plane of planes) plane.buildAtlas();
@@ -1053,7 +1047,7 @@ function extendSceneForViewport() {
 }
 function windowResized() {
   // Mobile browser chrome and orientation changes can produce transient zero
-  // sizes. Resize to the actual CSS viewport rather than stale p5 globals.
+  // sizes. Resize to the actual CSS viewport rather than cached canvas dimensions.
   const w = Math.max(1, document.documentElement.clientWidth || innerWidth);
   const h = Math.max(1, innerHeight || document.documentElement.clientHeight);
   if (Math.abs(width-w)<2 && Math.abs(height-h)<2) return;

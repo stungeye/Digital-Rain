@@ -1,6 +1,6 @@
-// Dependencies have finished loading before choosing the runtime.
-installRainCanvasAdapter();
-// No p5 keyPressed() callback: the browser's focused control must not steal
+// App dependencies have finished loading before installing the Canvas runtime.
+installRainCanvasRuntime();
+// The browser's focused control must not steal
 // Space, E, B, or any other shortcut. One event => at most one action.
 function handleRainShortcut(event) {
   if(event.repeat || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -17,7 +17,7 @@ function handleRainShortcut(event) {
   if(!recognized.has(shortcut))return;
   if(shortcut==='h' && typeof window.toggleRainPanel!=='function')return;
   event.preventDefault();  // Space never activates a focused button or scrolls.
-  event.stopImmediatePropagation(); // p5 / other keydown listeners cannot double-fire.
+  event.stopImmediatePropagation(); // Other keydown listeners cannot double-fire.
   activateRainAudio();
   const rain=getRainOptions();
   const feedback = kind => window.signalSound()?.interfaceSound(kind);

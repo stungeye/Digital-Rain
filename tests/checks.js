@@ -9,9 +9,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 
-function harness({coarse = false, reduced = false} = {}) {
+function harness({coarse = false, reduced = false, ready = 'loading'} = {}) {
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
-  const listeners = new Map(), elements = new Map(), canvasCalls = [];
+  const listeners = new Map(), elements = new Map(), canvasCalls = [], animationFrames = [];
   const math = Object.create(Math);
   math.random = () => { randomCalls++; return ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296); };
   function eventTarget(target = {}) {
@@ -50,9 +50,10 @@ function harness({coarse = false, reduced = false} = {}) {
     }
     return el;
   }
-  const document = eventTarget({readyState:'loading',hidden:false,
+  const document = eventTarget({readyState:ready,hidden:false,
     createElement:element,getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
-    querySelector(){return null;},querySelectorAll(){return [];},write(){},
+    querySelector(){return null;},querySelectorAll(){return [];},
+    write(){throw Error('startup must not inject external scripts');},
     documentElement:element(),body:element(),fonts:{ready:{then(fn){fontReady=fn;}}},
   });
   const media = new Map();
@@ -79,7 +80,8 @@ function harness({coarse = false, reduced = false} = {}) {
   }
   const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:coarse?1:0},
     performance:{now:()=>now},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},
-    setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},requestAnimationFrame:()=>1,
+    setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},
+    requestAnimationFrame(fn){animationFrames.push(fn);return animationFrames.length;},
     AudioContext,URLSearchParams,location:{search:'',href:'file:///index.html'},innerWidth:640,innerHeight:360,
     matchMedia(query){if(!media.has(query))media.set(query,eventTarget({matches:query.includes('reduced-motion')?reduced:query.includes('coarse')?coarse:false}));return media.get(query);},
     width:640,height:360,windowWidth:640,windowHeight:360,millis:()=>now,pixelDensity(){},frameRate(){},
@@ -92,7 +94,7 @@ function harness({coarse = false, reduced = false} = {}) {
   const context=vm.createContext(sandbox);
   const run=source=>vm.runInContext(source,context);
   for(const file of ['rain','crt','audio','ui'])vm.runInContext(fs.readFileSync(path.join(root,'js',file+'.js'),'utf8'),context,{filename:file+'.js'});
-  return {run,sandbox,canvasCalls,media,elements,advance(ms=17){now+=ms;},get renders(){return renders;},
+  return {run,sandbox,canvasCalls,animationFrames,media,elements,advance(ms=17){now+=ms;},get renders(){return renders;},
     get randomCalls(){return randomCalls;},resolveFonts(){fontReady?.();},
     snapshot:()=>run(`JSON.stringify({simulationTime,frameNumber,pulseSeq,pulses,signalAt,breachAt,hover,
       planes:planes.map(p=>p.lanes.map(l=>({x:l.x,progress:l.progress,active:l.active,nextGap:l.nextGap,
@@ -103,14 +105,20 @@ function check(name, body){body();console.log('PASS '+name);}
 
 // Test cases below exercise production source through its public setters and
 // actual simulation/display/audio methods rather than copied implementations.
-check('ordered scripts initialize with desktop and mobile Canvas adapter', () => {
-  for (const coarse of [false,true]) {
-    const h=harness({coarse});
-    assert.equal(h.run('planes.length'),0,'no premature setup while scripts load');
+check('ordered scripts initialize exactly once with desktop and mobile Canvas runtime', () => {
+  for (const coarse of [false,true]) for (const ready of ['loading','complete']) {
+    const h=harness({coarse,ready});
+    if(ready==='loading')assert.equal(h.run('planes.length'),0,'no premature setup while scripts load');
     h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});h.advance();h.run('draw()');
     assert.ok(h.run('planes.length === 3 && planes.every(p=>p.lanes.length>0)'));
     assert.ok(h.renders>0);
-    assert.equal(h.sandbox.__rainCanvasFallback,true);
+    assert.equal(h.sandbox.__rainCanvasRuntime,true);
+    const state=h.snapshot();
+    const frameRequests=h.animationFrames.length;
+    h.run('installRainCanvasRuntime()');
+    h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+    assert.equal(h.snapshot(),state,'reinstallation and repeated readiness do not reset the scene');
+    assert.equal(h.animationFrames.length,frameRequests,'startup cannot schedule duplicate animation loops');
     assert.equal(h.elements.get('rain').children.filter(el=>el.id==='defaultCanvas0').length,1);
     assert.equal(h.run('soundEngine.ctx'),null,'startup does not activate audio');
   }
