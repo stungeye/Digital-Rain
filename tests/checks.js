@@ -46,7 +46,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
         createPattern:()=>({}),createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),
         drawImage(...args){canvasCalls.push({canvas:el,args});},
         fillRect(){if(el.id==='defaultCanvas0')renders++;},
-        save(){},restore(){},translate(){},rotate(){},scale(){},fillText(){},clearRect(){},putImageData(){},
+        save(){},restore(){},translate(){},rotate(){},scale(){},setTransform(){},fillText(){},clearRect(){},putImageData(){},
       };
       el.getContext = type => type==='2d' ? ctx : null;
       el.width=640;el.height=360;
@@ -1009,6 +1009,64 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   assert.equal(engine.mode,'effects');assert.equal(engine.volume,.5);assert.equal(engine.scorePaused,false);
   assert.equal(h.run('displayEngine.mode'),'glass');assert.equal(h.elements.get('zoom').value,1);
   key('m');key('m');assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
+});
+
+check('beat envelopes follow audible output time, preserve touch attacks and release between hits', () => {
+  const h=harness();h.run('setup();soundEngine.init()');
+  const engine=h.run('soundEngine'),ctx=engine.ctx;
+  engine.mode='score';ctx.currentTime=10;
+  engine.recentHits=[{t:9.96,energy:.76}];
+  // The graph has reached the hit, but the output device has not.
+  ctx.getOutputTimestamp=()=>({contextTime:9.95,performanceTime:1000});
+  assert.equal(engine.beatEnergy(),0);
+  h.advance(17);assert.equal(engine.beatEnergy(),.76,'first audible frame gets the full attack');
+  h.advance(17);assert.equal(engine.beatEnergy(),.76,'attack survives one 30 FPS frame');
+  h.advance(66);ctx.currentTime=10.1;
+  const released=engine.beatEnergy();
+  assert.ok(released>0&&released<.3,'release restores contrast before the next hit');
+  h.advance(150);ctx.currentTime=10.3;
+  assert.equal(engine.beatEnergy(),0,'envelope has a finite lifetime');
+  // Missing / startup / stale timestamps use finite reported latencies.
+  ctx.getOutputTimestamp=undefined;ctx.baseLatency=.02;ctx.outputLatency=.03;
+  ctx.currentTime=10;engine.recentHits=[{t:9.96,energy:.76}];
+  assert.equal(engine.beatEnergy(),0);
+  ctx.currentTime=10.017;assert.equal(engine.beatEnergy(),.76);
+  for(const stamp of [{contextTime:0,performanceTime:0},{contextTime:9,performanceTime:1},
+    {contextTime:NaN,performanceTime:1000},{contextTime:9.95,performanceTime:Infinity},
+    {contextTime:20,performanceTime:1250}]) {
+    ctx.getOutputTimestamp=()=>stamp;assert.equal(engine.beatEnergy(),.76);
+  }
+  ctx.baseLatency=NaN;ctx.outputLatency=undefined;ctx.getOutputTimestamp=undefined;
+  ctx.currentTime=10;engine.recentHits=[{t:10,energy:.76}];
+  assert.equal(engine.beatEnergy(),0,'master compressor delay is accounted for');
+  ctx.currentTime=10.01;assert.equal(engine.beatEnergy(),.76);
+  engine.recentHits.push({t:10,energy:.55});assert.equal(engine.beatEnergy(),1,'combined hits stay bounded');
+  for(const state of ['suspended','interrupted','closed']){ctx.state=state;assert.equal(engine.beatEnergy(),0);}
+  ctx.state='running';engine.setPaused(true);assert.equal(engine.beatEnergy(),0);
+  engine.setPaused(false);assert.equal(engine.beatEnergy(),0,'resume clears old hits');
+  engine.mode='effects';assert.equal(engine.beatEnergy(),0);
+});
+
+check('tunnel caches preserve deterministic cells, bound memory and spare the hidden rain', () => {
+  const h=harness();h.run('setup();setRainOption("mode","tunnel");setRainOption("grain",0)');
+  const world=h.run('JSON.stringify(planes.map(p=>p.lanes.map(l=>l.streams.map(s=>[s.head,s.progress,[...s.cells]]))))');
+  h.run('updateSimulation(.055);updateSimulation(.055);renderScene()');
+  assert.equal(h.run('JSON.stringify(planes.map(p=>p.lanes.map(l=>l.streams.map(s=>[s.head,s.progress,[...s.cells]]))))'),world);
+  assert.ok(h.run('tunnelTravel>0 && tunnelRows.size>0'));
+  h.run(`for(let row=0;row<700;row++) {
+    const cached=tunnelRow(row);
+    for(let lane=0;lane<96;lane++)if(cached.cells[lane]!==tunnelHash(row,lane))throw Error('cached seed changed');
+  }`);
+  assert.equal(h.run('tunnelRows.size'),256);
+  h.run('simulationTime=3600000;tunnelTravel=48000;rain.mutation=2.5;renderScene()');
+  h.run(`for(const [row,cached] of tunnelRows)for(let lane=0;lane<96;lane++) {
+    const mutationRow=cached.mutationRows[lane];
+    if(Number.isFinite(mutationRow) && cached.glyphs[lane]!==Math.floor(tunnelHash(mutationRow,lane+19)*GLYPHS.length))throw Error('cached glyph changed');
+  }`);
+  assert.ok(h.run('tunnelRows.size<=256'));
+  h.run('setRainOption("mode","rain");updateSimulation(.055)');
+  assert.notEqual(h.run('JSON.stringify(planes.map(p=>p.lanes.map(l=>l.streams.map(s=>[s.head,s.progress,[...s.cells]]))))'),world);
+  h.run('buildScene()');assert.equal(h.run('tunnelRows.size'),0);assert.equal(h.run('tunnelLanes.length'),0);
 });
 
 check('tunnel preserves travel on pause and mode switches, and gates beat acceleration', () => {

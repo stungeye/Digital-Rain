@@ -500,12 +500,29 @@ window.SignalAudio = class SignalAudio {
     if(dropout&&s===12)this.filteredNoise(hit,.48,.09,550,.31);
   }
   beatEnergy() {
-    if(this.mode!=='score'||this.scorePaused||!this.ctx)return 0;
-    const now=this.ctx.currentTime;
+    if(this.mode!=='score'||this.scorePaused||!this.ctx||this.ctx.state!=='running')return 0;
+    const ac=this.ctx;
+    // currentTime is the rendering clock, ahead of the sound at the speakers.
+    // Prefer the device timestamp; older browsers fall back to reported latency.
+    let now=ac.currentTime;
+    const stamp=ac.getOutputTimestamp?.();
+    const elapsed=stamp ? (performance.now()-stamp.performanceTime)/1000 : Infinity;
+    if(stamp && Number.isFinite(stamp.contextTime) && stamp.contextTime>0 && stamp.contextTime<=ac.currentTime &&
+       Number.isFinite(elapsed) && elapsed>=0 && elapsed<.25) {
+      now=Math.min(now,stamp.contextTime+elapsed);
+    } else {
+      for(const latency of [ac.baseLatency,ac.outputLatency])
+        if(Number.isFinite(latency) && latency>0)now-=latency;
+    }
+    // The master DynamicsCompressor has a 6 ms pre-delay (Web Audio spec).
+    now-=.006;
     let energy=0;
     for(const hit of this.recentHits) {
       const elapsed=now-hit.t;
-      if(elapsed>=0 && elapsed<.29)energy+=hit.energy*Math.exp(-elapsed*14);
+      // Hold one touch frame's attack, then release quickly enough to separate
+      // consecutive hits. This also keeps a 30 FPS frame from missing the peak.
+      if(elapsed>=0 && elapsed<.22)
+        energy+=hit.energy*Math.exp(-Math.max(0,elapsed-.035)*22);
     }
     return Math.min(1,energy);
   }

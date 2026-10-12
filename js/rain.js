@@ -215,6 +215,8 @@ const BREACH_DURATION = 3200;
 let visualBeat = 0;
 let tunnelTravel = 0;
 let tunnelSeed = Math.random()*1000;
+let tunnelLanes = [];
+const tunnelRows = new Map();
 let displayEngine;
 let soundEngine;
 // M restores the previously selected audible mode, even if it was Code Hum
@@ -419,6 +421,8 @@ function buildScene() {
   pulses = [];
   tunnelTravel = 0;
   tunnelSeed = Math.random()*1000;
+  tunnelLanes = [];
+  tunnelRows.clear();
   signalAt = -Infinity;
   breachAt = -Infinity;
   background(...GRADES[rain.grade].bg);
@@ -447,9 +451,10 @@ function updateSimulation(dt) {
     const beat=tunnelBeat();
     const surge=Math.max(0,1-(t-signalAt)/1950);
     tunnelTravel+=dt*rain.speed*(13.5+beat*9+surge*14);
+  } else {
+    viewport=worldViewport();
+    for(const plane of planes)plane.update(dt,t);
   }
-  viewport=worldViewport();
-  for(const plane of planes)plane.update(dt,t);
 }
 function renderScene() {
   const t=simulationTime;
@@ -510,20 +515,20 @@ function renderScene() {
 // A moving lattice in world Z, rather than rescaled concentric screen rings.
 // Every row retains its identity as it approaches, passes the camera and exits.
 function tunnelBeat() {
-  // Lift quieter percussion before applying the user's impact control.
+  // Preserve attack/release contrast before applying the user's impact control.
   // Zero impact still disables every response; the upper end stays bounded.
   return rain.audio==='score' && rain.beatReactive ?
-    Math.min(2.5,Math.pow(Math.max(0,visualBeat),.7)*1.8*rain.beatStrength) : 0;
+    Math.min(2.5,Math.max(0,visualBeat)*1.8*rain.beatStrength) : 0;
 }
 function tunnelCurve(s) {
   return {x:2.4*Math.sin(s*.065)+1.1*Math.sin(s*.137),
     y:1.9*Math.sin(s*.081)+.7*Math.cos(s*.153)};
 }
-function tunnelSection(z,beat=0) {
-  const s=tunnelTravel, origin=tunnelCurve(s), ahead=tunnelCurve(s+z);
-  const roll=.32*Math.sin(s*.047)+.16*Math.sin(s*.093);
+function tunnelSection(z,beat=0,frame=null) {
+  const s=tunnelTravel, origin=frame?.origin||tunnelCurve(s), ahead=tunnelCurve(s+z);
+  const roll=frame?.roll??(.32*Math.sin(s*.047)+.16*Math.sin(s*.093));
   const x=ahead.x-origin.x, y=ahead.y-origin.y;
-  const cr=Math.cos(roll),sr=Math.sin(roll);
+  const cr=frame?.cr??Math.cos(roll),sr=frame?.sr??Math.sin(roll);
   return {x:x*cr-y*sr,y:x*sr+y*cr,
     twist:(s+z)*.065+roll,
     radius:3.15*(1+.065*Math.sin((s+z)*.22)+beat*.12*Math.sin(z*.8-s*.5)),
@@ -532,6 +537,20 @@ function tunnelSection(z,beat=0) {
 function tunnelHash(row,lane) {
   const n=Math.sin(row*127.1+lane*311.7+tunnelSeed)*43758.5453;
   return n-Math.floor(n);
+}
+function tunnelRow(row) {
+  let cached=tunnelRows.get(row);
+  if(cached)return cached;
+  const cells=new Float64Array(96),glyphs=new Uint8Array(96);
+  const mutationRows=new Float64Array(96);
+  mutationRows.fill(-Infinity);
+  for(let lane=0;lane<96;lane++)cells[lane]=tunnelHash(row,lane);
+  cached={cells,glyphs,mutationRows};
+  tunnelRows.set(row,cached);
+  // Cache by wall row, not by mutation row: mutation offsets diverge over
+  // long sessions. Each cell retains only its latest glyph lookup.
+  if(tunnelRows.size>256)tunnelRows.delete(tunnelRows.keys().next().value);
+  return cached;
 }
 // Both modes light the occupied code with the same broad screen-space wave.
 function rippleGlowCharge(x,y,now) {
@@ -556,31 +575,53 @@ function renderTunnel(ctx,now) {
   const breach=breachRupture(now);
   const centerX=width*.5-cameraPanX*.12,centerY=height*.5;
   const source=atlas.atlas.canvas;
+  if(tunnelLanes.length!==lanes) {
+    tunnelLanes=[];
+    for(let lane=0;lane<lanes;lane++) {
+      const seed=tunnelHash(0,lane),angle=lane/lanes*Math.PI*2;
+      tunnelLanes.push({lane,seed,period:37+Math.floor(seed*19),
+        cos:Math.cos(angle),sin:Math.sin(angle),head:0,length:0});
+    }
+  }
+  const active=[];
+  const density=Math.min(1,.65+rain.density*.30);
+  for(let lane=0;lane<lanes;lane++) {
+    const track=tunnelLanes[lane],{seed,period}=track;
+    if(seed>density)continue;
+    track.head=now*.001*rain.speed*(3+seed*5)+seed*period;
+    track.length=Math.min(period-3,(22+seed*18)*rain.persistence);
+    active.push(track);
+  }
+  const origin=tunnelCurve(tunnelTravel);
+  const roll=.32*Math.sin(tunnelTravel*.047)+.16*Math.sin(tunnelTravel*.093);
+  const cr=Math.cos(roll),sr=Math.sin(roll);
+  const frame={origin,roll,cr,sr};
+  const blanks=SIGNAL_MOTION[rain.grade].blanks;
+  const mutation=now*.001*rain.mutation;
+  ctx.save();
   // Painter's order also keeps near phosphor heads on top of distant trails.
   for(let i=count;i>=1;i--) {
     const row=first+i,z=row*step-tunnelTravel;
     if(z<.85||z>far)continue;
-    const section=tunnelSection(z,beat);
+    const section=tunnelSection(z,beat,frame);
     const beatBand=beat*(.4+.6*(.5+.5*Math.sin(z*.9-now*.009)));
     const fog=Math.pow(Math.max(0,1-z/far),.65);
     const entrance=Math.min(1,(z-.85)/.9);
     const glyphSize=Math.min(110,section.scale*.22);
     if(glyphSize<1.3)continue;
-    for(let lane=0;lane<lanes;lane++) {
-      const seed=tunnelHash(0,lane);
-      if(seed>Math.min(1,.65+rain.density*.30))continue;
+    const ct=Math.cos(section.twist),st=Math.sin(section.twist);
+    const cached=tunnelRow(row);
+    for(const track of active) {
+      const {lane,period,head,length}=track;
       // Independent falling streams run along the tube, each with a bright
       // leading cell, a fading tail and dark clearance before the next train.
-      const period=37+Math.floor(seed*19);
-      const head=now*.001*rain.speed*(3+seed*5)+seed*period;
       const age=((head-row)%period+period)%period;
-      const length=Math.min(period-3,(22+seed*18)*rain.persistence);
       if(age>length)continue;
-      const cell=tunnelHash(row,lane);
-      if(cell<SIGNAL_MOTION[rain.grade].blanks && age>2)continue;
-      const angle=lane/lanes*Math.PI*2+section.twist;
-      let x=centerX+(section.x+Math.cos(angle)*section.radius)*section.scale;
-      let y=centerY+(section.y+Math.sin(angle)*section.radius)*section.scale;
+      const cell=cached.cells[lane];
+      if(cell<blanks && age>2)continue;
+      const cos=track.cos*ct-track.sin*st,sin=track.sin*ct+track.cos*st;
+      let x=centerX+(section.x+cos*section.radius)*section.scale;
+      let y=centerY+(section.y+sin*section.radius)*section.scale;
       if(x<-glyphSize*2||x>width+glyphSize*2||y<-glyphSize*2||y>height+glyphSize*2)continue;
       let charge=rippleGlowCharge(x,y,now);
       if(surgeAge>=0 && surgeAge<1950)
@@ -592,22 +633,26 @@ function renderTunnel(ctx,now) {
       const headCell=age<1.5;
       const intensity=Math.pow(Math.max(0,1-age/length),1.25);
       const ink=Math.min(9,Math.max(1,Math.round(3+intensity*4+beatBand*3.2+charge*3)));
-      const glyph=Math.floor(tunnelHash(row+Math.floor(now*.001*rain.mutation*(.3+cell)),lane+19)*GLYPHS.length);
+      const mutationRow=row+Math.floor(mutation*(.3+cell));
+      if(cached.mutationRows[lane]!==mutationRow) {
+        cached.glyphs[lane]=Math.floor(tunnelHash(mutationRow,lane+19)*GLYPHS.length);
+        cached.mutationRows[lane]=mutationRow;
+      }
+      const glyph=cached.glyphs[lane];
       const opacity=Math.min(1,fog*entrance*grade.alpha*(.4+intensity*.6+beatBand*.25));
       if(rain.bloom && rain.glow>0 && (headCell||charge>.3||(beatBand>.3&&cell>.8))) {
+        ctx.setTransform(1,0,0,1,0,0);
         ctx.globalAlpha=Math.min(.8,opacity*rain.glow*(.3+beatBand*.5+charge*.15));
         const halo=glyphSize*(2.1+beatBand*.65);
         ctx.drawImage(glows.halo.canvas,x-halo,y-halo,halo*2,halo*2);
       }
       ctx.globalAlpha=opacity;
-      ctx.save();
-      ctx.translate(x,y);
-      ctx.rotate(angle+Math.PI*.5);
+      ctx.setTransform(-sin,cos,-cos,-sin,x,y);
       ctx.drawImage(source,glyph*atlas.sourceW,(headCell?9:ink)*atlas.sourceH,
         atlas.sourceW,atlas.sourceH,-glyphSize*.5,-glyphSize*.62,glyphSize,glyphSize*1.24);
-      ctx.restore();
     }
   }
+  ctx.restore();
   ctx.globalAlpha=1;
 }
 
@@ -738,6 +783,7 @@ class CodePlane {
     const surgeOn = surgeAge>=0 && surgeAge<1950;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
+      if(!rupture && (lane.x<viewport.minX-50 || lane.x>viewport.maxX+50))continue;
       for (const stream of lane.streams) {
         if (!stream.whiteHead || stream.head < this.minRow || stream.head >= stream.endRow) continue;
         const sourceY = (stream.head + .5) * this.lineHeight;
@@ -789,6 +835,7 @@ class CodePlane {
     const tw = this.tileW;
     const th = this.tileH;
     const lineHeight = this.lineHeight;
+    const falloffPower = 1.5 / rain.persistence;
     const pulseCount = pulses.length;
     const surgeAge = now - signalAt;
     const surgeOn = surgeAge >= 0 && surgeAge < 1950;
@@ -816,7 +863,7 @@ class CodePlane {
           if (cell.blank && age > 4) continue;
 
           const fraction = 1 - age/stream.length;
-          const falloff = Math.pow(fraction, 1.5 / rain.persistence);
+          const falloff = Math.pow(fraction, falloffPower);
           let tone = Math.floor((.2 + 8.8*falloff) * cell.energy);
           if (age === 0) tone = stream.whiteHead && (grade.heads >= 1 || lane.lottery < grade.heads) ? 9 : 7;
           else if (age === 1 && stream.whiteHead) tone = Math.max(tone, 7);
@@ -985,7 +1032,10 @@ class CodeLane {
       stream.progress -= steps;
       for (let i=0; i<steps; i++) stream.advanceRow();
     }
-    this.streams = this.streams.filter(stream => stream.head-stream.length < stream.endRow);
+    let retained=0;
+    for(const stream of this.streams)
+      if(stream.head-stream.length<stream.endRow)this.streams[retained++]=stream;
+    this.streams.length=retained;
     // Hold one sampled follower while waiting; don't reroll until a slow
     // speed happens to fit, which would bias the speed distribution.
     if (!this.pending) this.pending = new CodeStream(this.plane, this.plane.minRow-1);
