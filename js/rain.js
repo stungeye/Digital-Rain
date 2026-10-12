@@ -5,7 +5,7 @@ function installRainCanvasRuntime() {
   window.__rainCanvasRuntime = true;
   console.info('Digital Rain: using Canvas 2D renderer.');
   const begun=performance.now();
-  let main=null,ctx=null,desiredFPS=30,lastDraw=0;
+  let main=null,ctx=null,desiredFPS=30,nextDraw=0;
   const screenSize=()=>({w:Math.max(1,document.documentElement.clientWidth||innerWidth),
                         h:Math.max(1,innerHeight||document.documentElement.clientHeight)});
   const applySize=(w,h)=>{
@@ -41,8 +41,13 @@ function installRainCanvasRuntime() {
   },{passive:true});
   function tick(now){
     requestAnimationFrame(tick);
-    if(now-lastDraw<1000/desiredFPS)return;
-    lastDraw=now;
+    const interval=1000/desiredFPS;
+    // Browser refresh timestamps can land fractionally before the deadline.
+    // Retain the frame grid instead of restarting it at each late callback:
+    // otherwise rounding/jitter drops whole refreshes and looks like a pause.
+    const due=now+.5;
+    if(due<nextDraw)return;
+    nextDraw+=Math.max(1,Math.floor((due-nextDraw)/interval)+1)*interval;
     try{window.draw?.();}catch(e){
       console.error('Digital Rain renderer error',e);
       // A transient graphics failure should not keep hammering the GPU.

@@ -144,6 +144,29 @@ check('ordered scripts initialize exactly once with desktop and mobile Canvas ru
   }
 });
 
+check('frame pacing retains refresh cadence through timestamp rounding, jitter and stalls', () => {
+  for(const coarse of [false,true])for(const hz of [60,120,144]) {
+    const h=harness();
+    h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+    h.run(`frameRate(${coarse?30:60});globalThis.pacedFrames=0;window.draw=()=>pacedFrames++`);
+    let timestamp=1000;
+    const tick=time=>h.animationFrames.splice(0).forEach(callback=>callback(time));
+    tick(timestamp);
+    const before=h.run('pacedFrames');
+    for(let i=1;i<=hz*2;i++) {
+      // Quantized refresh timestamps plus small alternating delivery jitter.
+      tick(Math.round((timestamp+i*1000/hz+(i%2?.12:-.12))*10)/10);
+    }
+    assert.ok(Math.abs(h.run('pacedFrames')-before-(coarse?60:120))<=1,
+      `${coarse?30:60} FPS stays stable on ${hz} Hz: ${h.run('pacedFrames')-before}`);
+    timestamp+=2500;
+    const stalled=h.run('pacedFrames');tick(timestamp);
+    assert.equal(h.run('pacedFrames'),stalled+1,'a stall draws once without a catch-up burst');
+    tick(timestamp+.1);
+    assert.equal(h.run('pacedFrames'),stalled+1,'no immediate duplicate after a stall');
+  }
+});
+
 check('all profiles keep lane ownership and two dark rows at maximum density and speed', () => {
   const h=harness();h.run('setup(); setRainOption("density", 1.65); setRainOption("speed", 2.5)');
   const verify=()=>h.run(`(()=>{
