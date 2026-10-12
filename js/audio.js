@@ -534,7 +534,7 @@ window.SignalAudio = class SignalAudio {
     const ac=this.ctx, t=ac.currentTime+.012;
     const pan=Math.max(-.72,Math.min(.72,x*1.44-.72));
     const heavy=power>2, length=heavy?1.35:.94;
-    const peak=heavy?.21:.125, rise=heavy?.265:.175;
+    const peak=heavy?.42:.25, rise=heavy?.265:.175;
     const noiseLayer=(offset, duration, freq, targetFreq, amp, position, attack)=>{
       const s=ac.createBufferSource();s.buffer=this.noise;
       const f=ac.createBiquadFilter();f.type='bandpass';f.Q.value=.62;
