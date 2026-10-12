@@ -46,19 +46,22 @@ html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:v
 button,input{font:inherit;-webkit-tap-highlight-color:transparent}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);outline-offset:2px}
-#fullscreen-toggle,#toggle{position:fixed;z-index:7;left:var(--hud-left);width:var(--hud-button);height:var(--hud-button);display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
+#fullscreen-toggle,#music-toggle,#toggle{position:fixed;z-index:7;left:var(--hud-left);width:var(--hud-button);height:var(--hud-button);display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
 #fullscreen-toggle{top:var(--hud-top)}
-#toggle{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
-#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible,#toggle:hover,#toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
-#fullscreen-toggle svg,#toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
+#music-toggle{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
+#toggle{top:calc(var(--hud-top) + 2 * (var(--hud-button) + var(--hud-gap)))}
+#music-toggle[aria-pressed="true"]{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
+#music-toggle[aria-pressed="true"] .music-off{display:none}
+#fullscreen-toggle:hover,#fullscreen-toggle:focus-visible,#music-toggle:hover,#music-toggle:focus-visible,#toggle:hover,#toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
+#fullscreen-toggle svg,#music-toggle svg,#toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
 #fullscreen-toggle .fs-exit{display:none}
 #fullscreen-toggle.is-fullscreen .fs-enter{display:none}
 #fullscreen-toggle.is-fullscreen .fs-exit{display:block}
-.hud{position:fixed;z-index:5;left:var(--hud-left);top:calc(var(--hud-top) + 2 * (var(--hud-button) + var(--hud-gap)));font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--ui-label);letter-spacing:.085em;user-select:none}
+.hud{position:fixed;z-index:5;left:var(--hud-left);top:calc(var(--hud-top) + 3 * (var(--hud-button) + var(--hud-gap)));font:11px/1.5 Consolas,"Liberation Mono",monospace;color:var(--ui-label);letter-spacing:.085em;user-select:none}
 #toggle .panel-close{display:none}
 #toggle[aria-expanded="true"] .panel-close{display:block}
 #toggle[aria-expanded="true"] .panel-open{display:none}
-#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 2 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:12px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
+#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 3 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:12px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
 #panel.open{display:block}
 .hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:var(--ui-dim)}
 .live{color:var(--ui-accent)}

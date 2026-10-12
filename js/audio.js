@@ -31,6 +31,8 @@ window.SignalAudio = class SignalAudio {
   static scores = PROFILE_SCORES;
   constructor() {
     this.ctx = null; this.mode = 'off'; this.volume = rain.volume;
+    this.humVolume = rain.humVolume ?? .5;
+    this.scoreVolume = rain.scoreVolume ?? 1;
     this.step = 0; this.nextStep = 0; this.nextAmbient = 0;
     this.timer = null; this.nodes = []; this.recentHits = [];
     this.scorePaused = rain.paused;
@@ -60,7 +62,7 @@ window.SignalAudio = class SignalAudio {
     oldBus.gain.setTargetAtTime(0, t, .025);
     setTimeout(() => oldBus.disconnect(), 400);
     this.scoreBus = this.ctx.createGain();
-    this.scoreBus.gain.value = this.scorePaused || this.mode !== 'score' ? 0 : 1;
+    this.scoreBus.gain.value = this.scorePaused || this.mode !== 'score' ? 0 : this.scoreVolume;
     this.scoreBus.connect(this.master);
   }
   init() {
@@ -78,7 +80,7 @@ window.SignalAudio = class SignalAudio {
     this.master.connect(this.compressor); this.compressor.connect(ac.destination);
     // All score instruments are routed separately from UI and cinematic SFX.
     // This lets pause mute the full beat instantly without muting the hum.
-    this.scoreBus=ac.createGain();this.scoreBus.gain.value=this.scorePaused?0:1;
+    this.scoreBus=ac.createGain();this.scoreBus.gain.value=this.scorePaused?0:this.scoreVolume;
     this.scoreBus.connect(this.master);
     // Gate the entire ambient group after modulation. Setting an LFO-driven
     // source gain to zero alone cannot silence its additive modulation.
@@ -158,6 +160,18 @@ window.SignalAudio = class SignalAudio {
     if (this.ctx) this.master.gain.setTargetAtTime(this.mode === 'off' ? 0 : this.volume * .52,
       this.ctx.currentTime, .07);
   }
+  setHumVolume(value) {
+    this.humVolume = Number(value);
+    if (this.ctx) this.ambientBus.gain.setTargetAtTime(
+      this.mode==='ambience'||this.mode==='score'?this.humVolume:0,
+      this.ctx.currentTime, .05);
+  }
+  setScoreVolume(value) {
+    this.scoreVolume = Number(value);
+    if (this.ctx) this.scoreBus.gain.setTargetAtTime(
+      this.scorePaused||this.mode!=='score'?0:this.scoreVolume,
+      this.ctx.currentTime, .05);
+  }
   setMode(mode) {
     if (mode !== 'off' && !this.ctx && !this.init()) { this.mode = 'off'; return; }
     const previousMode=this.mode;
@@ -176,7 +190,7 @@ window.SignalAudio = class SignalAudio {
     const ac = this.ctx, active = mode !== 'off';
     const ambientEnabled=mode==='ambience'||mode==='score';
     this.ambientBus.gain.cancelScheduledValues(ac.currentTime);
-    if(ambientEnabled)this.ambientBus.gain.setTargetAtTime(1,ac.currentTime,.05);
+    if(ambientEnabled)this.ambientBus.gain.setTargetAtTime(this.humVolume,ac.currentTime,.05);
     else this.ambientBus.gain.setTargetAtTime(0,ac.currentTime,.02);
     if(mode==='score' && previousMode!=='score') {
       this.step=0;
@@ -185,8 +199,9 @@ window.SignalAudio = class SignalAudio {
     }
     this.setPaused(rain.paused);
     this.master.gain.setTargetAtTime(active ? this.volume * .52 : 0, ac.currentTime, active ? .018 : .12);
-    this.droneGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .072 : .135, ac.currentTime, .25);
-    this.airGain.gain.setTargetAtTime(mode === 'effects' ? 0 : mode === 'score' ? .019 : .043, ac.currentTime, .35);
+    // Both hum modes share the same bed levels; the hum slider owns its mix.
+    this.droneGain.gain.setTargetAtTime(mode === 'effects' ? 0 : .135, ac.currentTime, .25);
+    this.airGain.gain.setTargetAtTime(mode === 'effects' ? 0 : .043, ac.currentTime, .35);
     this.underGain.gain.setTargetAtTime(mode === 'effects' ? 0 : .019, ac.currentTime, .35);
     if (active && !this.timer) {
       this.nextStep = ac.currentTime + this.startLead;
@@ -201,7 +216,7 @@ window.SignalAudio = class SignalAudio {
     this.recentHits.length=0;
     if(!this.ctx)return;
     const t=this.ctx.currentTime;
-    this.scoreBus.gain.setTargetAtTime(this.scorePaused||this.mode!=='score'?0:1,t,.012);
+    this.scoreBus.gain.setTargetAtTime(this.scorePaused||this.mode!=='score'?0:this.scoreVolume,t,.012);
     // The sequencing position stays fixed while paused. The next note is
     // resynchronized to audio time on resume (no burst of skipped beats).
     this.nextStep=t+this.startLead;

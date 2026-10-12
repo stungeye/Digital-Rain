@@ -61,6 +61,12 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   const setText=(id,text)=>{const el=$(id);if(el)el.textContent=text;};
   const panel=$('panel'),toggle=$('toggle');
   const fsButton=$('fullscreen-toggle');
+  const musicButton=$('music-toggle');
+  musicButton.addEventListener('click',()=>{
+    const enabled=getRainOptions().audio!=='score';
+    setRainOption('audio',enabled?'score':'effects');
+    window.signalSound()?.interfaceSound(enabled?'toggle-on':'toggle-off');
+  });
   const touchControls=window.matchMedia?.('(pointer: coarse)');
   const phoneLayout=window.matchMedia?.('(max-width: 560px)');
   const useTouchHelp=()=>touchControls?.matches||phoneLayout?.matches;
@@ -164,20 +170,20 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
-    grade:{cinema:'Classic emerald trails, steady fall, white-hot heads.',
-      abyss:'Slow cyan drift, quiet glyphs, low glow.',
-      voltage:'Fast chartreuse streams, restless glyphs, intense bloom.',
-      anomaly:'Uneven magenta surges, flickering glyphs, broken trails.'},
+    grade:{cinema:'Classic emerald trails, steady fall, bright green heads.',
+      abyss:'Sparse cyan drift, long soft trails, low glow.',
+      voltage:'Dense chartreuse streams, fast fall, short trails, intense bloom.',
+      anomaly:'Uneven magenta surges, flickering glyphs, dense broken trails.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Analog scanlines with compensated phosphor brightness.',
-      glass:'Adjustable barrel curve with a full-screen crop, and pronounced scanlines.'},
-    audio:{off:'Completely muted; no music, interface sounds or cinematic effects.',
-      effects:'SFX Only: armed by default and enabled on your first interaction. No score or drone.',
-      ambience:'Deep layered hum with 27-second seamless noise textures and long, drifting movements.',
-      score:'Original music follows the signal profile. Pause freezes the score; atmospheric hum remains.'}
+      glass:'Adjustable barrel curve with a full-screen crop, and pronounced scanlines.'}
   };
   function sync(){
     const st=getRainOptions();
+    const musicOn=st.audio==='score';
+    musicButton.setAttribute('aria-pressed',String(musicOn));
+    musicButton.setAttribute('aria-label',musicOn?'Turn music off':'Turn music on');
+    musicButton.title=musicOn?'Turn music off':'Turn music on';
     document.documentElement.dataset.signal=st.grade;
     // Match supported mobile browser chrome to the selected signal.
     const themeBG={cinema:'#03150b',abyss:'#04131d',voltage:'#111704',anomaly:'#190512'};
@@ -193,19 +199,17 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
         const active=b.dataset[key]===st[key];
         b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
       });
-      setText(key+'-help',details[key][st[key]]);
-    }
-    if(st.audio==='score') {
-      const track=SignalAudio.scores[st.grade];
-      setText('audio-help',`${track.title} / ${track.bpm} BPM. ${track.style} Pause freezes the score; atmospheric hum remains.`);
+      if(details[key])setText(key+'-help',details[key][st[key]]);
     }
     setText('pause-btn',st.paused?'RESUME SIGNAL':'PAUSE SIGNAL');
     setText('status',st.paused?'// PAUSED':'// ONLINE');
     setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
-      st.audio==='score'?'AUDIO // SCORE + SFX':
-      st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // CODE HUM');
+      st.audio==='score'?'AUDIO // SCORE + HUM':
+      st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // STATIC HUM');
     $('curvature').disabled=st.crt!=='glass';
     $('scanBrightness').disabled=st.crt==='off';
+    $('humVolume').disabled=st.audio!=='ambience'&&st.audio!=='score';
+    $('scoreVolume').disabled=st.audio!=='score';
     $('beatReactive').disabled=st.audio!=='score';
     $('beatStrength').disabled=st.audio!=='score'||!st.beatReactive;
     $('interfaceLevel').disabled=st.audio==='off'||!st.interfaceSounds;

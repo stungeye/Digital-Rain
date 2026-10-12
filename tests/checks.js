@@ -55,7 +55,17 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   }
   const document = eventTarget({readyState:ready,hidden:false,
     createElement:element,getElementById(id){if(!markupIds.has(id))return null;if(!elements.has(id))elements.set(id,element());return elements.get(id);},
-    querySelector(){return null;},querySelectorAll(){return [];},
+    querySelector(){return null;},querySelectorAll(selector){
+      const key=selector.match(/^\[data-(grade|crt|audio)\]$/)?.[1];
+      if(!key)return [];
+      return [...markup.matchAll(new RegExp(`data-${key}="([^"]+)"`,'g'))].map(match=>{
+        const id=`data-${key}-${match[1]}`;
+        if(!elements.has(id)){
+          const button=element('button');button.dataset[key]=match[1];elements.set(id,button);
+        }
+        return elements.get(id);
+      });
+    },
     write(){throw Error('startup must not inject external scripts');},
     documentElement:element(),body:element(),fonts:{ready:{then(fn){fontReady=fn;}}},
   });
@@ -108,6 +118,76 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
 
 function check(name, body){body();console.log('PASS '+name);}
 
+check('music toggle and panel modes synchronize through clicks, mute and reset', () => {
+  const h=harness();h.run('setup()');
+  const button=h.elements.get('music-toggle');
+  const click=()=>button.dispatchEvent({type:'click'});
+  const selected=mode=>h.elements.get(`data-audio-${mode}`).getAttribute('aria-pressed');
+  assert.equal(button.getAttribute('aria-pressed'),'false');
+  assert.equal(h.elements.get('humVolume').disabled,true);
+  assert.equal(h.elements.get('scoreVolume').disabled,true);
+  assert.equal(h.run('soundEngine.ctx'),null,'music starts off without autoplay');
+  click();assert.equal(h.run('rain.audio'),'score');
+  assert.equal(button.getAttribute('aria-pressed'),'true');
+  assert.equal(selected('score'),'true');assert.equal(selected('effects'),'false');
+  assert.equal(h.elements.get('humVolume').disabled,false);
+  assert.equal(h.elements.get('scoreVolume').disabled,false);
+  click();assert.equal(h.run('rain.audio'),'effects');
+  assert.equal(button.getAttribute('aria-pressed'),'false');assert.equal(selected('effects'),'true');
+  assert.equal(h.elements.get('humVolume').disabled,true);
+  assert.equal(h.elements.get('scoreVolume').disabled,true);
+  h.elements.get('data-audio-score').dispatchEvent({type:'click'});
+  assert.equal(button.getAttribute('aria-pressed'),'true');
+  h.run('RainApp.toggleMute()');assert.equal(button.getAttribute('aria-pressed'),'false');
+  assert.equal(h.elements.get('humVolume').disabled,true);
+  assert.equal(h.elements.get('scoreVolume').disabled,true);
+  h.run('RainApp.toggleMute()');assert.equal(button.getAttribute('aria-pressed'),'true');
+  h.elements.get('data-audio-ambience').dispatchEvent({type:'click'});
+  assert.equal(button.getAttribute('aria-pressed'),'false');
+  assert.equal(h.elements.get('humVolume').disabled,false);
+  assert.equal(h.elements.get('scoreVolume').disabled,true);
+  click();assert.equal(h.run('rain.audio'),'score');
+  h.run('resetRain()');assert.equal(button.getAttribute('aria-pressed'),'false');
+  assert.equal(h.elements.get('humVolume').disabled,true);
+  assert.equal(h.elements.get('scoreVolume').disabled,true);
+});
+
+check('hum and score sliders independently retain levels across pause, profiles and modes', () => {
+  const h=harness();h.run('setup()');
+  for(const [id,value] of [['humVolume',.3],['scoreVolume',.6]]){
+    const slider=h.elements.get(id);slider.value=String(value);slider.dispatchEvent({type:'input'});
+  }
+  assert.equal(h.run('soundEngine.ctx'),null,'volume changes do not activate audio');
+  h.run('setRainOption("audio","score")');
+  const engine=h.run('soundEngine');
+  const levels=()=>{
+    assert.equal(engine.ambientBus.gain.value,.3);assert.equal(engine.scoreBus.gain.value,.6);
+  };
+  levels();const master=engine.master.gain.value,ui=engine.uiBus.gain.value;
+  const humBed=()=>[engine.droneGain.gain.value,engine.airGain.gain.value,engine.underGain.gain.value];
+  const scoreHumBed=humBed();
+  h.elements.get('data-audio-ambience').dispatchEvent({type:'click'});
+  assert.deepEqual(humBed(),scoreHumBed,'Code Hum preserves the same source levels as Score + Hum');
+  assert.equal(engine.ambientBus.gain.value,.3);
+  h.elements.get('data-audio-score').dispatchEvent({type:'click'});
+  assert.deepEqual(humBed(),scoreHumBed,'enabling score does not lower the hum behind its slider');
+  assert.equal(h.elements.get('humVolume').value,.3);levels();
+  h.run('setRainOption("humVolume",0)');assert.equal(engine.ambientBus.gain.value,0);
+  assert.equal(engine.scoreBus.gain.value,.6);assert.equal(engine.master.gain.value,master);
+  assert.equal(engine.uiBus.gain.value,ui);
+  h.run('setRainOption("humVolume",.3);setRainOption("paused",true);setRainOption("scoreVolume",.4)');
+  assert.equal(engine.scoreBus.gain.value,0);assert.equal(engine.ambientBus.gain.value,.3);
+  h.run('setRainOption("paused",false)');assert.equal(engine.scoreBus.gain.value,.4);
+  h.run('setRainOption("scoreVolume",.6);setRainOption("grade","abyss")');levels();
+  h.run('setRainOption("audio","effects")');
+  assert.equal(engine.scoreBus.gain.value,0);assert.equal(engine.ambientBus.gain.value,0);
+  h.run('setRainOption("audio","score")');levels();
+  h.run('resetRain();setRainOption("audio","score")');
+  assert.equal(engine.scoreBus.gain.value,1);assert.equal(engine.ambientBus.gain.value,.5);
+  assert.equal(h.elements.get('humVolume').value,.5);
+  assert.equal(h.elements.get('humVolume-value').textContent,'50%');
+});
+
 check('panel text can be removed while controls keep synchronizing', () => {
   const h=harness({omittedIds:['grade-help','crt-help','audio-help','density-value','notify','status','audio-status']});
   h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
@@ -129,7 +209,7 @@ check('ordered scripts initialize exactly once with desktop and mobile Canvas ru
     h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});h.advance();h.run('draw()');
     assert.ok(h.run('planes.length === 3 && planes.every(p=>p.lanes.length>0)'));
     assert.ok(h.renders>0);
-    assert.equal(h.run('displayEngine.mode'),'scan','default display processing is active from startup');
+    assert.equal(h.run('displayEngine.mode'),'glass','curved CRT is active from startup');
     assert.equal(h.run('displayEngine.output.style.display'),'block');
     assert.equal(h.run('displayEngine.source.style.opacity'),'0');
     assert.equal(h.sandbox.__rainCanvasRuntime,true);
@@ -185,6 +265,7 @@ check('all profiles keep lane ownership and two dark rows at maximum density and
   assert.ok(verify());
   for(const profile of ['cinema','abyss','voltage','anomaly']){
     h.run(`setRainOption('grade','${profile}')`);
+    h.run('setRainOption("density",1.65);setRainOption("speed",2.4)');
     for(let i=0;i<1800;i++){
       h.run('updateSimulation(.055)');
       assert.ok(verify());
@@ -192,15 +273,29 @@ check('all profiles keep lane ownership and two dark rows at maximum density and
   }
 });
 
-check('profile motion distinguishes drift, overdrive and irregular surges without resetting streams or controls', () => {
+check('profile presets synchronize editable code sliders and preserve existing streams', () => {
   const h=harness();h.run('setup()');
   h.run('globalThis.originalLane=planes[1].lanes[0];globalThis.originalStream=originalLane.streams[0]');
   const travel={};
+  const presets={
+    cinema:{density:1.05,persistence:1.25,speed:1,mutation:1,glow:1},
+    abyss:{density:.75,persistence:1.25,speed:.64,mutation:.55,glow:.42},
+    voltage:{density:1.4,persistence:.85,speed:1.42,mutation:1.6,glow:1.75},
+    anomaly:{density:1.2,persistence:.65,speed:1.05,mutation:1.85,glow:.85},
+  };
+  h.run('setRainOption("zoom",1.5)');
   for(const profile of ['cinema','abyss','voltage','anomaly']){
-    h.run(`setRainOption('grade','${profile}')`);
+    h.elements.get(`data-grade-${profile}`).dispatchEvent({type:'click'});
     assert.ok(h.run('planes[1].lanes[0]===originalLane && originalLane.streams[0]===originalStream'));
-    assert.equal(h.run('rain.speed'),1);
-    assert.equal(h.run('rain.mutation'),1);
+    assert.equal(h.run('rain.zoom'),1.5,'camera framing survives profile changes');
+    for(const [name,value] of Object.entries(presets[profile])){
+      assert.equal(h.run(`rain.${name}`),value);
+      if(name==='mutation')continue; // No mutation slider in this panel.
+      assert.equal(Number(h.elements.get(name).value),value);
+      assert.equal(h.elements.get(name+'-value').textContent,Math.round(value*100)+'%');
+      assert.equal(h.elements.get(name).getAttribute('aria-valuetext'),Math.round(value*100)+'%');
+    }
+    assert.ok(h.run('planes.every(p=>p.lanes.every(l=>l.active===(l.lottery<laneDensity())))'));
     travel[profile]=h.run(`(()=>{
       const lane=originalLane;lane.active=true;lane.progress=0;lane.phase=0;lane.rhythm=1;
       lane.update(.001,0);const a=lane.progress;
@@ -211,6 +306,26 @@ check('profile motion distinguishes drift, overdrive and irregular surges withou
   assert.ok(travel.voltage[0]>travel.cinema[0]*1.3,'Overdrive falls faster');
   assert.ok(travel.anomaly[1]>1.4,'Anomaly has a strong uneven cadence');
   assert.ok(travel.abyss[1]<1.04,'Deep has a gentle cadence');
+  for(const [name,value] of [['density',.9],['persistence',1.1],['speed',.8],['glow',.6]]){
+    const slider=h.elements.get(name);slider.value=String(value);slider.dispatchEvent({type:'input'});
+    assert.equal(h.run(`rain.${name}`),value,'slider edits the actual setting');
+  }
+  h.elements.get('data-grade-anomaly').dispatchEvent({type:'click'});
+  assert.equal(h.run('rain.speed'),.8,'reselecting the active profile retains edits');
+  const motion=()=>h.run(`(()=>{
+    originalLane.active=true;originalLane.progress=0;originalLane.phase=0;originalLane.rhythm=1;
+    originalLane.update(.001,0);return originalLane.progress/originalLane.speed/.001;
+  })()`);
+  assert.ok(Math.abs(motion()-.8)<1e-9,'velocity slider has no hidden profile multiplier');
+  h.run('handleRainShortcut({key:"c",preventDefault(){},stopImmediatePropagation(){}})');
+  assert.equal(h.run('rain.grade'),'voltage');
+  assert.equal(Number(h.elements.get('speed').value),1.42,'keyboard profile selection also syncs sliders');
+  h.run('resetRain()');
+  assert.equal(Number(h.elements.get('density').value),1.05);
+  assert.equal(Number(h.elements.get('speed').value),1);
+  assert.equal(Number(h.elements.get('persistence').value),1.25);
+  assert.equal(Number(h.elements.get('glow').value),1);
+  assert.equal(h.elements.get('grade-help').textContent,'Classic emerald trails, steady fall, bright green heads.');
 });
 
 check('Canvas CRT pointer conversion agrees with actual strip draw destinations', () => {
@@ -321,7 +436,7 @@ check('scanline spacing and thickness grow visibly above normal zoom in both CRT
 
 check('polished defaults reset and canvas interaction closes the panel', () => {
   const h=harness();h.run('setup()');
-  for(const [name,value] of [['grain',.35],['crt','scan'],['scanStrength',.85],['interfaceLevel',.4],['mutation',1],['curvature',1]])
+  for(const [name,value] of [['grain',.35],['crt','glass'],['scanStrength',.85],['interfaceLevel',.4],['mutation',1],['curvature',1]])
     assert.equal(h.run(`getRainOptions().${name}`),value);
   const panel=h.elements.get('panel'),toggle=h.elements.get('toggle');
   toggle.dispatchEvent({type:'click'});
@@ -630,12 +745,18 @@ check('paused visual changes redraw without advancing positions or effect bookke
     for(const p of planes)for(const l of p.lanes)for(const s of l.streams)for(const c of s.cells.values()){
       c.nextChange=-1;c.nextTwinkle=-1;c.lastBreach=-1;c.pulseIds=[];c.lastSurge=-1;
     }`);
-  const frozen=h.snapshot();
+  let frozen=h.snapshot();
   for(const [name,value] of [['grade','abyss'],['bloom',false],['glow',.4],['grain',0],['grain',.2],
     ['persistence',.8],['zoom',.65],['zoom',2],['crt','scan'],['crt','glass'],['scanStrength',1],['scanBrightness',1.2],['curvature',0],['curvature',2]]){
     const renders=h.renders;h.sandbox.testValue=value;
     h.run(`setRainOption(${JSON.stringify(name)},testValue)`);h.advance(1000);h.run('draw()');
     assert.ok(h.renders>renders,`${name} invalidates paused frame`);
+    if(name==='grade'){
+      // Profile density can change visibility; all retained simulation data stays frozen.
+      const expected=JSON.parse(frozen),current=JSON.parse(h.snapshot());
+      expected.planes.forEach((lanes,p)=>lanes.forEach((lane,l)=>{lane.active=current.planes[p][l].active;}));
+      frozen=JSON.stringify(expected);
+    }
     assert.equal(h.snapshot(),frozen,`${name} keeps simulation frozen`);
   }
   h.run('setRainOption("density",1.65)');h.advance();h.run('draw()');
@@ -798,7 +919,7 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   h.run('setRainOption("volume",.9);setRainOption("zoom",2);setRainOption("grade","anomaly");setRainOption("crt","glass");resetRain()');
   assert.equal(h.run('JSON.stringify(rain)'),h.run('JSON.stringify(defaults)'));
   assert.equal(engine.mode,'effects');assert.equal(engine.volume,.5);assert.equal(engine.scorePaused,false);
-  assert.equal(h.run('displayEngine.mode'),'scan');assert.equal(h.elements.get('zoom').value,1);
+  assert.equal(h.run('displayEngine.mode'),'glass');assert.equal(h.elements.get('zoom').value,1);
   key('m');key('m');assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
 });
 

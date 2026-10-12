@@ -98,25 +98,25 @@ const GLYPHS = [
 // aggressive chartreuse. Tonality, depth attenuation, and halos all change.
 const GRADES = {
   cinema: {
-    name: 'SOURCE', bg: [0, 3, 1], alpha: 1, heads: 1, blooms: 1,
+    name: 'SOURCE', bg: [0, 3, 1], alpha: 1, heads: 1,
     ink: [[1,12,4],[2,23,8],[3,39,13],[5,62,19],[8,91,28],
       [13,128,39],[27,168,58],[62,213,96],[144,248,166],[240,255,244]],
     halo: ['rgba(227,255,225,.59)','rgba(55,255,92,.34)','rgba(8,139,43,.10)'],
   },
   abyss: {
-    name: 'DEEP', bg: [0, 5, 9], alpha: .78, heads: .43, blooms: .42,
+    name: 'DEEP', bg: [0, 5, 9], alpha: .78, heads: .43,
     ink: [[1,10,16],[2,16,24],[2,24,35],[3,35,45],[4,50,65],
       [6,72,87],[12,104,117],[28,148,157],[78,195,200],[175,228,222]],
     halo: ['rgba(154,230,229,.29)','rgba(33,176,191,.22)','rgba(3,85,109,.11)'],
   },
   anomaly: {
-    name: 'ANOMALY', bg: [7, 0, 5], alpha: .97, heads: 1, blooms: 1.17,
+    name: 'ANOMALY', bg: [7, 0, 5], alpha: .97, heads: 1,
     ink: [[19,0,9],[35,1,17],[59,2,29],[89,3,42],[127,8,64],
       [171,24,91],[218,48,117],[245,100,155],[255,174,216],[255,240,252]],
     halo: ['rgba(255,206,233,.72)','rgba(252,46,113,.45)','rgba(147,2,65,.15)'],
   },
   voltage: {
-    name: 'OVERDRIVE', bg: [2, 4, 0], alpha: 1, heads: 1, blooms: 1.75,
+    name: 'OVERDRIVE', bg: [2, 4, 0], alpha: 1, heads: 1,
     ink: [[7,19,0],[14,34,0],[24,52,1],[37,78,0],[61,111,1],
       [96,153,4],[140,195,8],[188,229,36],[227,253,97],[255,255,208]],
     halo: ['rgba(242,255,188,.82)','rgba(173,255,22,.49)','rgba(77,164,4,.19)'],
@@ -124,13 +124,13 @@ const GRADES = {
 };
 const GRADE_NAMES = Object.keys(GRADES);
 
-// Motion is independent of the phosphor palettes and multiplies user controls.
-// Apply it to existing lanes without reseeding or changing their shared speed.
+// Profiles load editable code presets into the controls.
+// Cadence and trail breaks remain profile-specific on the existing lanes.
 const SIGNAL_MOTION = {
-  cinema: { speed: 1, mutation: 1, cadence: .075, rhythm: 1, blanks: .055 },
-  abyss: { speed: .64, mutation: .55, cadence: .035, rhythm: .6, blanks: .025 },
-  voltage: { speed: 1.42, mutation: 1.6, cadence: .12, rhythm: 1.7, blanks: .035 },
-  anomaly: { speed: 1.05, mutation: 1.85, cadence: .48, rhythm: 2.4, blanks: .14 },
+  cinema: { density: 1.05, persistence: 1.25, speed: 1, mutation: 1, glow: 1, cadence: .075, rhythm: 1, blanks: .055 },
+  abyss: { density: .75, persistence: 1.25, speed: .64, mutation: .55, glow: .42, cadence: .035, rhythm: .6, blanks: .025 },
+  voltage: { density: 1.4, persistence: .85, speed: 1.42, mutation: 1.6, glow: 1.75, cadence: .12, rhythm: 1.7, blanks: .035 },
+  anomaly: { density: 1.2, persistence: .65, speed: 1.05, mutation: 1.85, glow: .85, cadence: .48, rhythm: 2.4, blanks: .14 },
 };
 
 // Exclusive 22px global lanes; each lane gets one of these treatments.
@@ -154,19 +154,21 @@ const choiceSetting = (value,choices,visual=false) =>
 const SETTINGS = Object.freeze({
   density:numberSetting(1.05,.3,1.65,.05,true),
   zoom:numberSetting(1,.65,2,.01,true),
-  speed:numberSetting(1,.2,2.4,.05),
-  persistence:numberSetting(1,.55,1.55,.05,true),
+  speed:numberSetting(1,.2,2.4,.01),
+  persistence:numberSetting(1.25,.55,1.55,.05,true),
   mutation:numberSetting(1,.25,2.5,.05),
-  glow:numberSetting(1,0,1.8,.05,true),
+  glow:numberSetting(1,0,1.8,.01,true),
   bloom:booleanSetting(true,true),
   grain:numberSetting(.35,0,1.5,.05,true),
   grade:choiceSetting('cinema',[...GRADE_NAMES],true),
-  crt:choiceSetting('scan',['off','scan','glass'],true),
+  crt:choiceSetting('glass',['off','scan','glass'],true),
   curvature:numberSetting(1,0,2,.05,true),
   scanStrength:numberSetting(.85,.15,1,.05,true),
   scanBrightness:numberSetting(1,.6,1.75,.05,true),
   audio:choiceSetting('effects',['off','effects','ambience','score'],true),
   volume:numberSetting(.5,0,1,.05),
+  humVolume:numberSetting(.5,0,1,.05),
+  scoreVolume:numberSetting(1,0,1,.05),
   beatReactive:booleanSetting(true,true),
   beatStrength:numberSetting(.75,0,2,.05,true),
   interfaceSounds:booleanSetting(true),
@@ -572,7 +574,7 @@ class CodePlane {
         if(cell.blank&&age>4)continue;
         if(now>=cell.nextChange) {
           cell.glyph=randomGlyph();
-          cell.nextChange=now+between(380,3700)/(rain.mutation*SIGNAL_MOTION[rain.grade].mutation);
+          cell.nextChange=now+between(380,3700)/rain.mutation;
         }
         if(now>=cell.nextTwinkle) {
           cell.twinkleUntil=now+between(40,160);
@@ -612,7 +614,7 @@ class CodePlane {
     const c = this.config;
     const scale = c.size;
     const beat = rain.audio==='score' && rain.beatReactive ? visualBeat*rain.beatStrength : 0;
-    const strength = rain.glow * c.bloom * GRADES[rain.grade].blooms * (1 + beat*.9);
+    const strength = rain.glow * c.bloom * (1 + beat*.9);
     const surgeAge = now - signalAt;
     const surgeOn = surgeAge>=0 && surgeAge<1950;
     for (const lane of this.lanes) {
@@ -799,7 +801,7 @@ class CodeLane {
       const lead = this.streams.length ? this.streams[this.streams.length-1].head * this.plane.lineHeight : 0;
       chargeBoost += 1.65 * Math.max(0,1-Math.abs(lead-front)/360);
     }
-    this.progress += dt*this.speed*rain.speed*motion.speed*cadence*chargeBoost;
+    this.progress += dt*this.speed*rain.speed*cadence*chargeBoost;
     const steps = Math.min(12, Math.floor(this.progress));
     this.progress -= steps;
     for (let i=0; i<steps; i++) {
@@ -840,7 +842,7 @@ class CodeStream {
     return {
       glyph: randomGlyph(), energy: between(.74, 1.13),
       blank: Math.random()<motion.blanks,
-      nextChange: simulationTime + between(160, 3500)/(rain.mutation*motion.mutation),
+      nextChange: simulationTime + between(160, 3500)/rain.mutation,
       nextTwinkle: simulationTime + between(600, 5400),
       twinkleUntil: -Infinity, pulseIds: [], lastBreach: -1, lastSurge: -1,
     };
@@ -950,6 +952,13 @@ function setRainOption(name, value, {userChoice=true}={}) {
     else if(value!=='off') lastAudibleMode=value;
   }
   rain[name] = value;
+  if (name === 'grade' && old !== value) {
+    const preset = SIGNAL_MOTION[value];
+    for (const key of ['density','persistence','speed','mutation','glow']) rain[key] = preset[key];
+    // Reveal or hide retained lanes without rerolling streams or paused cells.
+    for (const plane of planes) for (const lane of plane.lanes)
+      lane.active = lane.lottery < laneDensity();
+  }
   if (name === 'zoom') {
     setCameraPan(cameraPanX); // Zoom-out can reduce the allowed pan range.
     invalidateRender();
@@ -962,6 +971,8 @@ function setRainOption(name, value, {userChoice=true}={}) {
   // intentionally unaffected; UI and cinematic effects remain responsive.
   if (name === 'paused') soundEngine?.setPaused(value);
   if (name === 'volume') soundEngine?.setVolume(value);
+  if (name === 'humVolume') soundEngine?.setHumVolume(value);
+  if (name === 'scoreVolume') soundEngine?.setScoreVolume(value);
   if (name === 'crt') displayEngine?.setMode(value);
   if (name === 'grade' && old !== value && planes.length) {
     // Preserve stream positions while recoloring the entire signal.
@@ -988,6 +999,8 @@ function resetRain() {
   soundEngine?.setProfile(rain.grade);
   soundEngine?.setMode(rain.audio);
   soundEngine?.setVolume(rain.volume);
+  soundEngine?.setHumVolume(rain.humVolume);
+  soundEngine?.setScoreVolume(rain.scoreVolume);
   soundEngine?.setPaused(rain.paused);
   emitState();
 }

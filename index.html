@@ -34,6 +34,20 @@
         <path class="fs-exit" d="M9 3v6H3 M21 9h-6V3 M15 21v-6h6 M3 15h6v6" />
       </svg>
     </button>
+    <button
+      id="music-toggle"
+      type="button"
+      aria-label="Turn music on"
+      title="Turn music on"
+      aria-pressed="false"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 17V5l11-2v12 M9 8l11-2" />
+        <ellipse cx="6" cy="18" rx="3" ry="2" />
+        <ellipse cx="17" cy="16" rx="3" ry="2" />
+        <path class="music-off" d="M3 3l18 18" />
+      </svg>
+    </button>
     <div class="hud">
       <section id="panel" aria-label="Signal engine controls">
         <h1>DIGITAL RAIN</h1>
@@ -49,7 +63,7 @@
           <button data-grade="anomaly" aria-pressed="false">ANOMALY</button>
         </div>
         <p class="dsc" id="grade-help">
-          Classic emerald trails, steady fall, white-hot heads.
+          Classic emerald trails, steady fall, bright green heads.
         </p>
         <div class="rule"></div>
         <p class="tag">02 / THE CODE</p>
@@ -92,10 +106,10 @@
         <p class="tag">03 / ANALOG DISPLAY</p>
         <div class="triad" role="group" aria-label="CRT display mode">
           <button data-crt="off" aria-pressed="false">FLAT</button>
-          <button data-crt="scan" class="active" aria-pressed="true">
+          <button data-crt="scan" aria-pressed="false">
             SCANLINES
           </button>
-          <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
+          <button data-crt="glass" class="active" aria-pressed="true">CURVED CRT</button>
         </div>
         <div class="control">
           <div class="control-head">
@@ -125,19 +139,36 @@
           <button data-audio="effects" class="active" aria-pressed="true">
             SFX ONLY
           </button>
-          <button data-audio="ambience" aria-pressed="false">CODE HUM</button>
+          <button data-audio="ambience" aria-pressed="false">STATIC HUM</button>
           <button data-audio="score" aria-pressed="false">SCORE + HUM</button>
         </div>
-        <p class="dsc" id="audio-help">
-          SFX Only is ready. Sound starts on your first interaction; Muted
-          remains available.
-        </p>
         <div class="control">
           <div class="control-head">
             <label for="interfaceLevel">UI SOUND LEVEL</label
             ><output id="interfaceLevel-value" for="interfaceLevel"></output>
           </div>
           <input id="interfaceLevel" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="humVolume">STATIC HUM VOLUME</label
+            ><output id="humVolume-value" for="humVolume"></output>
+          </div>
+          <input id="humVolume" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="scoreVolume">SCORE VOLUME</label
+            ><output id="scoreVolume-value" for="scoreVolume"></output>
+          </div>
+          <input id="scoreVolume" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="volume">MASTER VOLUME</label
+            ><output id="volume-value" for="volume"></output>
+          </div>
+          <input id="volume" type="range" />
         </div>
         <div class="switch">
           <label for="beatReactive">BEAT REACTIVE CODE</label
@@ -149,13 +180,6 @@
             ><output id="beatStrength-value" for="beatStrength"></output>
           </div>
           <input id="beatStrength" type="range" />
-        </div>
-        <div class="control">
-          <div class="control-head">
-            <label for="volume">MASTER VOLUME</label
-            ><output id="volume-value" for="volume"></output>
-          </div>
-          <input id="volume" type="range" />
         </div>
         <div class="rule"></div>
         <p class="tag">05 / SIGNAL INTERVENTION</p>
