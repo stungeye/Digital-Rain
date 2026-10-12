@@ -9,11 +9,12 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 
-function harness({coarse = false, reduced = false, ready = 'loading', userAgent = ''} = {}) {
+function harness({coarse = false, reduced = false, ready = 'loading', userAgent = '', omittedIds = []} = {}) {
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
   const listeners = new Map(), elements = new Map(), canvasCalls = [], animationFrames = [];
   const markup=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const markupIds=new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]));
+  for(const id of omittedIds)markupIds.delete(id);
   const math = Object.create(Math);
   math.random = () => { randomCalls++; return ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296); };
   function eventTarget(target = {}) {
@@ -106,6 +107,18 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
 }
 
 function check(name, body){body();console.log('PASS '+name);}
+
+check('panel text can be removed while controls keep synchronizing', () => {
+  const h=harness({omittedIds:['grade-help','crt-help','audio-help','density-value','notify','status','audio-status']});
+  h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+  h.run('setRainOption("crt","glass");setRainOption("audio","score");setRainOption("grade","abyss");setRainOption("density",1.5);setRainOption("paused",true)');
+  assert.equal(h.elements.get('density').value,1.5);
+  assert.equal(h.elements.get('density').attributes['aria-valuetext'],h.run('RainApp.settings.density.format(1.5)'));
+  assert.equal(h.elements.get('curvature').disabled,false);
+  assert.equal(h.elements.get('beatReactive').disabled,false);
+  assert.equal(h.elements.get('pause-btn').textContent,'RESUME SIGNAL');
+  h.elements.get('reseed-btn').dispatchEvent({type:'click'});
+});
 
 // Test cases below exercise production source through its public setters and
 // actual simulation/display/audio methods rather than copied implementations.

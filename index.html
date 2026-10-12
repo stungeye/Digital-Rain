@@ -1,99 +1,218 @@
 <!doctype html>
 <html lang="en" data-signal="cinema">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000402">
-<meta name="description" content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Desktop and mobile Canvas rendering.">
-<title>DIGITAL RAIN // SIGNAL ENGINE 16</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<main id="rain" aria-label="Interactive falling digital code rain"></main>
-<button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" title="Toggle fullscreen (F)" aria-pressed="false">
- <svg viewBox="0 0 24 24" aria-hidden="true"><path class="fs-enter" d="M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6"/><path class="fs-exit" d="M9 3v6H3 M21 9h-6V3 M15 21v-6h6 M3 15h6v6"/></svg>
-</button>
-<div class="hud">
- <section id="panel" aria-label="Signal engine controls">
-  <div class="hdr"><span>M / CONFIGURATION</span><span class="live">FEED LIVE</span></div>
-  <h1>DIGITAL RAIN</h1>
-  <p class="sub">SIGNAL ENGINE / 16<br>Film-inspired code, no intersecting streams.</p>
-  <div class="rule"></div>
-  <p class="tag">01 / DISTINCT SIGNAL PROFILES</p>
-  <div class="triad quad" role="group" aria-label="Color profiles">
-   <button data-grade="cinema" class="active" aria-pressed="true">SOURCE</button>
-   <button data-grade="abyss" aria-pressed="false">DEEP</button>
-   <button data-grade="voltage" aria-pressed="false">OVERDRIVE</button>
-   <button data-grade="anomaly" aria-pressed="false">ANOMALY</button>
-  </div>
-  <p class="dsc" id="grade-help">The original code: emerald tails, white-hot leading glyphs.</p>
-  <div class="rule"></div>
-  <p class="tag">02 / THE CODE</p>
-  <div class="control"><div class="control-head"><label for="density">COLUMN DENSITY</label><output id="density-value" for="density"></output></div><input id="density" type="range"></div>
-  <div class="control"><div class="control-head"><label for="zoom">CENTRED CAMERA ZOOM</label><output id="zoom-value" for="zoom"></output></div><input id="zoom" type="range"></div>
-  <div class="control"><div class="control-head"><label for="speed">FALL VELOCITY</label><output id="speed-value" for="speed"></output></div><input id="speed" type="range"></div>
-  <div class="control"><div class="control-head"><label for="persistence">TRAIL PERSISTENCE</label><output id="persistence-value" for="persistence"></output></div><input id="persistence" type="range"></div>
-  <div class="control"><div class="control-head"><label for="glow">PHOSPHOR HALO</label><output id="glow-value" for="glow"></output></div><input id="glow" type="range"></div>
-  <div class="rule"></div>
-  <p class="tag">03 / ANALOG DISPLAY</p>
-  <div class="triad" role="group" aria-label="CRT display mode">
-   <button data-crt="off" aria-pressed="false">FLAT</button>
-   <button data-crt="scan" class="active" aria-pressed="true">SCANLINES</button>
-   <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
-  </div>
-  <p class="dsc" id="crt-help">Analog scanlines with compensated phosphor brightness.</p>
-  <div class="control"><div class="control-head"><label for="curvature">CRT CURVATURE</label><output id="curvature-value" for="curvature"></output></div><input id="curvature" type="range"></div>
-  <div class="control"><div class="control-head"><label for="scanBrightness">PHOSPHOR BRIGHTNESS</label><output id="scanBrightness-value" for="scanBrightness"></output></div><input id="scanBrightness" type="range"></div>
-  <p class="dsc">Brightness automatically compensates as scanlines deepen. Fine-tune phosphor exposure here.</p>
-  <div class="control"><div class="control-head"><label for="grain">FILM TEXTURE STRENGTH</label><output id="grain-value" for="grain"></output></div><input id="grain" type="range"></div>
-  <div class="rule"></div>
-  <p class="tag">04 / ORIGINAL AUDIO</p>
-  <div class="triad quad" role="group" aria-label="Original audio modes">
-   <button data-audio="off" aria-pressed="false">MUTED</button>
-   <button data-audio="effects" class="active" aria-pressed="true">SFX ONLY</button>
-   <button data-audio="ambience" aria-pressed="false">CODE HUM</button>
-   <button data-audio="score" aria-pressed="false">SCORE + SFX</button>
-  </div>
-  <p class="dsc" id="audio-help">SFX Only is ready. Sound starts on your first interaction; Muted remains available.</p>
-  <div class="control"><div class="control-head"><label for="interfaceLevel">UI SOUND LEVEL</label><output id="interfaceLevel-value" for="interfaceLevel"></output></div><input id="interfaceLevel" type="range"></div>
-  <p class="dsc">Mechanical contact, resonant confirmation and a restrained electric tail. Designed to cut through the score. Silent in Muted mode.</p>
-  <div class="switch"><label for="beatReactive">BEAT / PHOSPHOR COUPLING</label><input id="beatReactive" type="checkbox" checked></div>
-  <p class="dsc">Kick and snare strikes brighten the existing glyphs. Turn it off to separate the music from the rain. Click SFX play in every audio-enabled mode.</p>
-  <div class="control"><div class="control-head"><label for="beatStrength">BEAT IMPACT</label><output id="beatStrength-value" for="beatStrength"></output></div><input id="beatStrength" type="range"></div>
-  <div class="control"><div class="control-head"><label for="volume">MASTER VOLUME</label><output id="volume-value" for="volume"></output></div><input id="volume" type="range"></div>
-  <div class="rule"></div>
-  <p class="tag">05 / SIGNAL INTERVENTION</p>
-  <div class="buttons">
-   <button id="surge-btn"><span class="keyboard-only">E / </span>ELECTRIC SURGE</button>
-   <button id="breach-btn"><span class="keyboard-only">B / </span>SYSTEM BREACH</button>
-   <button id="pause-btn">PAUSE SIGNAL</button>
-   <button id="reseed-btn">RESEED FIELD</button>
-   <button id="defaults-btn" style="grid-column:1/-1">RESTORE DEFAULTS</button>
-  </div>
-  <p class="dsc"><span class="keyboard-only">Desktop: wheel to zoom. </span>Touch: drag horizontally to explore, pinch to zoom, tap to ripple. Use the top-left icon for fullscreen.</p>
-  <p class="dsc">Surge = a charged wave through existing code. Breach = blackout and signal relock. Tap or click the running rain to release a viewport-anchored code ripple.<span class="keyboard-only"> Shift-click creates a heavier wave.</span></p>
-  <p id="notify" role="status" aria-live="polite"></p>
-  <div class="rule"></div>
-  <p class="keyhelp"><kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br>
-   <kbd>WHEEL</kbd> zoom · <kbd>PINCH</kbd> zoom · <kbd>SWIPE</kbd> mobile horizontal pan<br>
-   <kbd>E</kbd> surge · <kbd>B</kbd> breach<br>
-   <kbd>M</kbd> mute / restore audio · <kbd>SPACE</kbd> pause · <kbd>F</kbd> fullscreen<br>
-   <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color · <kbd>T</kbd> grain<br>
-   <kbd>H</kbd> panel<br>
-   <kbd>R</kbd> reseed · <kbd>G</kbd> glow</p>
- </section>
- <button id="toggle" type="button" aria-label="Open system panel" title="Open system panel (H)" aria-expanded="false" aria-controls="panel">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path class="panel-open" d="M3 6h6 M13 6h8 M3 12h12 M19 12h2 M3 18h2 M9 18h12 M9 3v6 M15 9v6 M5 15v6"/><path class="panel-close" d="M6 6l12 12 M18 6L6 18"/></svg>
- </button>
-</div>
-<div class="mini">SIGNAL <strong id="status">// ONLINE</strong><div id="audio-status">AUDIO // SFX ARMED</div><div id="beat-leds" aria-hidden="true"><i></i><i></i><i></i><i></i></div></div>
-<!-- Ordered classic scripts preserve direct-open startup. -->
-<script src="js/rain.js"></script>
-<script src="js/crt.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/ui.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#000402" />
+    <meta
+      name="description"
+      content="Matrix-inspired digital rain with genuine CRT barrel distortion, procedurally composed dark electronic soundtrack, cinematic code rain and collision-free streams. Desktop and mobile Canvas rendering."
+    />
+    <title>DIGITAL RAIN // SIGNAL ENGINE 16</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="rain" aria-label="Interactive falling digital code rain"></main>
+    <button
+      id="fullscreen-toggle"
+      type="button"
+      aria-label="Enter fullscreen"
+      title="Toggle fullscreen (F)"
+      aria-pressed="false"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="fs-enter" d="M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6" />
+        <path class="fs-exit" d="M9 3v6H3 M21 9h-6V3 M15 21v-6h6 M3 15h6v6" />
+      </svg>
+    </button>
+    <div class="hud">
+      <section id="panel" aria-label="Signal engine controls">
+        <h1>DIGITAL RAIN</h1>
+        <p class="sub">Your window into the Matrix.</p>
+        <div class="rule"></div>
+        <p class="tag">01 / SIGNAL PROFILES</p>
+        <div class="triad quad" role="group" aria-label="Color profiles">
+          <button data-grade="cinema" class="active" aria-pressed="true">
+            SOURCE
+          </button>
+          <button data-grade="abyss" aria-pressed="false">DEEP</button>
+          <button data-grade="voltage" aria-pressed="false">OVERDRIVE</button>
+          <button data-grade="anomaly" aria-pressed="false">ANOMALY</button>
+        </div>
+        <p class="dsc" id="grade-help">
+          The original code: emerald tails, white-hot leading glyphs.
+        </p>
+        <div class="rule"></div>
+        <p class="tag">02 / THE CODE</p>
+        <div class="control">
+          <div class="control-head">
+            <label for="density">COLUMN DENSITY</label
+            ><output id="density-value" for="density"></output>
+          </div>
+          <input id="density" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="zoom">CENTRED CAMERA ZOOM</label
+            ><output id="zoom-value" for="zoom"></output>
+          </div>
+          <input id="zoom" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="speed">FALL VELOCITY</label
+            ><output id="speed-value" for="speed"></output>
+          </div>
+          <input id="speed" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="persistence">TRAIL PERSISTENCE</label
+            ><output id="persistence-value" for="persistence"></output>
+          </div>
+          <input id="persistence" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="glow">PHOSPHOR HALO</label
+            ><output id="glow-value" for="glow"></output>
+          </div>
+          <input id="glow" type="range" />
+        </div>
+        <div class="rule"></div>
+        <p class="tag">03 / ANALOG DISPLAY</p>
+        <div class="triad" role="group" aria-label="CRT display mode">
+          <button data-crt="off" aria-pressed="false">FLAT</button>
+          <button data-crt="scan" class="active" aria-pressed="true">
+            SCANLINES
+          </button>
+          <button data-crt="glass" aria-pressed="false">CURVED CRT</button>
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="curvature">CRT CURVATURE</label
+            ><output id="curvature-value" for="curvature"></output>
+          </div>
+          <input id="curvature" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="scanBrightness">PHOSPHOR BRIGHTNESS</label
+            ><output id="scanBrightness-value" for="scanBrightness"></output>
+          </div>
+          <input id="scanBrightness" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="grain">FILM TEXTURE STRENGTH</label
+            ><output id="grain-value" for="grain"></output>
+          </div>
+          <input id="grain" type="range" />
+        </div>
+        <div class="rule"></div>
+        <p class="tag">04 / AUDIO</p>
+        <div class="triad quad" role="group" aria-label="Original audio modes">
+          <button data-audio="off" aria-pressed="false">MUTED</button>
+          <button data-audio="effects" class="active" aria-pressed="true">
+            SFX ONLY
+          </button>
+          <button data-audio="ambience" aria-pressed="false">CODE HUM</button>
+          <button data-audio="score" aria-pressed="false">SCORE + HUM</button>
+        </div>
+        <p class="dsc" id="audio-help">
+          SFX Only is ready. Sound starts on your first interaction; Muted
+          remains available.
+        </p>
+        <div class="control">
+          <div class="control-head">
+            <label for="interfaceLevel">UI SOUND LEVEL</label
+            ><output id="interfaceLevel-value" for="interfaceLevel"></output>
+          </div>
+          <input id="interfaceLevel" type="range" />
+        </div>
+        <div class="switch">
+          <label for="beatReactive">BEAT REACTIVE CODE</label
+          ><input id="beatReactive" type="checkbox" checked />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="beatStrength">BEAT IMPACT</label
+            ><output id="beatStrength-value" for="beatStrength"></output>
+          </div>
+          <input id="beatStrength" type="range" />
+        </div>
+        <div class="control">
+          <div class="control-head">
+            <label for="volume">MASTER VOLUME</label
+            ><output id="volume-value" for="volume"></output>
+          </div>
+          <input id="volume" type="range" />
+        </div>
+        <div class="rule"></div>
+        <p class="tag">05 / SIGNAL INTERVENTION</p>
+        <div class="buttons">
+          <button id="surge-btn">
+            <span class="keyboard-only">E / </span>ELECTRIC SURGE
+          </button>
+          <button id="breach-btn">
+            <span class="keyboard-only">B / </span>SYSTEM BREACH
+          </button>
+          <button id="pause-btn">PAUSE SIGNAL</button>
+          <button id="reseed-btn">RESEED FIELD</button>
+          <button id="defaults-btn" style="grid-column: 1/-1">
+            RESTORE DEFAULTS
+          </button>
+        </div>
+        <p id="notify" role="status" aria-live="polite"></p>
+        <div class="rule"></div>
+        <p class="keyhelp">
+          <kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br />
+          <kbd>WHEEL</kbd> zoom · <kbd>PINCH</kbd> zoom ·
+          <kbd>SWIPE</kbd> mobile horizontal pan<br />
+          <kbd>E</kbd> surge · <kbd>B</kbd> breach<br />
+          <kbd>M</kbd> mute / restore audio · <kbd>SPACE</kbd> pause ·
+          <kbd>F</kbd> fullscreen<br />
+          <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color ·
+          <kbd>T</kbd> grain<br />
+          <kbd>H</kbd> panel<br />
+          <kbd>R</kbd> reseed · <kbd>G</kbd> glow
+        </p>
+      </section>
+      <button
+        id="toggle"
+        type="button"
+        aria-label="Open system panel"
+        title="Open system panel (H)"
+        aria-expanded="false"
+        aria-controls="panel"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            class="panel-open"
+            d="M3 6h6 M13 6h8 M3 12h12 M19 12h2 M3 18h2 M9 18h12 M9 3v6 M15 9v6 M5 15v6"
+          />
+          <path class="panel-close" d="M6 6l12 12 M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+    <div class="mini">
+      SIGNAL <strong id="status">// ONLINE</strong>
+      <div id="audio-status">AUDIO // SFX ARMED</div>
+      <div id="beat-leds" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <!-- Ordered classic scripts preserve direct-open startup. -->
+    <script src="js/rain.js"></script>
+    <script src="js/crt.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/ui.js"></script>
+  </body>
 </html>

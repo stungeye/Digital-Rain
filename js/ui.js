@@ -57,7 +57,9 @@ function handleRainShortcut(event) {
 window.addEventListener('keydown', handleRainShortcut, {capture:true});
 (()=>{
   const $=id=>document.getElementById(id);
-  const panel=$('panel'),toggle=$('toggle'),notice=$('notify');
+  // Descriptive text and value labels may be omitted from the panel markup.
+  const setText=(id,text)=>{const el=$(id);if(el)el.textContent=text;};
+  const panel=$('panel'),toggle=$('toggle');
   const fsButton=$('fullscreen-toggle');
   const touchControls=window.matchMedia?.('(pointer: coarse)');
   const phoneLayout=window.matchMedia?.('(max-width: 560px)');
@@ -88,7 +90,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   touchControls?.addEventListener?.('change',updateFullscreenButton);
   phoneLayout?.addEventListener?.('change',updateFullscreenButton);
   updateFullscreenButton();
-  const notify=s=>notice.textContent=s;
+  const notify=s=>setText('notify',s);
   // Browser autoplay policy: do not create or resume WebAudio on page load.
   // The first pointer/key gesture arms the selected default, before the UI
   // handler plays its sound (and before the rain's native pointer ripple).
@@ -182,7 +184,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themeBG[st.grade]);
     for(const name of ranges){
       $(name).value=st[name];
-      $(name+'-value').textContent=RainApp.settings[name].format(st[name]);
+      setText(name+'-value',RainApp.settings[name].format(st[name]));
       $(name).setAttribute('aria-valuetext',RainApp.settings[name].format(st[name]));
     }
     for(const name of ['beatReactive'])$(name).checked=st[name];
@@ -191,17 +193,17 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
         const active=b.dataset[key]===st[key];
         b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
       });
-      $(key+'-help').textContent=details[key][st[key]];
+      setText(key+'-help',details[key][st[key]]);
     }
     if(st.audio==='score') {
       const track=SignalAudio.scores[st.grade];
-      $('audio-help').textContent=`${track.title} / ${track.bpm} BPM. ${track.style} Pause freezes the score; atmospheric hum remains.`;
+      setText('audio-help',`${track.title} / ${track.bpm} BPM. ${track.style} Pause freezes the score; atmospheric hum remains.`);
     }
-    $('pause-btn').textContent=st.paused?'RESUME SIGNAL':'PAUSE SIGNAL';
-    $('status').textContent=st.paused?'// PAUSED':'// ONLINE';
-    $('audio-status').textContent=st.audio==='off'?'AUDIO // MUTED':
+    setText('pause-btn',st.paused?'RESUME SIGNAL':'PAUSE SIGNAL');
+    setText('status',st.paused?'// PAUSED':'// ONLINE');
+    setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + SFX':
-      st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // CODE HUM';
+      st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // CODE HUM');
     $('curvature').disabled=st.crt!=='glass';
     $('scanBrightness').disabled=st.crt==='off';
     $('beatReactive').disabled=st.audio!=='score';
