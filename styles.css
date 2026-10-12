@@ -93,10 +93,10 @@ input:disabled{opacity:.60}
 #notify{color:var(--ui-accent);font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
 .keyhelp{font-size:9px;line-height:1.9;color:var(--ui-muted);letter-spacing:0}
 kbd{font:inherit;color:var(--ui-text)}
-.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:clamp(12px,2.4vh,28px);pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em}
+.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:max(0px,calc(clamp(12px,2.4vh,28px) - 13px));pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
 .mini strong{font-weight:400;color:var(--ui-text)}
-.mini:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:8px;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
-#beat-leds{height:13px;display:flex;justify-content:flex-end;align-items:flex-end;gap:4px;margin-top:5px}
+.mini:before{content:"";position:absolute;left:-13px;top:5.6px;width:5px;height:5px;border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
+#beat-leds{height:26px;display:flex;justify-content:space-between;align-items:flex-end;margin-top:0}
 #beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
 /* Phones and coarse-pointer devices keep touch guidance, without advertising
    shortcuts that require a physical keyboard. */

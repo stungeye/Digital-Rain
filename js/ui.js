@@ -202,7 +202,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       if(details[key])setText(key+'-help',details[key][st[key]]);
     }
     setText('pause-btn',st.paused?'RESUME SIGNAL':'PAUSE SIGNAL');
-    setText('status',st.paused?'// PAUSED':'// ONLINE');
+    setText('status',st.paused?'OFFLINE':'ONLINE');
     setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + HUM':
       st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // STATIC HUM');
