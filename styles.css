@@ -71,6 +71,7 @@ h1{margin:7px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:va
 .rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,var(--ui-rule),transparent)}
 .tag{font-size:9px;letter-spacing:.23em;color:var(--ui-accent);margin:0 0 10px}
 .triad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .triad.quad{grid-template-columns:repeat(4,minmax(0,1fr))}
 .triad button,.duo button{border:1px solid var(--ui-border);background:var(--ui-surface);color:var(--ui-label);padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
 .triad button.active,.duo button.active{background:var(--ui-selected);color:var(--ui-text);border-color:var(--ui-border-hot);box-shadow:inset 0 0 17px var(--ui-glow)}

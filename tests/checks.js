@@ -46,7 +46,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
         createPattern:()=>({}),createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),
         drawImage(...args){canvasCalls.push({canvas:el,args});},
         fillRect(){if(el.id==='defaultCanvas0')renders++;},
-        save(){},restore(){},translate(){},scale(){},fillText(){},clearRect(){},putImageData(){},
+        save(){},restore(){},translate(){},rotate(){},scale(){},fillText(){},clearRect(){},putImageData(){},
       };
       el.getContext = type => type==='2d' ? ctx : null;
       el.width=640;el.height=360;
@@ -56,7 +56,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   const document = eventTarget({readyState:ready,hidden:false,
     createElement:element,getElementById(id){if(!markupIds.has(id))return null;if(!elements.has(id))elements.set(id,element());return elements.get(id);},
     querySelector(){return null;},querySelectorAll(selector){
-      const key=selector.match(/^\[data-(grade|crt|audio)\]$/)?.[1];
+      const key=selector.match(/^\[data-(mode|grade|crt|audio)\]$/)?.[1];
       if(!key)return [];
       return [...markup.matchAll(new RegExp(`data-${key}="([^"]+)"`,'g'))].map(match=>{
         const id=`data-${key}-${match[1]}`;
@@ -997,7 +997,7 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   key(' ',{isComposing:true});assert.equal(h.run('rain.paused'),true);
   key(' ',{target:{isContentEditable:true}});assert.equal(h.run('rain.paused'),true);
   key(' ',{target:{matches:()=>true}});assert.equal(h.run('rain.paused'),true);
-  for(const value of ['d','s','v']){
+  for(const value of ['d','s']){
     const before=h.snapshot(),event=key(value);
     assert.equal(event.prevented,undefined);assert.equal(h.snapshot(),before);
   }
@@ -1009,6 +1009,34 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   assert.equal(engine.mode,'effects');assert.equal(engine.volume,.5);assert.equal(engine.scorePaused,false);
   assert.equal(h.run('displayEngine.mode'),'glass');assert.equal(h.elements.get('zoom').value,1);
   key('m');key('m');assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
+});
+
+check('tunnel preserves travel on pause and mode switches, and gates beat acceleration', () => {
+  for(const coarse of [false,true]) {
+    const h=harness({coarse});h.run('setup();setRainOption("grain",0)');
+    h.elements.get('data-mode-tunnel').dispatchEvent({type:'click'});
+    assert.equal(h.run('rain.mode'),'tunnel');
+    assert.equal(h.elements.get('data-mode-tunnel').getAttribute('aria-pressed'),'true');
+    h.run('updateSimulation(.02)');
+    const normal=h.run('tunnelTravel');assert.ok(normal>0);
+    h.run('rain.audio="score";soundEngine.beatEnergy=()=>1;updateSimulation(.02)');
+    const driven=h.run('tunnelTravel');assert.ok(driven-normal>normal);
+    h.run('setRainOption("beatReactive",false);updateSimulation(.02)');
+    assert.ok(Math.abs(h.run('tunnelTravel')-driven-normal)<1e-9);
+    h.run('setRainOption("paused",true)');
+    const frozen=h.run('[tunnelTravel,simulationTime,tunnelSeed].join()');
+    const calls=h.canvasCalls.length;
+    h.run('renderScene();renderScene()');
+    assert.ok(h.canvasCalls.length>calls,'tunnel draws projected glyphs');
+    for(const call of h.canvasCalls.slice(calls))
+      for(const value of call.args.slice(1))if(typeof value==='number')assert.ok(Number.isFinite(value));
+    h.advance(1000);h.run('draw();setRainOption("zoom",2);draw();setRainOption("grade","anomaly");draw()');
+    assert.equal(h.run('[tunnelTravel,simulationTime,tunnelSeed].join()'),frozen);
+    h.run('setRainOption("mode","rain");draw();setRainOption("mode","tunnel");draw()');
+    assert.equal(h.run('[tunnelTravel,simulationTime,tunnelSeed].join()'),frozen);
+    h.run('setRainOption("paused",false);signalBurst();updateSimulation(.02);systemBreach();updateSimulation(.055);renderScene()');
+    h.run('resetRain()');assert.equal(h.run('rain.mode'),'rain');assert.equal(h.run('tunnelTravel'),0);
+  }
 });
 
 check('reduced-motion preference follows changes until an explicit animation choice', () => {

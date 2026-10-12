@@ -152,6 +152,7 @@ const booleanSetting = (value,visual=false) => Object.freeze({type:'boolean',def
 const choiceSetting = (value,choices,visual=false) =>
   Object.freeze({type:'enum',default:value,choices:Object.freeze(choices),visual});
 const SETTINGS = Object.freeze({
+  mode:choiceSetting('rain',['rain','tunnel'],true),
   density:numberSetting(1.05,.3,1.65,.05,true),
   zoom:numberSetting(1,.65,2,.01,true),
   speed:numberSetting(1,.2,2.4,.01),
@@ -212,6 +213,8 @@ let frameNumber = 0;
 let breachAt = -Infinity;
 const BREACH_DURATION = 3200;
 let visualBeat = 0;
+let tunnelTravel = 0;
+let tunnelSeed = Math.random()*1000;
 let displayEngine;
 let soundEngine;
 // M restores the previously selected audible mode, even if it was Code Hum
@@ -414,6 +417,8 @@ function buildScene() {
     ...config, size: config.size
   }, depth, columns[depth], lanePitch));
   pulses = [];
+  tunnelTravel = 0;
+  tunnelSeed = Math.random()*1000;
   signalAt = -Infinity;
   breachAt = -Infinity;
   background(...GRADES[rain.grade].bg);
@@ -438,6 +443,11 @@ function updateSimulation(dt) {
   const t=simulationTime;
   pulses=pulses.filter(p=>t-p.at<1550);
   visualBeat=soundEngine?.beatEnergy()||0;
+  if(rain.mode==='tunnel') {
+    const beat=tunnelBeat();
+    const surge=Math.max(0,1-(t-signalAt)/1950);
+    tunnelTravel+=dt*rain.speed*(13.5+beat*9+surge*14);
+  }
   viewport=worldViewport();
   for(const plane of planes)plane.update(dt,t);
 }
@@ -447,6 +457,8 @@ function renderScene() {
   background(...grade.bg);
   const ctx = drawingContext;
 
+  if(rain.mode==='tunnel') renderTunnel(ctx,t);
+  else {
   viewport = worldViewport();
   ctx.save();
   // Camera zoom is centred in both axes, with no random realignment.
@@ -458,6 +470,7 @@ function renderScene() {
   }
   for (const plane of planes) plane.drawGlyphs(ctx, t);
   ctx.restore();
+  }
   // A restrained, brief source-point bloom makes the origin legible even
   // if the pointer falls between two glyph lanes. CRT will bend it naturally.
   for (const pulse of pulses) {
@@ -492,6 +505,100 @@ function renderScene() {
     ctx.globalAlpha = 1;
   }
   displayEngine?.present(drawingContext.canvas);
+}
+
+// A moving lattice in world Z, rather than rescaled concentric screen rings.
+// Every row retains its identity as it approaches, passes the camera and exits.
+function tunnelBeat() {
+  return rain.audio==='score' && rain.beatReactive ? visualBeat*rain.beatStrength : 0;
+}
+function tunnelCurve(s) {
+  return {x:2.4*Math.sin(s*.065)+1.1*Math.sin(s*.137),
+    y:1.9*Math.sin(s*.081)+.7*Math.cos(s*.153)};
+}
+function tunnelSection(z,beat=0) {
+  const s=tunnelTravel, origin=tunnelCurve(s), ahead=tunnelCurve(s+z);
+  const roll=.32*Math.sin(s*.047)+.16*Math.sin(s*.093);
+  const x=ahead.x-origin.x, y=ahead.y-origin.y;
+  const cr=Math.cos(roll),sr=Math.sin(roll);
+  return {x:x*cr-y*sr,y:x*sr+y*cr,
+    twist:(s+z)*.065+roll,
+    radius:3.15*(1+.065*Math.sin((s+z)*.22)+beat*.085*Math.sin(z*.8-s*.5)),
+    scale:Math.min(width,height)*.88*rain.zoom/z};
+}
+function tunnelHash(row,lane) {
+  const n=Math.sin(row*127.1+lane*311.7+tunnelSeed)*43758.5453;
+  return n-Math.floor(n);
+}
+function renderTunnel(ctx,now) {
+  const atlas=planes[2];
+  if(!atlas)return;
+  const beat=tunnelBeat(), step=.40, far=48;
+  const lanes=mobileInput()?72:96;
+  const first=Math.floor(tunnelTravel/step);
+  const count=Math.ceil(far/step);
+  const grade=GRADES[rain.grade];
+  const surgeAge=now-signalAt;
+  const breach=breachRupture(now);
+  const centerX=width*.5-cameraPanX*.12,centerY=height*.5;
+  const source=atlas.atlas.canvas;
+  // Painter's order also keeps near phosphor heads on top of distant trails.
+  for(let i=count;i>=1;i--) {
+    const row=first+i,z=row*step-tunnelTravel;
+    if(z<.85||z>far)continue;
+    const section=tunnelSection(z,beat);
+    const fog=Math.pow(Math.max(0,1-z/far),.65);
+    const entrance=Math.min(1,(z-.85)/.9);
+    const glyphSize=Math.min(110,section.scale*.22);
+    if(glyphSize<1.3)continue;
+    for(let lane=0;lane<lanes;lane++) {
+      const seed=tunnelHash(0,lane);
+      if(seed>Math.min(1,.65+rain.density*.30))continue;
+      // Independent falling streams run along the tube, each with a bright
+      // leading cell, a fading tail and dark clearance before the next train.
+      const period=37+Math.floor(seed*19);
+      const head=now*.001*rain.speed*(3+seed*5)+seed*period;
+      const age=((head-row)%period+period)%period;
+      const length=Math.min(period-3,(22+seed*18)*rain.persistence);
+      if(age>length)continue;
+      const cell=tunnelHash(row,lane);
+      if(cell<SIGNAL_MOTION[rain.grade].blanks && age>2)continue;
+      const angle=lane/lanes*Math.PI*2+section.twist;
+      let x=centerX+(section.x+Math.cos(angle)*section.radius)*section.scale;
+      let y=centerY+(section.y+Math.sin(angle)*section.radius)*section.scale;
+      if(x<-glyphSize*2||x>width+glyphSize*2||y<-glyphSize*2||y>height+glyphSize*2)continue;
+      let charge=0;
+      for(const pulse of pulses) {
+        const elapsed=(now-pulse.at)/1000;
+        const ring=Math.abs(Math.hypot(x-pulse.x,y-pulse.y)-elapsed*780);
+        charge+=Math.max(0,1-ring/65)*pulse.power;
+      }
+      if(surgeAge>=0 && surgeAge<1950)
+        charge+=2*Math.max(0,1-Math.abs(z-(surgeAge/1950)*far)/4);
+      if(breach) {
+        const fragment=breachFragment(screenToWorld(x,y).x,screenToWorld(x,y).y,breach);
+        x+=fragment.dx*rain.zoom;y+=fragment.dy*rain.zoom;
+      }
+      const headCell=age<1.5;
+      const intensity=Math.pow(Math.max(0,1-age/length),1.25);
+      const ink=Math.min(9,Math.max(1,Math.round(3+intensity*4+beat*1.3+charge*3)));
+      const glyph=Math.floor(tunnelHash(row+Math.floor(now*.001*rain.mutation*(.3+cell)),lane+19)*GLYPHS.length);
+      const opacity=Math.min(1,fog*entrance*grade.alpha*(.4+intensity*.6+beat*.12));
+      if(rain.bloom && rain.glow>0 && (headCell||charge>.3)) {
+        ctx.globalAlpha=Math.min(.8,opacity*rain.glow*(.3+beat*.3+charge*.15));
+        const halo=glyphSize*(2.1+beat*.35);
+        ctx.drawImage(glows.halo.canvas,x-halo,y-halo,halo*2,halo*2);
+      }
+      ctx.globalAlpha=opacity;
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(angle+Math.PI*.5);
+      ctx.drawImage(source,glyph*atlas.sourceW,(headCell?9:ink)*atlas.sourceH,
+        atlas.sourceW,atlas.sourceH,-glyphSize*.5,-glyphSize*.62,glyphSize,glyphSize*1.24);
+      ctx.restore();
+    }
+  }
+  ctx.globalAlpha=1;
 }
 
 function pulseInfluence(pulse,x,y,now) {

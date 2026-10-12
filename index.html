@@ -87,6 +87,13 @@
         <h1>DIGITAL RAIN</h1>
         <p class="sub">Your window into the Matrix. Watch, listen, learn.</p>
         <div class="rule"></div>
+        <p class="tag">00 / REALITY</p>
+        <div class="duo" role="group" aria-label="Visual mode">
+          <button data-mode="rain" class="active" aria-pressed="true">MATRIX RAIN</button>
+          <button data-mode="tunnel" aria-pressed="false">CODE TUNNEL</button>
+        </div>
+        <p class="dsc" id="mode-help">Your window into the Matrix.</p>
+        <div class="rule"></div>
         <p class="tag">01 / SIGNAL PROFILES</p>
         <div class="triad quad" role="group" aria-label="Color profiles">
           <button data-grade="cinema" class="active" aria-pressed="true">
@@ -117,7 +124,7 @@
         </div>
         <div class="control">
           <div class="control-head">
-            <label for="speed">FALL VELOCITY</label
+            <label for="speed" id="speed-label">FALL VELOCITY</label
             ><output id="speed-value" for="speed"></output>
           </div>
           <input id="speed" type="range" />
@@ -241,7 +248,7 @@
           <kbd>F</kbd> fullscreen<br />
           <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color ·
           <kbd>T</kbd> grain<br />
-          <kbd>H</kbd> panel<br />
+          <kbd>H</kbd> panel · <kbd>V</kbd> rain / tunnel<br />
           <kbd>R</kbd> reseed · <kbd>G</kbd> glow
         </p>
       </section>

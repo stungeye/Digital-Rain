@@ -13,7 +13,7 @@ function handleRainShortcut(event) {
     event.code==='NumpadAdd' ? '+' :
     event.code==='NumpadSubtract' ? '-' :
     ['+','='].includes(k) ? '+' : ['-','_'].includes(k) ? '-' : k;
-  const recognized = new Set(['space','f','g','r','e','b','m','1','2','3','t','c','h','+','-']);
+  const recognized = new Set(['space','f','g','r','e','b','m','1','2','3','t','c','h','v','+','-']);
   if(!recognized.has(shortcut))return;
   if(shortcut==='h' && typeof window.toggleRainPanel!=='function')return;
   event.preventDefault();  // Space never activates a focused button or scrolls.
@@ -48,6 +48,7 @@ function handleRainShortcut(event) {
     case '3': setRainOption('crt','glass'); feedback('select'); break;
     case 't': setRainOption('grain',rain.grain>0?0:RainApp.settings.grain.default); feedback(getRainOptions().grain>0?'toggle-on':'toggle-off'); break;
     case 'c': setRainOption('grade',RainApp.profiles[(RainApp.profiles.indexOf(rain.grade)+1)%RainApp.profiles.length]); feedback('select'); break;
+    case 'v': setRainOption('mode',rain.mode==='tunnel'?'rain':'tunnel'); feedback('select'); break;
     case 'h': window.toggleRainPanel(); break;
     case '+': setRainOption('density',rain.density+.1); feedback('slider'); break;
     case '-': setRainOption('density',rain.density-.1); feedback('slider'); break;
@@ -157,7 +158,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       setRainOption(name,enabled);
       feedback(enabled?'toggle-on':'toggle-off');
     });
-  for(const selector of ['grade','crt','audio']){
+  for(const selector of ['mode','grade','crt','audio']){
     document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
       const selected=button.dataset[selector];
       const previous=getRainOptions()[selector];
@@ -170,6 +171,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
+    mode:{rain:'Your window into the Matrix.',tunnel:'Fly through twisting walls of living code. Music drives speed, light and pressure waves.'},
     grade:{cinema:'Classic emerald trails with bright heads.',
       abyss:'Sparse cyan drift with long, soft trails.',
       voltage:'Fast chartreuse streams with bold bloom.',
@@ -194,7 +196,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       $(name).setAttribute('aria-valuetext',RainApp.settings[name].format(st[name]));
     }
     for(const name of ['beatReactive'])$(name).checked=st[name];
-    for(const key of ['grade','crt','audio']){
+    for(const key of ['mode','grade','crt','audio']){
       document.querySelectorAll(`[data-${key}]`).forEach(b=>{
         const active=b.dataset[key]===st[key];
         b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
@@ -202,6 +204,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       if(details[key])setText(key+'-help',details[key][st[key]]);
     }
     setText('pause-btn',st.paused?'RESUME SIGNAL':'PAUSE SIGNAL');
+    setText('speed-label',st.mode==='tunnel'?'FLIGHT / RAIN VELOCITY':'FALL VELOCITY');
+    $('rain').setAttribute('aria-label',st.mode==='tunnel'?'Interactive flight through a twisting digital code tunnel':'Interactive falling digital code rain');
     setText('status',st.paused?'OFFLINE':'ONLINE');
     if($('signal-indicator'))$('signal-indicator').dataset.paused=String(st.paused);
     setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
