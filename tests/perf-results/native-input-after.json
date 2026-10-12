@@ -1,0 +1,45 @@
+{
+  "ref": null,
+  "browser": "154.0.8037.99",
+  "nativeInput": true,
+  "results": [
+    {
+      "touchPoints": 2,
+      "coarse": false,
+      "fine": true,
+      "mobile": false,
+      "crt": "WebGL",
+      "atlasScale": 2,
+      "mode": "rain",
+      "frames": 180,
+      "interval": {
+        "median": 16.7,
+        "p95": 16.8
+      },
+      "draw": {
+        "median": 4.6,
+        "p95": 5.3
+      },
+      "peakBeat": 0.883256714220786
+    },
+    {
+      "touchPoints": 2,
+      "coarse": false,
+      "fine": true,
+      "mobile": false,
+      "crt": "WebGL",
+      "atlasScale": 2,
+      "mode": "tunnel",
+      "frames": 150,
+      "interval": {
+        "median": 18.1,
+        "p95": 39
+      },
+      "draw": {
+        "median": 17.7,
+        "p95": 21
+      },
+      "peakBeat": 1
+    }
+  ]
+}

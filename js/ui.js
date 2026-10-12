@@ -61,6 +61,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   // Descriptive text and value labels may be omitted from the panel markup.
   const setText=(id,text)=>{const el=$(id);if(el)el.textContent=text;};
   const panel=$('panel'),toggle=$('toggle');
+  const fpsIndicator=$('fps-indicator');
+  let fpsEnabled=false,fpsPaused=false,fpsSampleAt=0,fpsSampleFrames=0;
   const fsButton=$('fullscreen-toggle');
   const musicButton=$('music-toggle');
   musicButton.addEventListener('click',()=>{
@@ -152,7 +154,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     // One soft landing when releasing a drag or finishing a keyboard adjustment.
     el.addEventListener('change',()=>feedback('slider-end',norm(),name));
   }
-  for(const name of ['beatReactive'])
+  for(const name of ['beatReactive','showFPS'])
     $(name).addEventListener('change',()=>{
       const enabled=$(name).checked;
       setRainOption(name,enabled);
@@ -195,7 +197,13 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       setText(name+'-value',RainApp.settings[name].format(st[name]));
       $(name).setAttribute('aria-valuetext',RainApp.settings[name].format(st[name]));
     }
-    for(const name of ['beatReactive'])$(name).checked=st[name];
+    for(const name of ['beatReactive','showFPS'])$(name).checked=st[name];
+    if(fpsIndicator)fpsIndicator.hidden=!st.showFPS;
+    if(st.showFPS!==fpsEnabled || st.paused!==fpsPaused) {
+      fpsEnabled=st.showFPS;fpsPaused=st.paused;
+      fpsSampleAt=performance.now();fpsSampleFrames=RainApp.renderedFrames;
+      if(fpsEnabled)setText('fps-value',st.paused?'0':'—');
+    }
     for(const key of ['mode','grade','crt','audio']){
       document.querySelectorAll(`[data-${key}]`).forEach(b=>{
         const active=b.dataset[key]===st[key];
@@ -223,6 +231,13 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   const beatLEDs=Array.from(document.querySelectorAll('#beat-leds i'));
   let lastBeatFrame=0,lastBeatEnergy=-1;
   function beatVisualClock(t){
+    if(fpsEnabled && t-fpsSampleAt>=1000) {
+      const frames=RainApp.renderedFrames;
+      const fps=fpsPaused?0:Math.round((frames-fpsSampleFrames)*1000/(t-fpsSampleAt));
+      const value=$('fps-value');
+      if(value && value.textContent!==String(fps))value.textContent=String(fps);
+      fpsSampleAt=t;fpsSampleFrames=frames;
+    }
     if(t-lastBeatFrame>32){
       lastBeatFrame=t;
       const st=RainApp.state;

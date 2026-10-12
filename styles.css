@@ -95,8 +95,11 @@ input:disabled{opacity:.60}
 #notify{color:var(--ui-accent);font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
 .keyhelp{font-size:9px;line-height:1.9;color:var(--ui-muted);letter-spacing:0}
 kbd{font:inherit;color:var(--ui-text)}
-.mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:max(0px,calc(clamp(12px,2.4vh,28px) - 13px));pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
-.mini strong{font-weight:400;color:var(--ui-text)}
+.mini,.fps{position:fixed;z-index:3;right:clamp(12px,2vw,30px);pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
+.mini{bottom:max(0px,calc(clamp(12px,2.4vh,28px) - 13px))}
+.fps{top:max(var(--hud-top),env(safe-area-inset-top));font-variant-numeric:tabular-nums}
+.mini strong,.fps strong{font-weight:400;color:var(--ui-text)}
+#fps-value{display:inline-block;min-width:3ch}
 /* Reserve OFFLINE's width so the dot and label stay anchored when pausing. */
 .mini #status{display:inline-block;width:calc(7ch + 1.26em);text-align:left}
 .mini:before{content:"";display:inline-block;vertical-align:calc(.05em + .5px);margin-left:-6.5px;margin-right:2.5px;width:4px;height:4px;border:1px solid var(--ui-led);border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}

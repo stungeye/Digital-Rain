@@ -19,7 +19,7 @@ window.CRTDisplay = class CRTDisplay {
     this.output.setAttribute('aria-hidden', 'true');
     this.output.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;';
     source.parentElement.appendChild(this.output);
-    const mobileCanvas = window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+    const mobileCanvas = RainApp.mobileInput;
     this.gl = mobileCanvas ? null : this.output.getContext('webgl', {
       alpha:false, antialias:false, depth:false, stencil:false,
       preserveDrawingBuffer:true, powerPreference:'default'

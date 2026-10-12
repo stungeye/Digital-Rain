@@ -173,6 +173,10 @@
           </div>
           <input id="grain" type="range" />
         </div>
+        <div class="switch">
+          <label for="showFPS">SHOW FPS</label>
+          <input id="showFPS" type="checkbox" />
+        </div>
         <div class="rule"></div>
         <p class="tag">04 / AUDIO</p>
         <div class="triad quad" role="group" aria-label="Original audio modes">
@@ -268,6 +272,9 @@
           <path class="panel-close" d="M6 6l12 12 M18 6L6 18" />
         </svg>
       </button>
+    </div>
+    <div class="fps" id="fps-indicator" hidden aria-hidden="true">
+      FPS: <strong id="fps-value">—</strong>
     </div>
     <div class="mini" id="signal-indicator">
       SIGNAL: <strong id="status">ONLINE</strong>

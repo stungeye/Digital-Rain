@@ -1,0 +1,162 @@
+{
+  "method": "Isolated installed Firefox via WebDriver BiDi; native input; headless; seeded scene; fonts blocked; real audio clock at zero master volume",
+  "viewport": [
+    1920,
+    1080
+  ],
+  "warmupMs": 1500,
+  "measuredMs": 3000,
+  "reference": "ed6695c",
+  "before": [
+    {
+      "browser": "firefox",
+      "version": "157.0.1",
+      "ref": "HEAD",
+      "info": {
+        "touch": 0,
+        "coarse": false,
+        "fine": true,
+        "mobile": false,
+        "crt": "WebGL",
+        "size": [
+          1920,
+          1080
+        ],
+        "atlasScale": 2
+      },
+      "audio": {
+        "sampleRate": 48000,
+        "baseLatency": 0,
+        "outputLatency": 0.0397083
+      },
+      "results": [
+        {
+          "mode": "rain",
+          "frames": 142,
+          "interval": {
+            "median": 20,
+            "p95": 27
+          },
+          "draw": {
+            "median": 19,
+            "p95": 20
+          },
+          "clockLag": {
+            "median": 2.4868995751603507E-13,
+            "p95": 2.4868995751603507E-13
+          },
+          "stampAge": {
+            "median": 39.70829999999978,
+            "p95": 39.708300000000236
+          },
+          "energy": {
+            "median": 0.07285471583218953,
+            "p95": 0.6123942446826333
+          },
+          "peak": 0.8682100438930017
+        },
+        {
+          "mode": "tunnel",
+          "frames": 44,
+          "interval": {
+            "median": 60,
+            "p95": 96
+          },
+          "draw": {
+            "median": 59,
+            "p95": 96
+          },
+          "clockLag": {
+            "median": -2.0605739337042905E-13,
+            "p95": -2.0605739337042905E-13
+          },
+          "stampAge": {
+            "median": 39.708300000000236,
+            "p95": 39.708300000000236
+          },
+          "energy": {
+            "median": 0.07611429571618289,
+            "p95": 0.6366375996429053
+          },
+          "peak": 1
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "browser": "firefox",
+      "version": "157.0.1",
+      "ref": "working",
+      "info": {
+        "touch": 0,
+        "coarse": false,
+        "fine": true,
+        "mobile": false,
+        "crt": "WebGL",
+        "size": [
+          1920,
+          1080
+        ],
+        "atlasScale": 2
+      },
+      "audio": {
+        "sampleRate": 48000,
+        "baseLatency": 0,
+        "outputLatency": 0.0408125
+      },
+      "results": [
+        {
+          "mode": "rain",
+          "frames": 143,
+          "interval": {
+            "median": 19,
+            "p95": 31
+          },
+          "draw": {
+            "median": 18,
+            "p95": 20
+          },
+          "clockLag": {
+            "median": -8.526512829121202E-14,
+            "p95": 3.623767952376511E-13
+          },
+          "stampAge": {
+            "median": 40.8125,
+            "p95": 40.8125
+          },
+          "energy": {
+            "median": 0.06608439379054751,
+            "p95": 0.5992220276028084
+          },
+          "peak": 0.8727089828207725
+        },
+        {
+          "mode": "tunnel",
+          "frames": 46,
+          "interval": {
+            "median": 59,
+            "p95": 88
+          },
+          "draw": {
+            "median": 58,
+            "p95": 90
+          },
+          "clockLag": {
+            "median": 3.623767952376511E-13,
+            "p95": 3.623767952376511E-13
+          },
+          "stampAge": {
+            "median": 40.8125,
+            "p95": 40.8125
+          },
+          "energy": {
+            "median": 0.05774379778197048,
+            "p95": 0.8512000000000001
+          },
+          "peak": 1
+        }
+      ]
+    }
+  ]
+}

@@ -166,6 +166,7 @@ const SETTINGS = Object.freeze({
   curvature:numberSetting(1,0,2,.05,true),
   scanStrength:numberSetting(.85,.15,1,.05,true),
   scanBrightness:numberSetting(1,.6,1.75,.05,true),
+  showFPS:booleanSetting(false),
   audio:choiceSetting('effects',['off','effects','ambience','score'],true),
   volume:numberSetting(.5,0,1,.05),
   humVolume:numberSetting(.5,0,1,.05),
@@ -204,7 +205,14 @@ let cameraPanX = 0; // World-space horizontal camera displacement, bounded to th
 let renderDirty = true;
 function invalidateRender() { renderDirty = true; }
 let nativeGesturesInstalled = false;
-const mobileInput = () => window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0;
+const mobileInput = () => {
+  // Touch-capable desktops still have a fine primary pointer. Browsers can
+  // report their touchscreen differently; touch support alone
+  // must not select the 30 FPS / Canvas CRT path on a mouse-driven desktop.
+  const coarse = window.matchMedia?.('(pointer: coarse)')?.matches;
+  const fine = window.matchMedia?.('(pointer: fine)')?.matches;
+  return !!(coarse || (!fine && navigator.maxTouchPoints > 0));
+};
 const ZOOM_MAX = SETTINGS.zoom.max;
 let hover = { x: -999, y: -999, at: -Infinity };
 let simulationTime = 0;
@@ -214,6 +222,7 @@ let frameNumber = 0;
 let breachAt = -Infinity;
 const BREACH_DURATION = 3200;
 let visualBeat = 0;
+let renderedFrames = 0;
 let tunnelTravel = 0;
 let tunnelSeed = Math.random()*1000;
 let tunnelLanes = [];
@@ -372,7 +381,7 @@ function installRainGestures(target) {
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
-  frameRate((window.matchMedia?.('(pointer: coarse)')?.matches || navigator.maxTouchPoints > 0) ? 30 : 60);
+  frameRate(mobileInput() ? 30 : 60);
   const mount = document.getElementById('rain');
   if (mount) canvas.parent(mount);
   installRainGestures(mount || canvas.elt);
@@ -511,6 +520,7 @@ function renderScene() {
     ctx.globalAlpha = 1;
   }
   displayEngine?.present(drawingContext.canvas);
+  renderedFrames++;
 }
 
 // A moving lattice in world Z, rather than rescaled concentric screen rings.
@@ -683,7 +693,7 @@ class CodePlane {
   buildAtlas() {
     // A 2x source atlas produces high-quality edges on ordinary 1x canvas
     // without multiplying every framebuffer pixel on a Retina / 4K screen.
-    const scale = (navigator.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)')?.matches) ? 1.5 : 2;
+    const scale = mobileInput() ? 1.5 : 2;
     const count = GRADES[rain.grade].ink.length;
     this.tileW = Math.ceil(this.config.size * 1.16);
     this.tileH = Math.ceil(this.lineHeight * 1.15);
@@ -1378,6 +1388,8 @@ window.breachRain = systemBreach;
 window.RainApp = Object.freeze({
   state: rain,
   get time() { return simulationTime; },
+  get mobileInput() { return mobileInput(); },
+  get renderedFrames() { return renderedFrames; },
   profiles: Object.freeze([...GRADE_NAMES]),
   settings: SETTINGS,
   toggleMute() { setRainOption('audio', rain.audio==='off' ? lastAudibleMode : 'off'); }

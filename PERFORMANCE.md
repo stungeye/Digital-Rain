@@ -1,3 +1,33 @@
+# Desktop Chrome beat responsiveness — October 12, 2026
+
+The reported Chrome/Firefox difference predates the last profiling pass. On this Windows desktop, installed Chrome 154.0.8037.99 reports `navigator.maxTouchPoints = 2`, while Firefox 157.0.1 reports zero. Both report `(pointer: fine)` and no coarse primary pointer. The app previously treated any touch support as mobile: Chrome therefore selected 30 FPS, Canvas CRT, smaller atlases and the wider mobile world; Firefox selected 60 FPS and WebGL CRT.
+
+This explains a concrete difference in rain's beat sampling cadence. The earlier controlled desktop benchmarks explicitly overrode touch points to zero, so they did not exercise Chrome's native desktop classification. It also meant Chrome used the expensive curved Canvas strip presentation in rain, while tunnel used the flat Canvas presentation. Perceived synchrony still needs listening; this investigation establishes the rendering-path mismatch and corrects it.
+
+Rendering now follows the primary pointer consistently across frame rate, CRT selection, atlas scale, world sizing and tunnel lane count. A fine primary pointer keeps desktop rendering even with a touchscreen. Coarse input retains the mobile path, with touch points as a fallback when no fine pointer is reported. This follows the [primary-pointer distinction in Media Queries](https://www.w3.org/TR/mediaqueries-4/#pointer); native touch gestures remain available on desktop.
+
+## Native-input verification
+
+Headless installed browsers use isolated contexts, 1920 × 1080, a fixed random seed, blocked optional fonts, the production animation/UI clocks, and real score scheduling with master volume zero. Each scene warms for 1.5 seconds and records three seconds. These are frame submission intervals, not GPU presentation latency or audible synchrony. Chrome's repeatable results are in [native-input-before.json](tests/perf-results/native-input-before.json) and [native-input-after.json](tests/perf-results/native-input-after.json).
+
+| Chrome scene | Frames before / after in 3 s | Median interval before / after | p95 interval before / after |
+| --- | ---: | ---: | ---: |
+| Rain | 89 / 180 | 33.3 / 16.7 ms | 33.6 / 16.8 ms |
+| Tunnel | 90 / 150 | 33.3 / 18.1 ms | 33.5 / 39.0 ms |
+
+Rain reaches approximately 60 FPS rather than the accidental 30 FPS cap. Tunnel gains cadence but its full desktop lane count remains more expensive and does not sustain 60 FPS in this run. Firefox retains the same desktop configuration and produces valid beat envelopes in both scenes; its isolated native-input capture is in [native-firefox-input.json](tests/perf-results/native-firefox-input.json). Firefox's headless submission costs are not evidence of the user's visible tunnel performance.
+
+The dependency-free suite covers fine-pointer desktops with/without touch, coarse input, absent pointer information, actual startup frame targets, atlas scale, world extent and attempted WebGL versus Canvas CRT. `tests/perf.js --native-input` leaves the production clocks and native input reports intact, unlike its existing controlled graphics cases:
+
+```text
+PERF_BROWSER=chrome node tests/perf.js --native-input --ref ed6695c --output before.json
+PERF_BROWSER=chrome node tests/perf.js --native-input --output after.json
+```
+
+The optional **SHOW FPS** checkbox is off by default in Analog Display. Its top-right readout shares the signal indicator's 9 px font, averages submitted scene frames over roughly one second, displays zero on pause, starts a fresh sample on resume and turns off on Restore Defaults. It uses the existing UI clock and does not sample or write FPS text while disabled. Browser checks exercised the real checkbox, rain/tunnel switching, pause/resume, reset and desktop/phone layouts: desktop showed 59 FPS and phone emulation 30 FPS, with matching 9 px type. Real GPU presentation and listening remain outside these automated checks.
+
+---
+
 # Performance profiling and optimization — October 12, 2026
 
 This follow-up compares against `fa2c771`, after the earlier beat/rendering pass below. The principal cost is rendering and presentation, especially the thousands of transformed tunnel glyph/halo draws. Ordinary simulation is small; audio scheduling and retained resources do not show an accumulating leak in the exercised workloads.

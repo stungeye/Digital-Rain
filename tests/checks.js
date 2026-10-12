@@ -9,9 +9,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 
-function harness({coarse = false, reduced = false, ready = 'loading', userAgent = '', omittedIds = []} = {}) {
+function harness({coarse = false, fine = !coarse, touchPoints = coarse ? 1 : 0, reduced = false, ready = 'loading', userAgent = '', omittedIds = []} = {}) {
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
-  const listeners = new Map(), elements = new Map(), canvasCalls = [], animationFrames = [];
+  const listeners = new Map(), elements = new Map(), canvasCalls = [], contextRequests = [], animationFrames = [];
   const markup=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const markupIds=new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]));
   for(const id of omittedIds)markupIds.delete(id);
@@ -48,7 +48,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
         fillRect(){if(el.id==='defaultCanvas0')renders++;},
         save(){},restore(){},translate(){},rotate(){},scale(){},setTransform(){},fillText(){},clearRect(){},putImageData(){},
       };
-      el.getContext = type => type==='2d' ? ctx : null;
+      el.getContext = type => { contextRequests.push({canvas:el,type});return type==='2d' ? ctx : null; };
       el.width=640;el.height=360;
     }
     return el;
@@ -101,12 +101,12 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
     createBuffer(channels,length,sampleRate=this.sampleRate){const data=Array.from({length:channels},()=>new Float32Array(length));return {duration:length/sampleRate,getChannelData:i=>data[i]};}
     resume(){return Promise.resolve();}
   }
-  const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:coarse?1:0,userAgent},
+  const sandbox = eventTarget({console,Math:math,document,navigator:{maxTouchPoints:touchPoints,userAgent},
     performance:{now:()=>now},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},
     setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},
     requestAnimationFrame(fn){animationFrames.push(fn);return animationFrames.length;},
     AudioContext,URLSearchParams,location:{search:'',href:'file:///index.html'},innerWidth:640,innerHeight:360,
-    matchMedia(query){if(!media.has(query))media.set(query,eventTarget({matches:query.includes('reduced-motion')?reduced:query.includes('coarse')?coarse:false}));return media.get(query);},
+    matchMedia(query){if(!media.has(query))media.set(query,eventTarget({matches:query.includes('reduced-motion')?reduced:query.includes('coarse')?coarse:query.includes('pointer: fine')?fine:false}));return media.get(query);},
     width:640,height:360,windowWidth:640,windowHeight:360,millis:()=>now,pixelDensity(){},frameRate(){},
     background(){renders++;},
   });
@@ -117,7 +117,7 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   const context=vm.createContext(sandbox);
   const run=source=>vm.runInContext(source,context);
   for(const file of ['rain','crt','audio','ui'])vm.runInContext(fs.readFileSync(path.join(root,'js',file+'.js'),'utf8'),context,{filename:file+'.js'});
-  return {run,sandbox,canvasCalls,animationFrames,media,elements,advance(ms=17){now+=ms;},get renders(){return renders;},
+  return {run,sandbox,canvasCalls,contextRequests,animationFrames,media,elements,advance(ms=17){now+=ms;},get renders(){return renders;},
     get randomCalls(){return randomCalls;},resolveFonts(){fontReady?.();},
     snapshot:()=>run(`JSON.stringify({simulationTime,frameNumber,pulseSeq,pulses,signalAt,breachAt,hover,
       planes:planes.map(p=>p.lanes.map(l=>({x:l.x,active:l.active,nextGap:l.nextGap,
@@ -252,6 +252,69 @@ check('frame pacing retains refresh cadence through timestamp rounding, jitter a
     assert.equal(h.run('pacedFrames'),stalled+1,'a stall draws once without a catch-up burst');
     tick(timestamp+.1);
     assert.equal(h.run('pacedFrames'),stalled+1,'no immediate duplicate after a stall');
+  }
+});
+
+check('fine-pointer desktops retain desktop rendering even with a touchscreen', () => {
+  for(const [options,mobile] of [
+    [{coarse:false,fine:true,touchPoints:0},false],
+    [{coarse:false,fine:true,touchPoints:2},false],
+    [{coarse:true,fine:false,touchPoints:5},true],
+    [{coarse:false,fine:false,touchPoints:1},true],
+    [{coarse:false,fine:false,touchPoints:0},false],
+  ]) {
+    const h=harness(options);
+    h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+    assert.equal(h.run('mobileInput()'),mobile);
+    assert.equal(h.run('RainApp.mobileInput'),mobile,'CRT shares the scene device policy');
+    assert.equal(h.run('planes[0].sourceW/planes[0].tileW'),mobile?1.5:2);
+    assert.equal(h.run('worldWidth'),Math.ceil(640*(mobile?2.70:1/.65)));
+    assert.equal(h.contextRequests.some(request=>request.canvas.id==='crt-output'&&request.type==='webgl'),!mobile,
+      'touchscreen laptops attempt WebGL CRT; coarse devices keep Canvas CRT');
+    h.run('globalThis.deviceFrames=0;window.draw=()=>deviceFrames++');
+    const tick=time=>h.animationFrames.splice(0).forEach(callback=>callback(time));
+    tick(1000);const before=h.run('deviceFrames');
+    for(let i=1;i<=120;i++)tick(1000+i*1000/60);
+    assert.ok(Math.abs(h.run('deviceFrames')-before-(mobile?60:120))<=1,
+      'startup selects 60 FPS for fine pointers and 30 FPS for coarse pointers');
+  }
+  const fallback=harness({touchPoints:2});
+  fallback.sandbox.matchMedia=undefined;
+  assert.equal(fallback.run('mobileInput()'),true,'touch detection remains a fallback without pointer media queries');
+});
+
+check('FPS toggle reports rendered cadence, clears on pause and resets to hidden', () => {
+  for(const coarse of [false,true]) {
+    const h=harness({coarse,touchPoints:2});
+    h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+    const control=h.elements.get('showFPS'),indicator=h.elements.get('fps-indicator');
+    assert.equal(control.checked,false);
+    assert.equal(indicator.hidden,true);
+    control.checked=true;control.dispatchEvent({type:'change'});
+    assert.equal(h.run('rain.showFPS'),true);
+    assert.equal(indicator.hidden,false);
+    assert.equal(h.elements.get('fps-value').textContent,'—');
+    let stamp=1000;
+    const tick=()=>h.animationFrames.splice(0).forEach(callback=>callback(stamp));
+    const pump=frames=>{for(let i=0;i<frames;i++){h.advance(1000/120);stamp+=1000/120;tick();}};
+    tick();pump(250);
+    assert.ok(Math.abs(Number(h.elements.get('fps-value').textContent)-(coarse?30:60))<=1,
+      'counts rendered frames instead of the 120 Hz UI refresh or target setting');
+    h.run('setRainOption("paused",true)');
+    assert.equal(h.elements.get('fps-value').textContent,'0');
+    const rendered=h.run('RainApp.renderedFrames');pump(130);
+    assert.equal(h.run('RainApp.renderedFrames'),rendered+1,'paused scene redraws once then rests');
+    assert.equal(h.elements.get('fps-value').textContent,'0');
+    h.run('setRainOption("paused",false)');
+    assert.equal(h.elements.get('fps-value').textContent,'—','resume starts a fresh measurement');
+    pump(130);
+    assert.ok(Math.abs(Number(h.elements.get('fps-value').textContent)-(coarse?30:60))<=1);
+    control.checked=false;control.dispatchEvent({type:'change'});
+    assert.equal(indicator.hidden,true);
+    const value=h.elements.get('fps-value').textContent;pump(130);
+    assert.equal(h.elements.get('fps-value').textContent,value,'hidden readout performs no text updates');
+    h.run('setRainOption("showFPS",true);resetRain()');
+    assert.equal(control.checked,false);assert.equal(indicator.hidden,true);
   }
 });
 

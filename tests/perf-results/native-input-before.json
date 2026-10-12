@@ -1,0 +1,45 @@
+{
+  "ref": "ed6695c",
+  "browser": "154.0.8037.99",
+  "nativeInput": true,
+  "results": [
+    {
+      "touchPoints": 2,
+      "coarse": false,
+      "fine": true,
+      "mobile": true,
+      "crt": "Canvas",
+      "atlasScale": 1.5,
+      "mode": "rain",
+      "frames": 89,
+      "interval": {
+        "median": 33.3,
+        "p95": 33.6
+      },
+      "draw": {
+        "median": 3.6,
+        "p95": 4.3
+      },
+      "peakBeat": 0.8710716214180099
+    },
+    {
+      "touchPoints": 2,
+      "coarse": false,
+      "fine": true,
+      "mobile": true,
+      "crt": "Canvas",
+      "atlasScale": 1.5,
+      "mode": "tunnel",
+      "frames": 90,
+      "interval": {
+        "median": 33.3,
+        "p95": 33.5
+      },
+      "draw": {
+        "median": 12.6,
+        "p95": 14.6
+      },
+      "peakBeat": 1
+    }
+  ]
+}
