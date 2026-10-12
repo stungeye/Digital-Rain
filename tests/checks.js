@@ -228,7 +228,7 @@ check('curvature preserves coverage and pointer alignment across its range', () 
   }
 });
 
-check('scanline spacing and thickness grow gently above normal zoom in both CRT modes', () => {
+check('scanline spacing and thickness grow visibly above normal zoom in both CRT modes', () => {
   const h=harness();h.run(`setup();setRainOption('paused',true);
     const scanMasks=[];
     displayEngine.ctx.fillRect=function(x,y,w,height){
@@ -239,20 +239,22 @@ check('scanline spacing and thickness grow gently above normal zoom in both CRT 
     for(const zoom of [.65,1,1.5,2]) {
       h.run(`setRainOption('crt','${mode}');setRainOption('zoom',${zoom});scanMasks.length=0;displayEngine.present(drawingContext.canvas)`);
       const masks=h.run('scanMasks'),thickness=masks[0].height,spacing=masks[1].y-masks[0].y;
-      assert.ok(spacing>2*thickness,'scanlines retain a visible bright gap');
-      if(zoom===2){assert.ok(thickness>1.5&&thickness<1.6,'full zoom has slightly wider dark bands');assert.ok(Math.abs(spacing-4.05)<1e-9,'spacing remains unchanged');}
+      assert.ok(Math.abs(spacing/thickness-2.7/1.25)<1e-9,'spacing and thickness keep the same proportion at every zoom');
+      assert.equal(thickness,1.25*Math.max(1,zoom),'scanline thickness follows glyph height above 100%');
+      if(zoom===2){assert.equal(thickness,2.5,'full zoom doubles the dark-band width');assert.equal(spacing,5.4,'full zoom doubles the spacing');}
       if(zoom===.65)baseline=JSON.stringify(masks);
       if(zoom===1)assert.equal(JSON.stringify(masks),baseline,'normal and smaller zoom retain original scanlines');
-      if(zoom>1){assert.ok(thickness>1);assert.ok(thickness<1.6);assert.ok(masks.length<JSON.parse(baseline).length);}
+      if(zoom>1){assert.ok(thickness>1);assert.ok(thickness<=2.5);assert.ok(masks.length<JSON.parse(baseline).length);}
       // Exercise the shader presentation path to verify it receives the same scale.
       h.run(`{const savedGL=displayEngine.gl,savedUniforms=displayEngine.uniforms;
-        window.scanUniforms={};displayEngine.uniforms={u_scanScale:'scale',u_scanThickness:'thickness'};
+        window.scanUniforms={};displayEngine.uniforms={u_scanScale:'scale'};
         displayEngine.gl={activeTexture(){},bindTexture(){},texImage2D(){},uniform2f(){},
           uniform1f(name,value){scanUniforms[name]=value;},drawArrays(){}};
         displayEngine.present(drawingContext.canvas);
         displayEngine.gl=savedGL;displayEngine.uniforms=savedUniforms;}`);
-      assert.ok(Math.abs(h.run('scanUniforms.scale')-spacing/3)<1e-9);
-      assert.ok(Math.abs(h.run('scanUniforms.scale*scanUniforms.thickness')-thickness)<1e-9);
+      assert.ok(Math.abs(h.run('scanUniforms.scale')-spacing/2.7)<1e-9);
+      assert.equal(1.25*h.run('scanUniforms.scale'),thickness);
+      if(zoom===2)assert.equal(h.run('scanUniforms.scale'),2,'desktop raster doubles with glyph height at full zoom');
     }
   }
 });
