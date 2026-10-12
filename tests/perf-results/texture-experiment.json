@@ -1,0 +1,482 @@
+{
+  "reference": "HEAD",
+  "host": {
+    "platform": "win32",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13950HX",
+    "browser": "155.0.4283.45"
+  },
+  "runs": 3,
+  "frames": 180,
+  "warmup": 60,
+  "results": [
+    {
+      "case": "desktop-rain-default",
+      "revision": "reference",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.5,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 3.3,
+        "p95": 3.9,
+        "p99": 4.2
+      },
+      "total": {
+        "median": 3.5,
+        "p95": 4.2,
+        "p99": 4.5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 16.9,
+        "p99": 17
+      }
+    },
+    {
+      "case": "desktop-rain-default",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.5,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 3.3,
+        "p95": 4,
+        "p99": 4.4
+      },
+      "total": {
+        "median": 3.6,
+        "p95": 4.3,
+        "p99": 4.8
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17
+      }
+    },
+    {
+      "case": "desktop-rain-default",
+      "revision": "working",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.4
+      },
+      "render": {
+        "median": 3.4,
+        "p95": 3.9,
+        "p99": 4.7
+      },
+      "total": {
+        "median": 3.6,
+        "p95": 4.1,
+        "p99": 5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-default",
+      "revision": "reference",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 3.3,
+        "p95": 3.8,
+        "p99": 4
+      },
+      "total": {
+        "median": 3.6,
+        "p95": 4.1,
+        "p99": 4.3
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-default",
+      "revision": "reference",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.5
+      },
+      "render": {
+        "median": 3.4,
+        "p95": 3.9,
+        "p99": 4.2
+      },
+      "total": {
+        "median": 3.5,
+        "p95": 4.1,
+        "p99": 4.5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-default",
+      "revision": "working",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 3.5,
+        "p95": 3.9,
+        "p99": 4.8
+      },
+      "total": {
+        "median": 3.7,
+        "p95": 4.3,
+        "p99": 5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "reference",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.3,
+        "p95": 0.5,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 4.8,
+        "p95": 5.5,
+        "p99": 7
+      },
+      "total": {
+        "median": 5.1,
+        "p95": 5.9,
+        "p99": 7.2
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.5,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 4.6,
+        "p95": 5.2,
+        "p99": 5.4
+      },
+      "total": {
+        "median": 4.9,
+        "p95": 5.6,
+        "p99": 5.9
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "working",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.3,
+        "p95": 0.5,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 4.7,
+        "p95": 5.5,
+        "p99": 5.7
+      },
+      "total": {
+        "median": 5,
+        "p95": 5.8,
+        "p99": 6
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "reference",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.3,
+        "p95": 0.5,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 4.7,
+        "p95": 5.3,
+        "p99": 5.7
+      },
+      "total": {
+        "median": 5,
+        "p95": 5.5,
+        "p99": 6.1
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "reference",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.3,
+        "p95": 0.5,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 4.7,
+        "p95": 5.2,
+        "p99": 5.7
+      },
+      "total": {
+        "median": 5,
+        "p95": 5.4,
+        "p99": 6
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "working",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.3,
+        "p95": 0.5,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 4.7,
+        "p95": 5.2,
+        "p99": 6.3
+      },
+      "total": {
+        "median": 4.9,
+        "p95": 5.6,
+        "p99": 6.6
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17.1,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "reference",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 1.3,
+        "p95": 1.6,
+        "p99": 1.7
+      },
+      "total": {
+        "median": 1.5,
+        "p95": 1.9,
+        "p99": 2.2
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17.1,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.4
+      },
+      "render": {
+        "median": 1.3,
+        "p95": 1.5,
+        "p99": 1.7
+      },
+      "total": {
+        "median": 1.5,
+        "p95": 1.8,
+        "p99": 2.1
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "working",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.5,
+        "p99": 1
+      },
+      "render": {
+        "median": 1.3,
+        "p95": 1.7,
+        "p99": 2.2
+      },
+      "total": {
+        "median": 1.5,
+        "p95": 2.1,
+        "p99": 2.6
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "reference",
+      "run": 1,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.5
+      },
+      "render": {
+        "median": 1.2,
+        "p95": 1.6,
+        "p99": 1.8
+      },
+      "total": {
+        "median": 1.4,
+        "p95": 1.8,
+        "p99": 2.4
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.2
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "reference",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 1.2,
+        "p95": 1.6,
+        "p99": 1.9
+      },
+      "total": {
+        "median": 1.4,
+        "p95": 1.8,
+        "p99": 2.1
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "working",
+      "run": 2,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 1.3,
+        "p95": 1.6,
+        "p99": 1.9
+      },
+      "total": {
+        "median": 1.5,
+        "p95": 1.9,
+        "p99": 2.2
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    }
+  ],
+  "diagnostics": []
+}

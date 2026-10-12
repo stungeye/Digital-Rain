@@ -1,0 +1,3303 @@
+{
+  "reference": "fa2c771",
+  "tolerance": 0.001,
+  "source": [
+    {
+      "case": "desktop-rain-cinema-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-breach",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-surge",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-ripple",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-grain",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    }
+  ],
+  "crt": [
+    {
+      "case": "desktop-rain-cinema-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-glass",
+      "mean": 4.5136367304123295e-7,
+      "maxChannel": 2,
+      "changedFraction": 0.0002406442901234568
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-paused-resize-shrunk",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-paused-resize-grown",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-scan",
+      "mean": 1.89118857419511e-9,
+      "maxChannel": 1,
+      "changedFraction": 0.0000014467592592592592
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-glass",
+      "mean": 6.3039619139837e-10,
+      "maxChannel": 1,
+      "changedFraction": 4.822530864197531e-7
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-paused-resize-shrunk",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-paused-resize-grown",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-paused-resize-shrunk",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-paused-resize-grown",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-scan",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-glass",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-paused-resize-shrunk",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-paused-resize-grown",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    }
+  ],
+  "retention": [
+    {
+      "case": "desktop-rain-cinema-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-cinema-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-abyss-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-voltage-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-rain-anomaly-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-cinema-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-abyss-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-voltage-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "desktop-tunnel-anomaly-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-cinema-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-abyss-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-voltage-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-rain-anomaly-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-cinema-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-abyss-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-voltage-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-0.65-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-1-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-scan-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-scan-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-glass-reference",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    },
+    {
+      "case": "touch-tunnel-anomaly-2-normal-glass-working",
+      "mean": 0,
+      "maxChannel": 0,
+      "changedFraction": 0
+    }
+  ],
+  "devices": [
+    {
+      "case": "desktop-rain",
+      "reference": {
+        "type": "WebGL",
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+      },
+      "working": {
+        "type": "WebGL",
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+      }
+    },
+    {
+      "case": "desktop-tunnel",
+      "reference": {
+        "type": "WebGL",
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+      },
+      "working": {
+        "type": "WebGL",
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+      }
+    },
+    {
+      "case": "touch-rain",
+      "reference": {
+        "type": "Canvas",
+        "renderer": null
+      },
+      "working": {
+        "type": "Canvas",
+        "renderer": null
+      }
+    },
+    {
+      "case": "touch-tunnel",
+      "reference": {
+        "type": "Canvas",
+        "renderer": null
+      },
+      "working": {
+        "type": "Canvas",
+        "renderer": null
+      }
+    }
+  ],
+  "interaction": [
+    {
+      "case": "desktop-rain",
+      "pointerSamples": 27,
+      "pointerError": 0,
+      "modePreference": true,
+      "pausedResize": true
+    },
+    {
+      "case": "desktop-tunnel",
+      "pointerSamples": 27,
+      "pointerError": 0,
+      "modePreference": true,
+      "pausedResize": true
+    },
+    {
+      "case": "touch-rain",
+      "pointerSamples": 27,
+      "pointerError": 0,
+      "modePreference": true,
+      "pausedResize": true
+    },
+    {
+      "case": "touch-tunnel",
+      "pointerSamples": 27,
+      "pointerError": 0,
+      "modePreference": true,
+      "pausedResize": true
+    }
+  ],
+  "failures": []
+}

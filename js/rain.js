@@ -189,6 +189,7 @@ let planes = [];
 let glows = {};
 let vignette;
 let filmTile;
+let filmData;
 let filmPattern;
 let pulses = [];
 let pulseSeq = 0;
@@ -627,7 +628,8 @@ function renderTunnel(ctx,now) {
       if(surgeAge>=0 && surgeAge<1950)
         charge+=2*Math.max(0,1-Math.abs(z-(surgeAge/1950)*far)/4);
       if(breach) {
-        const fragment=breachFragment(screenToWorld(x,y).x,screenToWorld(x,y).y,breach);
+        const world=screenToWorld(x,y);
+        const fragment=breachFragment(world.x,world.y,breach);
         x+=fragment.dx*rain.zoom;y+=fragment.dy*rain.zoom;
       }
       const headCell=age<1.5;
@@ -729,6 +731,7 @@ class CodePlane {
       if(!lane.active)continue;
       const x=lane.x;
       if(x<view.minX-this.tileW||x>view.maxX+this.tileW)continue;
+      const front=surgeOn?surgeFront(x,surgeAge):0;
       for(const stream of lane.streams)for(const [row,cell] of stream.cells) {
         const age=stream.head-row;
         const y=(row+.5)*this.lineHeight;
@@ -763,7 +766,7 @@ class CodePlane {
             cell.twinkleUntil=now+130;
           }
         }
-        if(surgeOn&&Math.abs(y-surgeFront(x,surgeAge))<21&&cell.lastSurge!==signalAt) {
+        if(surgeOn&&Math.abs(y-front)<21&&cell.lastSurge!==signalAt) {
           cell.lastSurge=signalAt;
           if(Math.random()<.89)cell.glyph=randomGlyph();
           cell.twinkleUntil=now+380;
@@ -854,6 +857,7 @@ class CodePlane {
       if (!lane.active) continue;
       const x = lane.x;
       if (x < viewport.minX-tw || x > viewport.maxX+tw) continue;
+      const front = surgeOn ? surgeFront(x, surgeAge) : 0;
       for (const stream of lane.streams) {
         for (const [row, cell] of stream.cells) {
           const age = stream.head - row;
@@ -900,7 +904,6 @@ class CodePlane {
           // Front lines are staggered across lanes, and leave a hot afterglow.
           // No glyphs are created outside the stream's owned cells.
           if (surgeOn) {
-            const front = surgeFront(x, surgeAge);
             const dy = y-front;
             const crest = Math.max(0, 1-Math.abs(dy)/54);
             const corona = Math.max(0, 1-Math.abs(dy)/150);
@@ -1150,7 +1153,8 @@ function buildFilmTile(tile) {
     tile.width = tile.height = 128;
   }
   const ctx = tile.getContext('2d');
-  const data = ctx.createImageData(128,128);
+  // The sole film tile has a fixed size; every channel is overwritten below.
+  const data = filmData ||= ctx.createImageData(128,128);
   for (let i=0; i<data.data.length; i+=4) {
     const v = Math.random();
     if (v < .13) { data.data[i]=0;data.data[i+1]=0;data.data[i+2]=0;data.data[i+3]=80; }

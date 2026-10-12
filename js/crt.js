@@ -118,7 +118,7 @@ window.CRTDisplay = class CRTDisplay {
   // The shader maps output pixels to sampled source pixels. Pointer input
   // must follow the same transformation or a click near curved edges misses.
   screenToSource(x,y) {
-    if(this.mode!=='glass')return {x,y};
+    if(this.mode!=='glass'||rain.mode==='tunnel')return {x,y};
     const w=this.source.width,h=this.source.height;
     if(!this.gl) {
       // The fallback stretches each strip past the viewport edges. Follow
@@ -139,17 +139,19 @@ window.CRTDisplay = class CRTDisplay {
   }
   present(source) {
     if(this.mode==='off')return;
+    if (this.output.width!==source.width||this.output.height!==source.height)this.resize();
     const w=this.output.width,h=this.output.height;
-    if (w!==source.width||h!==source.height)this.resize();
     // Glyphs grow directly with camera zoom. Use the same factor for both
     // scanline spacing and thickness above 100%, keeping their ratio fixed.
     const scanScale=Math.max(1,rain.zoom);
+    // Tunnel perspective supplies its own curvature. Retain the rain setting.
+    const curve=this.mode==='glass'&&rain.mode!=='tunnel'?rain.curvature:0;
     if(this.gl) {
       const gl=this.gl,u=this.uniforms;
       gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.texture);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
       gl.uniform2f(u.u_size,w,h);
-      gl.uniform1f(u.u_curve,this.mode==='glass'?rain.curvature:0);
+      gl.uniform1f(u.u_curve,curve);
       gl.uniform1f(u.u_scan,rain.scanStrength);
       gl.uniform1f(u.u_scanScale,scanScale);
       gl.uniform1f(u.u_brightness,rain.scanBrightness);
@@ -162,10 +164,10 @@ window.CRTDisplay = class CRTDisplay {
       const maskCoverage=(.82*1.25+.17*.65)/2.7;
       const compensation=1/(1-maskCoverage*rain.scanStrength)*rain.scanBrightness;
       ctx.save();ctx.filter=`brightness(${compensation})`;
-      if(this.mode==='glass') {
+      if(curve>0) {
         for (let y=0;y<h;y+=3) {
           const row=Math.min(3,h-y);
-          const overscan=stripOverscan(w,h,y,rain.curvature);
+          const overscan=stripOverscan(w,h,y,curve);
           ctx.drawImage(source,0,y,w,row,-overscan,y,w+2*overscan,row);
         }
       } else ctx.drawImage(source,0,0,w,h);

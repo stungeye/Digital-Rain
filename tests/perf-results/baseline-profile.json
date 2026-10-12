@@ -1,0 +1,742 @@
+{
+  "reference": null,
+  "host": {
+    "platform": "win32",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13950HX",
+    "browser": "155.0.4283.45"
+  },
+  "runs": 1,
+  "frames": 90,
+  "warmup": 60,
+  "results": [
+    {
+      "case": "desktop-rain-default",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 3.2,
+        "p95": 3.6,
+        "p99": 3.8
+      },
+      "total": {
+        "median": 3.5,
+        "p95": 3.8,
+        "p99": 4.1
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 16.8,
+        "p99": 17.4
+      }
+    },
+    {
+      "case": "desktop-rain-stress",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.5,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 4.6,
+        "p95": 5,
+        "p99": 5.3
+      },
+      "total": {
+        "median": 4.9,
+        "p95": 5.4,
+        "p99": 5.5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.2
+      }
+    },
+    {
+      "case": "desktop-rain-flat",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.8
+      },
+      "render": {
+        "median": 1.2,
+        "p95": 1.4,
+        "p99": 1.6
+      },
+      "total": {
+        "median": 1.3,
+        "p95": 1.6,
+        "p99": 1.9
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17.1,
+        "p99": 17.2
+      }
+    },
+    {
+      "case": "desktop-tunnel-default",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0,
+        "p95": 0.3,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 15.3,
+        "p95": 17.9,
+        "p99": 19.3
+      },
+      "total": {
+        "median": 15.3,
+        "p95": 18,
+        "p99": 19.5
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-tunnel-stress",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0,
+        "p95": 0.3,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 11.4,
+        "p95": 13.2,
+        "p99": 14.6
+      },
+      "total": {
+        "median": 11.5,
+        "p95": 13.3,
+        "p99": 14.9
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "desktop-tunnel-flat",
+      "revision": "working",
+      "run": 0,
+      "crt": "WebGL",
+      "update": {
+        "median": 0,
+        "p95": 0.3,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 12.7,
+        "p95": 17.2,
+        "p99": 19.1
+      },
+      "total": {
+        "median": 12.8,
+        "p95": 17.2,
+        "p99": 19.3
+      },
+      "interval": {
+        "median": 16.7,
+        "p95": 17,
+        "p99": 17.1
+      }
+    },
+    {
+      "case": "touch-rain-default",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0.1,
+        "p95": 0.3,
+        "p99": 0.3
+      },
+      "render": {
+        "median": 0.8,
+        "p95": 1.2,
+        "p99": 1.4
+      },
+      "total": {
+        "median": 1,
+        "p95": 1.3,
+        "p99": 1.7
+      },
+      "interval": {
+        "median": 33.3,
+        "p95": 33.7,
+        "p99": 33.9
+      }
+    },
+    {
+      "case": "touch-rain-stress",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0.1,
+        "p95": 0.3,
+        "p99": 0.5
+      },
+      "render": {
+        "median": 1.3,
+        "p95": 1.7,
+        "p99": 2.1
+      },
+      "total": {
+        "median": 1.5,
+        "p95": 1.9,
+        "p99": 2.2
+      },
+      "interval": {
+        "median": 33.4,
+        "p95": 33.7,
+        "p99": 33.8
+      }
+    },
+    {
+      "case": "touch-rain-flat",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0.1,
+        "p95": 0.4,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 1
+      },
+      "total": {
+        "median": 0.3,
+        "p95": 0.8,
+        "p99": 1.1
+      },
+      "interval": {
+        "median": 33.3,
+        "p95": 33.6,
+        "p99": 33.7
+      }
+    },
+    {
+      "case": "touch-tunnel-default",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0,
+        "p95": 0.3,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 12,
+        "p95": 13.7,
+        "p99": 14.6
+      },
+      "total": {
+        "median": 12.1,
+        "p95": 13.7,
+        "p99": 14.8
+      },
+      "interval": {
+        "median": 33.3,
+        "p95": 33.6,
+        "p99": 33.8
+      }
+    },
+    {
+      "case": "touch-tunnel-stress",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0,
+        "p95": 0.2,
+        "p99": 0.6
+      },
+      "render": {
+        "median": 9.1,
+        "p95": 10,
+        "p99": 10.4
+      },
+      "total": {
+        "median": 9.2,
+        "p95": 10,
+        "p99": 10.4
+      },
+      "interval": {
+        "median": 33.3,
+        "p95": 33.6,
+        "p99": 33.7
+      }
+    },
+    {
+      "case": "touch-tunnel-flat",
+      "revision": "working",
+      "run": 0,
+      "crt": "Canvas",
+      "update": {
+        "median": 0,
+        "p95": 0.2,
+        "p99": 0.7
+      },
+      "render": {
+        "median": 11.4,
+        "p95": 13.4,
+        "p99": 22.5
+      },
+      "total": {
+        "median": 11.4,
+        "p95": 13.6,
+        "p99": 22.5
+      },
+      "interval": {
+        "median": 33.3,
+        "p95": 33.5,
+        "p99": 33.7
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "case": "desktop-rain-stress",
+      "costs": {
+        "buildFilmTile": {
+          "ms": 10.599999606609344,
+          "calls": 50
+        },
+        "updateCells": {
+          "ms": 20.90000009536743,
+          "calls": 450
+        },
+        "drawBloom": {
+          "ms": 14.800000131130219,
+          "calls": 450
+        },
+        "drawGlyphs": {
+          "ms": 260.3000000715256,
+          "calls": 450
+        },
+        "CRT": {
+          "ms": 452.50000005960464,
+          "calls": 150
+        }
+      },
+      "canvasCalls": {
+        "createImageData": 50,
+        "fillRect": 300,
+        "drawImage": 434781
+      },
+      "textureUploadBytesPerFrame": 8294400,
+      "framebufferBytes": 24883200,
+      "gpu": {
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "timerQuery": true
+      },
+      "heap": {
+        "initial": {
+          "usedSize": 2060304,
+          "totalSize": 3145728,
+          "embedderHeapUsedSize": 1138248,
+          "backingStorageSize": 129119
+        },
+        "final": {
+          "usedSize": 2578088,
+          "totalSize": 3145728,
+          "embedderHeapUsedSize": 1116464,
+          "backingStorageSize": 129153
+        }
+      },
+      "soak": [
+        {
+          "time": 2499.9999999999995,
+          "streams": 348,
+          "cells": 7076,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        },
+        {
+          "time": 302500.00000000704,
+          "streams": 368,
+          "cells": 7528,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        },
+        {
+          "time": 602499.999999969,
+          "streams": 349,
+          "cells": 7241,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        }
+      ],
+      "cpuSelfMs": {
+        "(idle)": 1665.1,
+        "(program)": 39.74,
+        "drawGlyphs": 34.72,
+        "updateCells": 18.44,
+        "(garbage collector)": 12.79,
+        "update": 5.07,
+        "buildFilmTile": 4.33,
+        "advanceRow": 4.2,
+        "(anonymous)": 1.96,
+        "worldViewport": 1.2,
+        "drawBloom": 1.04,
+        "window.background": 1.03
+      }
+    },
+    {
+      "case": "desktop-tunnel-stress",
+      "costs": {
+        "buildFilmTile": {
+          "ms": 9.29999977350235,
+          "calls": 50
+        },
+        "renderTunnel": {
+          "ms": 1716.0999997854233,
+          "calls": 150
+        },
+        "CRT": {
+          "ms": 87.40000021457672,
+          "calls": 150
+        }
+      },
+      "canvasCalls": {
+        "createImageData": 50,
+        "fillRect": 300,
+        "setTransform": 961942,
+        "drawImage": 962092
+      },
+      "textureUploadBytesPerFrame": 8294400,
+      "framebufferBytes": 24883200,
+      "gpu": {
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4080 Laptop GPU (0x000027A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "timerQuery": true
+      },
+      "heap": {
+        "initial": {
+          "usedSize": 2057980,
+          "totalSize": 2621440,
+          "embedderHeapUsedSize": 1610824,
+          "backingStorageSize": 129286
+        },
+        "final": {
+          "usedSize": 2362704,
+          "totalSize": 3145728,
+          "embedderHeapUsedSize": 1112576,
+          "backingStorageSize": 547112
+        }
+      },
+      "soak": [
+        {
+          "time": 2499.9999999999995,
+          "streams": 386,
+          "cells": 6185,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        },
+        {
+          "time": 302500.00000000704,
+          "streams": 386,
+          "cells": 6185,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        },
+        {
+          "time": 602499.999999969,
+          "streams": 386,
+          "cells": 6185,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        }
+      ],
+      "cpuSelfMs": {
+        "(idle)": 641.22,
+        "renderTunnel": 104.4,
+        "(program)": 49.5,
+        "(garbage collector)": 11.16,
+        "buildFilmTile": 7.88,
+        "rippleGlowCharge": 6.06,
+        "tunnelSection": 4.09,
+        "mobileInput": 1.49,
+        "tunnelRow": 1.48,
+        "(anonymous)": 1.26,
+        "tunnelCurve": 1.02,
+        "tunnelHash": 1.01
+      }
+    },
+    {
+      "case": "touch-rain-stress",
+      "costs": {
+        "buildFilmTile": {
+          "ms": 10.599999845027924,
+          "calls": 50
+        },
+        "updateCells": {
+          "ms": 6.500000059604645,
+          "calls": 450
+        },
+        "drawBloom": {
+          "ms": 5.099999904632568,
+          "calls": 450
+        },
+        "drawGlyphs": {
+          "ms": 50.099999368190765,
+          "calls": 450
+        },
+        "CRT": {
+          "ms": 145.30000001192093,
+          "calls": 150
+        }
+      },
+      "canvasCalls": {
+        "createImageData": 50,
+        "fillRect": 94350,
+        "drawImage": 125688
+      },
+      "textureUploadBytesPerFrame": 0,
+      "framebufferBytes": 3949920,
+      "gpu": null,
+      "heap": {
+        "initial": {
+          "usedSize": 1368240,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 1087984,
+          "backingStorageSize": 127095
+        },
+        "final": {
+          "usedSize": 1731764,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 1003152,
+          "backingStorageSize": 127184
+        }
+      },
+      "soak": [
+        {
+          "time": 4999.999999999999,
+          "streams": 122,
+          "cells": 2316,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        },
+        {
+          "time": 305000.0000000056,
+          "streams": 119,
+          "cells": 2289,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        },
+        {
+          "time": 604999.999999972,
+          "streams": 124,
+          "cells": 2259,
+          "tunnelRows": 0,
+          "tunnelBytes": 0
+        }
+      ],
+      "cpuSelfMs": {
+        "(idle)": 4636.68,
+        "(program)": 134.16,
+        "buildFilmTile": 11.65,
+        "(anonymous)": 10.3,
+        "update": 7.8,
+        "updateCells": 5.9,
+        "drawGlyphs": 5.43,
+        "(garbage collector)": 4.18,
+        "advanceRow": 3.33,
+        "makeCell": 1.24,
+        "present": 1.1,
+        "updateSimulation": 1.03,
+        "renderScene": 1.02,
+        "safeHead": 0.23
+      }
+    },
+    {
+      "case": "touch-tunnel-stress",
+      "costs": {
+        "buildFilmTile": {
+          "ms": 9.800000071525574,
+          "calls": 50
+        },
+        "renderTunnel": {
+          "ms": 1057.1000002026558,
+          "calls": 150
+        },
+        "CRT": {
+          "ms": 360.9000000357628,
+          "calls": 150
+        }
+      },
+      "canvasCalls": {
+        "createImageData": 50,
+        "fillRect": 94350,
+        "setTransform": 726088,
+        "drawImage": 768538
+      },
+      "textureUploadBytesPerFrame": 0,
+      "framebufferBytes": 3949920,
+      "gpu": null,
+      "heap": {
+        "initial": {
+          "usedSize": 1368092,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 1184472,
+          "backingStorageSize": 127262
+        },
+        "final": {
+          "usedSize": 1678924,
+          "totalSize": 2359296,
+          "embedderHeapUsedSize": 995672,
+          "backingStorageSize": 545143
+        }
+      },
+      "soak": [
+        {
+          "time": 4999.999999999999,
+          "streams": 128,
+          "cells": 1867,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        },
+        {
+          "time": 305000.0000000056,
+          "streams": 128,
+          "cells": 1867,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        },
+        {
+          "time": 604999.999999972,
+          "streams": 128,
+          "cells": 1867,
+          "tunnelRows": 256,
+          "tunnelBytes": 417792
+        }
+      ],
+      "cpuSelfMs": {
+        "(idle)": 3427.08,
+        "(program)": 137.03,
+        "renderTunnel": 95.3,
+        "(garbage collector)": 11.61,
+        "rippleGlowCharge": 8.28,
+        "buildFilmTile": 7.81,
+        "tunnelRow": 6.34,
+        "tunnelHash": 5.5,
+        "renderScene": 3.83,
+        "(anonymous)": 3.3,
+        "tunnelCurve": 1.02,
+        "present": 0.46
+      }
+    }
+  ],
+  "audio": {
+    "initMs": 64.10000002384186,
+    "sampleRate": 48000,
+    "noiseBytes": 5318400,
+    "profiles": [
+      {
+        "grade": "cinema",
+        "createdSources": 158,
+        "liveSources": 9,
+        "peakSources": 20,
+        "scheduleMs": {
+          "median": 0,
+          "p95": 0.4,
+          "p99": 0.7
+        }
+      },
+      {
+        "grade": "abyss",
+        "createdSources": 95,
+        "liveSources": 37,
+        "peakSources": 60,
+        "scheduleMs": {
+          "median": 0,
+          "p95": 0.1,
+          "p99": 0.6
+        }
+      },
+      {
+        "grade": "voltage",
+        "createdSources": 241,
+        "liveSources": 7,
+        "peakSources": 60,
+        "scheduleMs": {
+          "median": 0,
+          "p95": 0.7,
+          "p99": 1.1
+        }
+      },
+      {
+        "grade": "anomaly",
+        "createdSources": 131,
+        "liveSources": 5,
+        "peakSources": 60,
+        "scheduleMs": {
+          "median": 0,
+          "p95": 0.3,
+          "p99": 1.5
+        }
+      }
+    ],
+    "remainingTransientSources": 0,
+    "foley": [
+      {
+        "kind": "panel-open",
+        "coldMs": 10,
+        "warmMs": 0
+      },
+      {
+        "kind": "panel-close",
+        "coldMs": 4.900000035762787,
+        "warmMs": 0
+      },
+      {
+        "kind": "toggle-on",
+        "coldMs": 5,
+        "warmMs": 0
+      },
+      {
+        "kind": "select",
+        "coldMs": 2.800000011920929,
+        "warmMs": 0
+      },
+      {
+        "kind": "slider",
+        "coldMs": 0.8999999761581421,
+        "warmMs": 0
+      },
+      {
+        "kind": "slider-end",
+        "coldMs": 0.800000011920929,
+        "warmMs": 0
+      }
+    ],
+    "foleyBytes": 318148
+  }
+}

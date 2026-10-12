@@ -171,7 +171,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
-    mode:{rain:'Your window into the Matrix.',tunnel:'Fly through twisting walls of living code. Music drives speed, light and pressure waves.'},
+    mode:{rain:'Your window into the Matrix.',tunnel:'Fly through twisting walls of living code. Music drives speed, light and pressure waves; CRT curvature returns in rain.'},
     grade:{cinema:'Classic emerald trails with bright heads.',
       abyss:'Sparse cyan drift with long, soft trails.',
       voltage:'Fast chartreuse streams with bold bloom.',
@@ -211,7 +211,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + HUM':
       st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // STATIC HUM');
-    $('curvature').disabled=st.crt!=='glass';
+    $('curvature').disabled=st.crt!=='glass'||st.mode==='tunnel';
     $('scanBrightness').disabled=st.crt==='off';
     $('humVolume').disabled=st.audio!=='ambience'&&st.audio!=='score';
     $('scoreVolume').disabled=st.audio!=='score';
@@ -221,17 +221,18 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
   }
   window.addEventListener('rain-state',sync);sync();
   const beatLEDs=Array.from(document.querySelectorAll('#beat-leds i'));
-  let lastBeatFrame=0;
+  let lastBeatFrame=0,lastBeatEnergy=-1;
   function beatVisualClock(t){
     if(t-lastBeatFrame>32){
       lastBeatFrame=t;
-      const st=getRainOptions();
+      const st=RainApp.state;
       const e=st.audio==='score'&&st.beatReactive?(window.signalSound()?.beatEnergy()||0)*st.beatStrength:0;
-      beatLEDs.forEach((bar,i)=>{
+      if(e!==lastBeatEnergy)beatLEDs.forEach((bar,i)=>{
         const level=Math.max(.13,Math.min(1,.12+e*(.62+.20*Math.sin(i*2.1))));
         bar.style.transform=`scaleY(${level})`;
         bar.style.opacity=String(.26+Math.min(1,e)*.74);
       });
+      lastBeatEnergy=e;
     }
     requestAnimationFrame(beatVisualClock);
   }

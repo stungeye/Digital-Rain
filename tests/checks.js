@@ -56,6 +56,14 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   const document = eventTarget({readyState:ready,hidden:false,
     createElement:element,getElementById(id){if(!markupIds.has(id))return null;if(!elements.has(id))elements.set(id,element());return elements.get(id);},
     querySelector(){return null;},querySelectorAll(selector){
+      if(selector==='#beat-leds i'&&markupIds.has('beat-leds')) {
+        const bars=markup.match(/id="beat-leds"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
+        return [...bars.matchAll(/<i\b/g)].map((_,i)=>{
+          const id=`beat-led-${i}`;
+          if(!elements.has(id))elements.set(id,element('i'));
+          return elements.get(id);
+        });
+      }
       const key=selector.match(/^\[data-(mode|grade|crt|audio)\]$/)?.[1];
       if(!key)return [];
       return [...markup.matchAll(new RegExp(`data-${key}="([^"]+)"`,'g'))].map(match=>{
@@ -421,7 +429,11 @@ check('curvature preserves coverage and pointer alignment across its range', () 
     h.run(`displayEngine.gl=null;setRainOption("curvature",${curvature})`);
     h.canvasCalls.length=0;h.run('displayEngine.present(drawingContext.canvas)');
     const strips=h.canvasCalls.filter(c=>c.args.length===9&&c.args[0]===h.sandbox.drawingContext.canvas);
-    assert.ok(strips.length>10);
+    if(curvature>0)assert.ok(strips.length>10);
+    else {
+      assert.equal(strips.length,0,'zero curvature uses one direct source draw');
+      assert.equal(h.canvasCalls.filter(c=>c.args[0]===h.sandbox.drawingContext.canvas&&c.args.length===5).length,1);
+    }
     for(const strip of strips) {
       const [source,sx,sy,sw,sh,dx,dy,dw]=strip.args;
       assert.ok(dx<=0&&dx+dw>=640);
@@ -473,6 +485,38 @@ check('scanline spacing and thickness grow visibly above normal zoom in both CRT
   }
 });
 
+check('tunnel bypasses CRT curvature while retaining and restoring the rain preference', () => {
+  for(const webgl of [false,true]) {
+    const h=harness();h.run('setup();setRainOption("crt","glass");setRainOption("curvature",1.5)');
+    if(webgl)h.run(`window.curveUniforms={};displayEngine.uniforms={u_curve:'curve'};
+      displayEngine.gl={activeTexture(){},bindTexture(){},texImage2D(){},uniform2f(){},
+        uniform1f(name,value){curveUniforms[name]=value;},drawArrays(){}};`);
+    const present=()=>{
+      h.canvasCalls.length=0;h.run('displayEngine.present(drawingContext.canvas)');
+      if(webgl)return h.run('curveUniforms.curve');
+      return h.canvasCalls.filter(call=>call.args[0]===h.sandbox.drawingContext.canvas&&call.args.length===9).length;
+    };
+    assert.ok(present()>0,'rain uses its selected glass curvature');
+    const curved=h.run('displayEngine.screenToSource(480,180)');
+    assert.ok(curved.x<480,'rain pointers follow the curved output');
+    h.run('setRainOption("mode","tunnel")');
+    assert.equal(h.elements.get('curvature').disabled,true);
+    assert.equal(h.run('rain.curvature'),1.5,'tunnel preserves the stored rain preference');
+    assert.equal(present(),0,'tunnel supplies zero curvature to both output paths');
+    if(!webgl)assert.equal(h.canvasCalls.filter(call=>call.args[0]===h.sandbox.drawingContext.canvas&&call.args.length===5).length,1);
+    for(const [x,y] of [[0,0],[640,360],[0,180],[480,180],[64,36]]) {
+      const point=h.run(`displayEngine.screenToSource(${x},${y})`);
+      assert.equal(point.x,x);assert.equal(point.y,y,'tunnel pointer mapping is the identity');
+    }
+    h.run('setRainOption("mode","rain")');
+    assert.equal(h.elements.get('curvature').disabled,false);
+    assert.equal(h.run('rain.curvature'),1.5);
+    assert.ok(present()>0,'returning to rain restores the selected curvature');
+    const restored=h.run('displayEngine.screenToSource(480,180)');
+    assert.equal(restored.x,curved.x);assert.equal(restored.y,curved.y);
+  }
+});
+
 check('polished defaults reset and canvas interaction closes the panel', () => {
   const h=harness();h.run('setup()');
   for(const [name,value] of [['grain',.35],['crt','glass'],['scanStrength',.85],['interfaceLevel',.4],['mutation',1],['curvature',1]])
@@ -506,6 +550,50 @@ check('zero film strength disables grain and slider and shortcut restore it', ()
   key();assert.equal(h.run('rain.grain'),0);
   key();assert.equal(h.run('rain.grain'),.35);
   assert.equal(h.sandbox.document.getElementById('texture'),null);
+});
+
+check('film refreshes reuse one ImageData while replacing every channel with changing grain', () => {
+  const h=harness();h.run(`setup();
+    const originalFilmData=filmData,firstFilmPixels=filmData.data.slice();
+    let filmAllocations=0;const filmWrites=[];
+    const filmContext=filmTile.getContext('2d'),originalCreateImageData=filmContext.createImageData;
+    filmContext.createImageData=function(...args){filmAllocations++;return originalCreateImageData.apply(this,args);};
+    filmContext.putImageData=(data)=>filmWrites.push(data);
+    buildFilmTile(filmTile);`);
+  assert.equal(h.run('filmData'),h.run('originalFilmData'));
+  assert.equal(h.run('filmAllocations'),0,'refreshing a fixed tile allocates no new pixel buffer');
+  assert.equal(h.run('filmWrites[0]'),h.run('originalFilmData'));
+  assert.notDeepEqual(h.run('filmData.data'),h.run('firstFilmPixels'),'the reused tile still changes between refreshes');
+  assert.ok(h.run('new Set(filmData.data).size>20'),'film pixels retain varied noise');
+  h.run('filmData.data.fill(255);buildFilmTile(filmTile)');
+  assert.ok(h.run('filmData.data.every(value=>value<255)'),'all four channels overwrite previous pixel contents');
+  assert.equal(h.run('filmWrites[1]'),h.run('originalFilmData'));
+  assert.equal(h.run('filmAllocations'),0);
+  h.run('buildScene();buildFilmTile(filmTile)');
+  assert.equal(h.run('filmData'),h.run('originalFilmData'),'reseed retains the fixed tile buffer');
+  assert.equal(h.run('filmAllocations'),0);
+});
+
+check('beat indicators update changed energy and skip redundant style writes', () => {
+  const h=harness();h.run('setup()');
+  const bars=h.sandbox.document.querySelectorAll('#beat-leds i');
+  assert.ok(bars.length>0);
+  let writes=0;
+  for(const bar of bars)bar.style=new Proxy(bar.style,{set(target,key,value){writes++;target[key]=value;return true;}});
+  const tick=stamp=>h.animationFrames.splice(0).forEach(callback=>callback(stamp));
+  tick(50);assert.equal(writes,bars.length*2,'the first silent frame initializes every indicator');
+  tick(100);assert.equal(writes,bars.length*2,'steady silence leaves styles alone');
+  h.run('rain.audio="score";soundEngine.beatEnergy=()=>.5');
+  tick(150);assert.equal(writes,bars.length*4,'a beat updates both styles on every indicator');
+  assert.ok(new Set(bars.map(bar=>bar.style.transform)).size>1,'beat levels still vary across the indicator');
+  tick(200);assert.equal(writes,bars.length*4,'a stable sustained level is already rendered');
+  h.run('setRainOption("beatStrength",1.25)');
+  tick(250);assert.equal(writes,bars.length*6,'impact changes update the displayed level');
+  h.run('setRainOption("beatReactive",false)');
+  tick(300);assert.equal(writes,bars.length*8,'disabling beat response restores the silent display');
+  tick(350);assert.equal(writes,bars.length*8);
+  h.run('setRainOption("beatReactive",true)');
+  tick(400);assert.equal(writes,bars.length*10,'reenabling response restores the current beat');
 });
 
 check('SFX Only gates every ambient source independently of LFO modulation', () => {
