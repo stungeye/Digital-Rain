@@ -73,8 +73,8 @@ function installRainCanvasRuntime() {
   Ordered classic scripts; native Canvas rendering on every device.
 
   Not scrolling text: glyphs are born, age and extinguish in stationary cells.
-  One physical horizontal lane per stream depth, and all segments in that lane
-  have the same velocity. Stream glyphs therefore cannot overwrite one another.
+  One physical horizontal lane per stream depth. Each stream has its own speed;
+  birth spacing prevents faster followers from catching slower trails.
 
   One global capture-phase shortcut dispatcher, independent of UI focus.
   SPACE pause   F fullscreen   R reseed   G glow   C color grade
@@ -620,7 +620,7 @@ class CodePlane {
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       for (const stream of lane.streams) {
-        if (!stream.whiteHead || stream.head < this.minRow || stream.head >= this.rows) continue;
+        if (!stream.whiteHead || stream.head < this.minRow || stream.head >= stream.endRow) continue;
         const x = lane.x;
         const y = (stream.head + .5) * this.lineHeight;
         if (x < viewport.minX-50 || x > viewport.maxX+50 ||
@@ -751,12 +751,11 @@ class CodeLane {
     this.x = (column+.5)*pitch;
     this.lottery = Math.random();
     this.active = this.lottery < laneDensity();
-    this.speed = between(plane.config.advanceMin, plane.config.advanceMax);
-    this.progress = Math.random();
     this.phase = between(0, Math.PI*2);
     this.rhythm = between(.25, 1.2);
     this.streams = [];
     this.nextGap = 0;
+    this.pending = null;
     this.reset(true);
   }
 
@@ -766,21 +765,55 @@ class CodeLane {
     return Math.floor(between(5-3*tightness, 25-17*tightness));
   }
 
+  // All streams share the global velocity/cadence/surge multiplier, so
+  // clearance in base-speed time survives changes to those controls.
+  safeHead(stream, gap = this.nextGap) {
+    let head = Infinity;
+    for (const below of this.streams) {
+      const position = below.head + below.progress;
+      const remaining = Math.max(0, (below.endRow + below.length - position) / below.speed);
+      const catchup = Math.max(0, stream.speed - below.speed) * remaining;
+      // An extra row covers independently rounded head positions.
+      head = Math.min(head, position - below.length - Math.max(2, gap) - 1 - catchup);
+    }
+    return Math.floor(head);
+  }
+
+  fillAbove(head) {
+    while (head > this.plane.minRow-this.plane.config.lengthMax && this.streams.length < 15) {
+      const stream = new CodeStream(this.plane, head);
+      head = Math.min(head, this.safeHead(stream, this.randomGap()));
+      if (head <= this.plane.minRow-this.plane.config.lengthMax) break;
+      stream.place(head);
+      this.streams.push(stream); // Bottommost stream first.
+      head -= stream.length + this.randomGap();
+    }
+  }
+
   reset(fill) {
     this.streams.length = 0;
-    this.progress = Math.random();
+    this.pending = null;
     if (fill) {
-      let head = Math.floor(between(this.plane.minRow+(this.plane.rows-this.plane.minRow)*.3,
-                                  this.plane.rows + this.plane.config.lengthMax*.8));
-      while (head > this.plane.minRow-this.plane.config.lengthMax && this.streams.length < 15) {
-        const stream = new CodeStream(this.plane, head);
-        this.streams.push(stream); // Bottommost stream first.
-        head -= stream.length + this.randomGap();
-      }
+      this.fillAbove(Math.floor(between(this.plane.minRow+(this.plane.rows-this.plane.minRow)*.3,
+                                      this.plane.rows + this.plane.config.lengthMax*.8)));
     } else {
       this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
     }
     this.nextGap = this.randomGap();
+  }
+
+  extendBottom(row) {
+    // Extend existing lifetimes only when followers still have clearance.
+    // Otherwise the retained trail finishes at its original bottom boundary.
+    // New births use the expanded field immediately.
+    for (let i=0; i<this.streams.length; i++) {
+      const stream=this.streams[i], position=stream.head+stream.progress;
+      const remaining=Math.max(0,(row+stream.length-position)/stream.speed);
+      const safe=this.streams.slice(i+1).every(follower =>
+        position-stream.length-follower.head-follower.progress >=
+          3+Math.max(0,follower.speed-stream.speed)*remaining);
+      if (safe) stream.endRow=Math.max(stream.endRow,row);
+    }
   }
 
   updateDensity() {
@@ -801,24 +834,24 @@ class CodeLane {
       const lead = this.streams.length ? this.streams[this.streams.length-1].head * this.plane.lineHeight : 0;
       chargeBoost += 1.65 * Math.max(0,1-Math.abs(lead-front)/360);
     }
-    this.progress += dt*this.speed*rain.speed*cadence*chargeBoost;
-    const steps = Math.min(12, Math.floor(this.progress));
-    this.progress -= steps;
-    for (let i=0; i<steps; i++) {
-      for (const stream of this.streams) stream.advanceRow();
-      while (this.streams.length &&
-             this.streams[0].head-this.streams[0].length >= this.plane.rows) {
-        this.streams.shift();
-      }
-      if (!this.streams.length) {
-        this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
-        this.nextGap = this.randomGap();
-      }
-      const top = this.streams[this.streams.length - 1];
-      if (top.head-top.length-this.nextGap >= this.plane.minRow-1) {
-        this.streams.push(new CodeStream(this.plane, this.plane.minRow-1));
-        this.nextGap = this.randomGap();
-      }
+    const travel = dt*rain.speed*cadence*chargeBoost;
+    for (const stream of this.streams) {
+      stream.progress += travel*stream.speed;
+      const steps = Math.floor(stream.progress);
+      stream.progress -= steps;
+      for (let i=0; i<steps; i++) stream.advanceRow();
+    }
+    this.streams = this.streams.filter(stream => stream.head-stream.length < stream.endRow);
+    // Hold one sampled follower while waiting; don't reroll until a slow
+    // speed happens to fit, which would bias the speed distribution.
+    if (!this.pending) this.pending = new CodeStream(this.plane, this.plane.minRow-1);
+    const head = this.plane.minRow-1;
+    if (this.safeHead(this.pending) >= head) {
+      this.pending.endRow = this.plane.rows;
+      this.pending.place(head);
+      this.streams.push(this.pending);
+      this.pending = null;
+      this.nextGap = this.randomGap();
     }
   }
 }
@@ -828,12 +861,21 @@ class CodeStream {
     this.plane = plane;
     const cfg = plane.config;
     this.length = Math.floor(between(cfg.lengthMin, cfg.lengthMax+1));
+    this.speed = between(cfg.advanceMin, cfg.advanceMax);
+    this.progress = Math.random();
+    this.endRow = plane.rows;
     this.head = head;
     this.whiteHead = Math.random() < cfg.headChance;
     this.glow = between(.6, 1);
     this.cells = new Map();
+    this.place(head);
+  }
+
+  place(head) {
+    this.head = head;
+    this.cells.clear();
     for (let row=head-this.length+1; row<=head; row++) {
-      if (row>=plane.minRow && row<plane.rows) this.cells.set(row, this.makeCell());
+      if (row>=this.plane.minRow && row<this.endRow) this.cells.set(row, this.makeCell());
     }
   }
 
@@ -850,7 +892,7 @@ class CodeStream {
 
   advanceRow() {
     this.head++;
-    if (this.head>=this.plane.minRow && this.head<this.plane.rows)
+    if (this.head>=this.plane.minRow && this.head<this.endRow)
       this.cells.set(this.head, this.makeCell());
     this.cells.delete(this.head-this.length);
   }
@@ -1050,20 +1092,15 @@ function extendSceneForViewport() {
     if(minRow===plane.minRow && maxRow===plane.rows)continue;
     plane.minRow=minRow;plane.rows=maxRow;
     for(const lane of plane.lanes) {
+      lane.extendBottom(maxRow);
       // Previously clipped parts of a retained stream acquire only new cells.
       for(const stream of lane.streams) {
-        for(let row=Math.max(minRow,stream.head-stream.length+1);row<=Math.min(maxRow-1,stream.head);row++)
+        for(let row=Math.max(minRow,stream.head-stream.length+1);row<=Math.min(stream.endRow-1,stream.head);row++)
           if(!stream.cells.has(row))stream.cells.set(row,stream.makeCell());
       }
-      // Populate newly exposed territory above the old scheduler origin, with
-      // the same lane velocity and the same minimum separation as normal births.
-      let top=lane.streams.at(-1);
-      let head=top ? top.head-top.length-lane.nextGap : minRow-1;
-      while(head>=minRow) {
-        top=new CodeStream(plane,head);
-        lane.streams.push(top);
-        head-=top.length+lane.randomGap();
-      }
+      // New territory uses the same trajectory clearance as normal births.
+      const top=lane.streams.at(-1);
+      lane.fillAbove(top ? top.head-top.length-lane.nextGap : minRow-1);
     }
   }
   const owned=new Set(planes.flatMap(plane=>plane.lanes.map(lane=>lane.column)));

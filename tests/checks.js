@@ -112,8 +112,8 @@ function harness({coarse = false, reduced = false, ready = 'loading', userAgent 
   return {run,sandbox,canvasCalls,animationFrames,media,elements,advance(ms=17){now+=ms;},get renders(){return renders;},
     get randomCalls(){return randomCalls;},resolveFonts(){fontReady?.();},
     snapshot:()=>run(`JSON.stringify({simulationTime,frameNumber,pulseSeq,pulses,signalAt,breachAt,hover,
-      planes:planes.map(p=>p.lanes.map(l=>({x:l.x,progress:l.progress,active:l.active,nextGap:l.nextGap,
-        streams:l.streams.map(s=>({head:s.head,length:s.length,cells:[...s.cells]}))})))})`)};
+      planes:planes.map(p=>p.lanes.map(l=>({x:l.x,active:l.active,nextGap:l.nextGap,
+        streams:l.streams.map(s=>({head:s.head,length:s.length,speed:s.speed,progress:s.progress,cells:[...s.cells]}))})))})`)};
 }
 
 function check(name, body){body();console.log('PASS '+name);}
@@ -273,6 +273,45 @@ check('all profiles keep lane ownership and two dark rows at maximum density and
   }
 });
 
+check('independent stream speeds stay in range and faster followers wait for lifetime clearance', () => {
+  const h=harness();h.run(`setup();setRainOption('density',1.65);
+    const lane=planes[1].lanes[0], cfg=lane.plane.config;
+    lane.active=true;lane.phase=0;lane.rhythm=1;
+    lane.streams=[];lane.nextGap=2;
+    const slow=new CodeStream(lane.plane,0);
+    slow.speed=cfg.advanceMin;slow.progress=0;slow.length=20;slow.place(0);
+    const fast=new CodeStream(lane.plane,lane.plane.minRow-1);
+    fast.speed=cfg.advanceMax;fast.progress=.9;lane.pending=fast;
+    lane.streams.push(slow);`);
+  h.run('lane.update(.001,0)');
+  assert.ok(h.run('lane.pending===fast && lane.streams.length===1'),'fast follower waits');
+  const births=h.run(`(()=>{
+    const speeds=new Map([[slow,slow.speed]]);let births=0;
+    for(let tick=0;tick<5000;tick++){
+      if(tick===80){innerHeight=1200;windowResized();}
+      if(tick===160){innerHeight=1800;windowResized();}
+      if(tick%200===0){setRainOption('speed',tick%400===0?.2:2.4);signalAt=simulationTime;}
+      updateSimulation(.055);
+      for(const plane of planes)for(const lane of plane.lanes){
+        const occupied=new Set();
+        for(let i=0;i<lane.streams.length;i++){
+          const s=lane.streams[i],cfg=plane.config;
+          if(s.speed<cfg.advanceMin||s.speed>cfg.advanceMax)throw Error('speed out of range');
+          if(speeds.has(s)&&speeds.get(s)!==s.speed)throw Error('base speed drifted');
+          if(!speeds.has(s)){speeds.set(s,s.speed);births++;}
+          if(i){const below=lane.streams[i-1];if(below.head-below.length-s.head<2)throw Error('follower caught trail');}
+          for(const row of s.cells.keys()){if(occupied.has(row))throw Error('overlapping cells');occupied.add(row);}
+        }
+      }
+      if(lane.pending && lane.pending===fast && fast.speed!==cfg.advanceMax)throw Error('waiting speed rerolled');
+    }
+    return births;
+  })()`);
+  assert.ok(births>100,'repeated births exercise the scheduler');
+  assert.ok(h.run('new Set(lane.streams.map(s=>s.speed)).size>1 || lane.pending.speed!==lane.streams[0].speed'),
+    'one column has independently sampled speeds');
+});
+
 check('profile presets synchronize editable code sliders and preserve existing streams', () => {
   const h=harness();h.run('setup()');
   h.run('globalThis.originalLane=planes[1].lanes[0];globalThis.originalStream=originalLane.streams[0]');
@@ -297,9 +336,9 @@ check('profile presets synchronize editable code sliders and preserve existing s
     }
     assert.ok(h.run('planes.every(p=>p.lanes.every(l=>l.active===(l.lottery<laneDensity())))'));
     travel[profile]=h.run(`(()=>{
-      const lane=originalLane;lane.active=true;lane.progress=0;lane.phase=0;lane.rhythm=1;
-      lane.update(.001,0);const a=lane.progress;
-      lane.progress=0;lane.update(.001,770);return [a,lane.progress/a];
+      const lane=originalLane;lane.active=true;originalStream.progress=0;lane.phase=0;lane.rhythm=1;
+      lane.update(.001,0);const a=originalStream.progress;
+      originalStream.progress=0;lane.update(.001,770);return [a,originalStream.progress/a];
     })()`);
   }
   assert.ok(travel.abyss[0]<travel.cinema[0]*.7,'Deep drifts slower');
@@ -313,8 +352,8 @@ check('profile presets synchronize editable code sliders and preserve existing s
   h.elements.get('data-grade-anomaly').dispatchEvent({type:'click'});
   assert.equal(h.run('rain.speed'),.8,'reselecting the active profile retains edits');
   const motion=()=>h.run(`(()=>{
-    originalLane.active=true;originalLane.progress=0;originalLane.phase=0;originalLane.rhythm=1;
-    originalLane.update(.001,0);return originalLane.progress/originalLane.speed/.001;
+    originalLane.active=true;originalStream.progress=0;originalLane.phase=0;originalLane.rhythm=1;
+    originalLane.update(.001,0);return originalStream.progress/originalStream.speed/.001;
   })()`);
   assert.ok(Math.abs(motion()-.8)<1e-9,'velocity slider has no hidden profile multiplier');
   h.run('handleRainShortcut({key:"c",preventDefault(){},stopImmediatePropagation(){}})');
@@ -802,15 +841,15 @@ check('resize retains camera centre, simulation and existing lane/stream/cell id
       const retainedLanes=planes.flatMap(p=>p.lanes);
       const retainedStreams=retainedLanes.flatMap(l=>l.streams);
       const retainedCells=retainedStreams.flatMap(s=>[...s.cells].map(([row,cell])=>({s,row,cell,state:JSON.stringify(cell)})));
-      const laneState=retainedLanes.map(l=>JSON.stringify([l.x,l.speed,l.progress,l.phase,l.rhythm,l.nextGap,l.active]));
-      const streamState=retainedStreams.map(s=>JSON.stringify([s.head,s.length,s.whiteHead,s.glow]));
+      const laneState=retainedLanes.map(l=>JSON.stringify([l.x,l.phase,l.rhythm,l.nextGap,l.active]));
+      const streamState=retainedStreams.map(s=>JSON.stringify([s.head,s.length,s.speed,s.progress,s.whiteHead,s.glow]));
       const origin=screenToWorld(width/2,height/2),clock=simulationTime,frame=frameNumber;
       const beforeVignette=vignette;`);
     const verify=()=>assert.ok(h.run(`planes.every((p,i)=>p===retainedPlanes[i]&&p.atlas===retainedAtlases[i]) &&
       retainedLanes.every((l,i)=>planes.includes(l.plane)&&l.plane.lanes.includes(l)&&
-        JSON.stringify([l.x,l.speed,l.progress,l.phase,l.rhythm,l.nextGap,l.active])===laneState[i]) &&
+        JSON.stringify([l.x,l.phase,l.rhythm,l.nextGap,l.active])===laneState[i]) &&
       retainedStreams.every((s,i)=>s.plane.lanes.some(l=>l.streams.includes(s))&&
-        JSON.stringify([s.head,s.length,s.whiteHead,s.glow])===streamState[i]) &&
+        JSON.stringify([s.head,s.length,s.speed,s.progress,s.whiteHead,s.glow])===streamState[i]) &&
       retainedCells.every(({s,row,cell,state})=>s.cells.get(row)===cell&&JSON.stringify(cell)===state) &&
       simulationTime===clock&&frameNumber===frame&&cameraPanX===80 &&
       Math.abs(screenToWorld(width/2,height/2).x-origin.x)<1e-7&&
