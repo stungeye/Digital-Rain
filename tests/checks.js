@@ -665,6 +665,27 @@ check('audio uses common scheduling defaults and the native context configuratio
   assert.equal(engine.ctx,null);
 });
 
+check('breach audio pulls outward and seats each slab at its visual relock', () => {
+  const h=harness();h.run('setup(); soundEngine.setMode("effects")');
+  const engine=h.run('soundEngine'),ctx=engine.ctx,before=ctx.createdNodes.length;
+  const phases=h.run('Array.from({length:9},(_,slab)=>breachSlabPhase(slab))');
+  engine.breach(phases);
+  const nodes=ctx.createdNodes.slice(before),sources=nodes.filter(n=>n.startArgs);
+  const origin=ctx.currentTime+.01;
+  for(const phase of phases) {
+    const seat=origin+2.42+phase*.46;
+    assert.equal(sources.filter(n=>Math.abs(n.startArgs[0]-seat)<1e-9).length,2,
+      'noise contact and damped tone align with each slab flash');
+  }
+  const pulls=nodes.filter(n=>n.kind==='panner'&&n.pan.calls.some(c=>c[0]==='linear'&&Math.abs(c[1])===.78));
+  assert.equal(pulls.length,2,'tear has two moving stereo layers');
+  assert.ok(pulls.some(n=>n.pan.calls.at(-1)[1]<0));
+  assert.ok(pulls.some(n=>n.pan.calls.at(-1)[1]>0));
+  assert.ok(sources.some(n=>Math.abs(n.startArgs[0]-origin-3.02)<1e-9),'final low seating impact');
+  engine.setMode('off');const silent=ctx.createdNodes.length;engine.breach(phases);
+  assert.equal(ctx.createdNodes.length,silent,'mute gates the entire sequence');
+});
+
 check('finished voices disconnect their whole graph and score partials retain shared effects until all end', () => {
   const h=harness();h.run('setup();soundEngine.setMode("effects")');
   const engine=h.run('soundEngine'),ctx=engine.ctx;
@@ -807,6 +828,34 @@ check('paused visual changes redraw without advancing positions or effect bookke
   h.run('setRainOption("paused",false)');h.advance(17);h.run('draw()');
   assert.notEqual(h.snapshot(),before,'advancing frame applies pending cell/effect updates');
   assert.ok(h.run('simulationTime')-time<100,'resume has no accumulated pause backlog');
+});
+
+check('breach tears occupied code apart, relocks by slab and renders without mutation', () => {
+  const h=harness();h.run('setup(); breachAt=simulationTime');
+  assert.equal(h.run('breachRupture(simulationTime+639)'),null,'opening stays intact');
+  for(const zoom of [.65,1,2]) {
+    h.sandbox.testZoom=zoom;
+    h.run('setRainOption("zoom",testZoom)');
+    const fragments=JSON.parse(h.run(`JSON.stringify(Array.from({length:9},(_,i)=>{
+      const r=breachRupture(breachAt+1500),y=r.top+(i+.5)*r.band;
+      return [breachFragment(r.center-r.span*.1,y,r),breachFragment(r.center+r.span*.1,y,r)];
+    }))`));
+    for(const [left,right] of fragments) {
+      assert.ok(left.dx*zoom < -25 && right.dx*zoom > 25,'visible split at every zoom');
+      assert.equal(left.amount,1,'rupture holds open');
+    }
+    h.run('simulationTime=breachAt+1500');
+    const snapshot=h.snapshot(),random=h.randomCalls;
+    h.run('renderScene(); renderScene()');
+    assert.equal(h.snapshot(),snapshot,'draw preserves cell and stream ownership');
+    assert.equal(h.randomCalls,random,'fracture rendering is deterministic');
+  }
+  const recovery=JSON.parse(h.run(`JSON.stringify(Array.from({length:9},(_,i)=>{
+    const r=breachRupture(breachAt+2600);
+    return breachFragment(r.center,r.top+(i+.5)*r.band,r).amount;
+  }))`));
+  assert.ok(Math.max(...recovery)-Math.min(...recovery)>.3,'slabs recover independently');
+  assert.equal(h.run('breachRupture(breachAt+BREACH_DURATION)'),null,'displacement fully ends');
 });
 
 check('overlapping ripples handle each cell once and bound ownership to active pulses', () => {

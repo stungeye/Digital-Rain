@@ -580,13 +580,48 @@ window.SignalAudio = class SignalAudio {
     for(let i=0;i<6;i++)
       this.filteredNoise(t+.18+i*.21,.07,.06,1300+i*340,.72, i%2?.45:-.45);
   }
-  breach() {
+  breach(slabPhases = Array.from({length:9},(_,slab)=>slab/8)) {
     if (this.mode==='off'||!this.ctx) return;
-    const t=this.ctx.currentTime+.01;
+    const ac=this.ctx,t=ac.currentTime+.01;
+    // Preserve the opening's failing power supply and broken contacts.
     this.tone(t,67,1.24,'sine',.53,26);
     this.filteredNoise(t+.13,.99,.24,290,.25);
     for(let i=0;i<7;i++)this.filteredNoise(t+.32+i*.15,.057,.038,430+i*135,.67,Math.random()-.5);
-    this.filteredNoise(t+1.52,.64,.095,580,.27);
+    // Filtered metal under tension: two rough layers pull outward with the
+    // tear. The same soft exponential attacks/tails as the other film SFX.
+    const strain=(at,dur,hz,endHz,amp,pan,endPan,attack)=>{
+      const begin=t+at,source=ac.createBufferSource();source.buffer=this.noise;
+      const filter=ac.createBiquadFilter();filter.type='bandpass';filter.Q.value=.85;
+      filter.frequency.setValueAtTime(hz,begin);
+      filter.frequency.exponentialRampToValueAtTime(endHz,begin+dur*.85);
+      const gain=ac.createGain();gain.gain.setValueAtTime(.0001,begin);
+      gain.gain.exponentialRampToValueAtTime(amp,begin+attack);
+      gain.gain.exponentialRampToValueAtTime(.0001,begin+dur);
+      gain.gain.linearRampToValueAtTime(0,begin+dur+.005);
+      source.connect(filter);
+      const graph=this.connectVoice(filter,gain,pan);
+      const panner=ac.createStereoPanner ? graph[2] : null;
+      if(panner){panner.pan.setValueAtTime(pan,begin);panner.pan.linearRampToValueAtTime(endPan,begin+dur*.8);}
+      this.releaseVoice(source,[source,...graph]);
+      source.start(begin,Math.random()*Math.max(0,this.noise.duration-dur-.1));
+      source.stop(begin+dur+.025);
+    };
+    strain(.64,.76,360,1700,.15,-.12,-.78,.16);
+    strain(.67,.88,1900,240,.12,.12,.78,.20);
+    this.tone(t+.64,48,1.35,'triangle',.13,39,240,-.25);
+    this.tone(t+.69,54,1.25,'triangle',.075,43,280,.25);
+    this.filteredNoise(t+1.35,.83,.045,420,.45);
+    // Each slab draws inward, then seats with a short damped metal latch
+    // at its visual relock flash (2.42–2.88 s). No melodic success chime.
+    for(let slab=0;slab<slabPhases.length;slab++) {
+      const phase=slabPhases[slab],seat=2.42+phase*.46;
+      const pan=(slab%2?1:-1)*(.22+phase*.35);
+      strain(seat-.17,.19,280,900,.038,pan,pan*.15,.14);
+      this.filteredNoise(t+seat,.045,.052,1150+phase*750,.9,pan);
+      this.tone(t+seat,125+phase*65,.13,'triangle',.044,72,620,pan*.5);
+    }
+    this.tone(t+3.02,55,.28,'sine',.13,48,180);
+    this.filteredNoise(t+3.02,.12,.035,240,.5);
   }
   // ─── SHIPBOARD INTERFACE FOLEY / v14 ──────────────────────────────────
   // Controls feel like physical shipboard hardware. v14 retains the v13

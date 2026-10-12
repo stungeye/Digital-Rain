@@ -210,6 +210,7 @@ let lastRealTime = 0;
 let lastClickTime = -Infinity;
 let frameNumber = 0;
 let breachAt = -Infinity;
+const BREACH_DURATION = 3200;
 let visualBeat = 0;
 let displayEngine;
 let soundEngine;
@@ -557,7 +558,7 @@ class CodePlane {
   updateCells(now) {
     const view=worldViewport();
     const breachAge=now-breachAt;
-    const breachOn=breachAge>=0 && breachAge<2800;
+    const breachOn=breachAge>=0 && breachAge<BREACH_DURATION;
     const surgeAge=now-signalAt;
     const surgeOn=surgeAge>=0 && surgeAge<1950;
     // Keep the original viewport culling cost. Newly revealed cells update
@@ -614,15 +615,18 @@ class CodePlane {
     const c = this.config;
     const scale = c.size;
     const beat = rain.audio==='score' && rain.beatReactive ? visualBeat*rain.beatStrength : 0;
-    const strength = rain.glow * c.bloom * (1 + beat*.9);
+    const rupture = breachRupture(now);
+    const strength = rain.glow * c.bloom * (1 + beat*.9) * (rupture ? .25 : 1);
     const surgeAge = now - signalAt;
     const surgeOn = surgeAge>=0 && surgeAge<1950;
     for (const lane of this.lanes) {
       if (!lane.active) continue;
       for (const stream of lane.streams) {
         if (!stream.whiteHead || stream.head < this.minRow || stream.head >= stream.endRow) continue;
-        const x = lane.x;
-        const y = (stream.head + .5) * this.lineHeight;
+        const sourceY = (stream.head + .5) * this.lineHeight;
+        const fracture = rupture ? breachFragment(lane.x, sourceY, rupture) : null;
+        const x = lane.x + (fracture?.dx || 0);
+        const y = sourceY + (fracture?.dy || 0);
         if (x < viewport.minX-50 || x > viewport.maxX+50 ||
             y < viewport.minY-50 || y > viewport.maxY+50) continue;
         const haloR = scale * 3.1;
@@ -654,7 +658,8 @@ class CodePlane {
     const hoverOn = hoverAge < 950;
     const grade = GRADES[rain.grade];
     const breachAge = now - breachAt;
-    const breachOn = breachAge >= 0 && breachAge < 2800;
+    const breachOn = breachAge >= 0 && breachAge < BREACH_DURATION;
+    const rupture = breachRupture(now);
     const blanking = breachOn && breachAge < 220 ? .12 : 1;
     const jolt = breachOn && breachAge >= 220 && breachAge < 640;
 
@@ -678,16 +683,15 @@ class CodePlane {
           else if (age === 1 && stream.whiteHead) tone = Math.max(tone, 7);
           else if (age === 2 && stream.whiteHead) tone = Math.max(tone, 6);
           if (now < cell.twinkleUntil && age > 2) tone += 2;
-          // SYSTEM BREACH is an entirely different event from the narrow
-          // E-surge: silence/dim -> code-wide relock -> staggered avalanches.
-          // It recolors and mutates ONLY occupied cells, never adds glyphs.
+          // After the opening dropout/jolt, the field physically fractures.
+          // Only owned glyphs move; rendering never changes stream state.
+          const fracture = rupture ? breachFragment(x, y, rupture) : null;
           if (breachOn) {
             if (jolt) tone = 9;
-            else if (breachAge >= 640) {
-              const front = (breachAge - 590) * (worldHeight/1500) - (x / Math.max(1,worldWidth))*270;
-              const gap = Math.abs(y - front);
-              if (gap < 185) tone = Math.max(tone, 8 - Math.floor(gap/53));
-              if (breachAge < 1600) tone = Math.max(tone, Math.floor(5*(1-(breachAge-640)/960)));
+            else if (fracture) {
+              tone = Math.max(0, tone - Math.round(3*fracture.amount));
+              if (fracture.edge) tone = Math.max(tone, 8);
+              if (fracture.relock) tone = 9;
             }
           }
 
@@ -730,7 +734,8 @@ class CodePlane {
           tone = Math.max(0, Math.min(c.ink, tone));
 
           ctx.drawImage(src, cell.glyph*sw, tone*sh, sw, sh,
-            Math.round(x-tw/2), Math.round(y-th/2), tw, th);
+            Math.round(x-tw/2+(fracture?.dx || 0)),
+            Math.round(y-th/2+(fracture?.dy || 0)), tw, th);
         }
       }
     }
@@ -969,6 +974,37 @@ function buildFilmTile(tile) {
   return tile;
 }
 
+// Breach displacement is camera-relative, so the tear remains significant
+// at every zoom. Horizontal slabs return independently instead of sweeping.
+function breachRupture(now) {
+  const age = now - breachAt;
+  if (age < 640 || age >= BREACH_DURATION) return null;
+  return {age, center:worldCenterX()+cameraPanX, top:worldViewport().minY,
+    span:width/rain.zoom, band:Math.max(24,height/9)/rain.zoom};
+}
+function breachFragment(x, y, rupture) {
+  const {age, center, top, span, band} = rupture;
+  const slab = Math.floor((y-top)/band);
+  const phase = breachSlabPhase(slab);
+  const opening = Math.min(1, Math.max(0,(age-640)/510));
+  const closeAt = 2080+phase*460;
+  const recovery = Math.min(1, Math.max(0,(age-closeAt)/480));
+  const amount = opening*opening*(3-2*opening)*(1-recovery*recovery*(3-2*recovery));
+  const seam = center + (phase-.5)*span*.075;
+  const side = x < seam ? -1 : 1;
+  const proximity = Math.max(0,1-Math.abs(x-seam)/(span*.52));
+  return {amount, dx:side*span*(.22+phase*.09)*amount*(.5+.5*proximity),
+    dy:(phase-.5)*band*.8*amount,
+    edge:amount>.1 && Math.abs(x-seam)<span*.045,
+    relock:age>=closeAt+340 && age<closeAt+460};
+}
+
+// Shared with the breach cue so each mechanical latch follows its slab.
+function breachSlabPhase(slab) {
+  const seed = Math.sin(slab*127.1+19.7)*43758.5453;
+  return seed-Math.floor(seed);
+}
+
 // Deterministic per-column phase jitter creates an uneven surge front.
 function surgeFront(x, age) {
   const sweep = -120 + (age/1580)*(worldHeight+310);
@@ -1054,7 +1090,7 @@ function signalBurst() {
 function systemBreach() {
   setRainOption('paused',false); // Manual effects explicitly choose animation.
   breachAt = simulationTime;
-  soundEngine?.breach();
+  soundEngine?.breach(Array.from({length:9},(_,slab)=>breachSlabPhase(slab)));
 }
 // The first native canvas ripple activates the selected audio mode.
 function activateRainAudio() {
