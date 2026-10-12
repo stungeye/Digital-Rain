@@ -510,7 +510,10 @@ function renderScene() {
 // A moving lattice in world Z, rather than rescaled concentric screen rings.
 // Every row retains its identity as it approaches, passes the camera and exits.
 function tunnelBeat() {
-  return rain.audio==='score' && rain.beatReactive ? visualBeat*rain.beatStrength : 0;
+  // Lift quieter percussion before applying the user's impact control.
+  // Zero impact still disables every response; the upper end stays bounded.
+  return rain.audio==='score' && rain.beatReactive ?
+    Math.min(2.5,Math.pow(Math.max(0,visualBeat),.7)*1.8*rain.beatStrength) : 0;
 }
 function tunnelCurve(s) {
   return {x:2.4*Math.sin(s*.065)+1.1*Math.sin(s*.137),
@@ -523,12 +526,23 @@ function tunnelSection(z,beat=0) {
   const cr=Math.cos(roll),sr=Math.sin(roll);
   return {x:x*cr-y*sr,y:x*sr+y*cr,
     twist:(s+z)*.065+roll,
-    radius:3.15*(1+.065*Math.sin((s+z)*.22)+beat*.085*Math.sin(z*.8-s*.5)),
+    radius:3.15*(1+.065*Math.sin((s+z)*.22)+beat*.12*Math.sin(z*.8-s*.5)),
     scale:Math.min(width,height)*.88*rain.zoom/z};
 }
 function tunnelHash(row,lane) {
   const n=Math.sin(row*127.1+lane*311.7+tunnelSeed)*43758.5453;
   return n-Math.floor(n);
+}
+// Both modes light the occupied code with the same broad screen-space wave.
+function rippleGlowCharge(x,y,now) {
+  let charge=0;
+  for(const pulse of pulses) {
+    const elapsed=(now-pulse.at)/1000;
+    if(elapsed<0)continue;
+    const ring=Math.abs(Math.hypot(x-pulse.x,y-pulse.y)-elapsed*780);
+    charge+=Math.max(0,1-ring/65)*pulse.power;
+  }
+  return charge;
 }
 function renderTunnel(ctx,now) {
   const atlas=planes[2];
@@ -547,6 +561,7 @@ function renderTunnel(ctx,now) {
     const row=first+i,z=row*step-tunnelTravel;
     if(z<.85||z>far)continue;
     const section=tunnelSection(z,beat);
+    const beatBand=beat*(.4+.6*(.5+.5*Math.sin(z*.9-now*.009)));
     const fog=Math.pow(Math.max(0,1-z/far),.65);
     const entrance=Math.min(1,(z-.85)/.9);
     const glyphSize=Math.min(110,section.scale*.22);
@@ -567,12 +582,7 @@ function renderTunnel(ctx,now) {
       let x=centerX+(section.x+Math.cos(angle)*section.radius)*section.scale;
       let y=centerY+(section.y+Math.sin(angle)*section.radius)*section.scale;
       if(x<-glyphSize*2||x>width+glyphSize*2||y<-glyphSize*2||y>height+glyphSize*2)continue;
-      let charge=0;
-      for(const pulse of pulses) {
-        const elapsed=(now-pulse.at)/1000;
-        const ring=Math.abs(Math.hypot(x-pulse.x,y-pulse.y)-elapsed*780);
-        charge+=Math.max(0,1-ring/65)*pulse.power;
-      }
+      let charge=rippleGlowCharge(x,y,now);
       if(surgeAge>=0 && surgeAge<1950)
         charge+=2*Math.max(0,1-Math.abs(z-(surgeAge/1950)*far)/4);
       if(breach) {
@@ -581,12 +591,12 @@ function renderTunnel(ctx,now) {
       }
       const headCell=age<1.5;
       const intensity=Math.pow(Math.max(0,1-age/length),1.25);
-      const ink=Math.min(9,Math.max(1,Math.round(3+intensity*4+beat*1.3+charge*3)));
+      const ink=Math.min(9,Math.max(1,Math.round(3+intensity*4+beatBand*3.2+charge*3)));
       const glyph=Math.floor(tunnelHash(row+Math.floor(now*.001*rain.mutation*(.3+cell)),lane+19)*GLYPHS.length);
-      const opacity=Math.min(1,fog*entrance*grade.alpha*(.4+intensity*.6+beat*.12));
-      if(rain.bloom && rain.glow>0 && (headCell||charge>.3)) {
-        ctx.globalAlpha=Math.min(.8,opacity*rain.glow*(.3+beat*.3+charge*.15));
-        const halo=glyphSize*(2.1+beat*.35);
+      const opacity=Math.min(1,fog*entrance*grade.alpha*(.4+intensity*.6+beatBand*.25));
+      if(rain.bloom && rain.glow>0 && (headCell||charge>.3||(beatBand>.3&&cell>.8))) {
+        ctx.globalAlpha=Math.min(.8,opacity*rain.glow*(.3+beatBand*.5+charge*.15));
+        const halo=glyphSize*(2.1+beatBand*.65);
         ctx.drawImage(glows.halo.canvas,x-halo,y-halo,halo*2,halo*2);
       }
       ctx.globalAlpha=opacity;
@@ -744,6 +754,28 @@ class CodePlane {
         ctx.globalAlpha = Math.min(1, strength * .63 * stream.glow * (1+.9*charge));
         ctx.drawImage(glows.column.canvas,
           x - scale*.79, y - scale*6.7, scale*1.58, scale*7.2);
+      }
+    }
+    // Illuminate entire trails as the ripple crosses, not only their heads.
+    // Halos are drawn before glyphs so the wave never softens the code itself.
+    if(pulses.length) {
+      for(const lane of this.lanes) {
+        if(!lane.active || lane.x<viewport.minX-this.tileW || lane.x>viewport.maxX+this.tileW)continue;
+        for(const stream of lane.streams)for(const [row,cell] of stream.cells) {
+          const age=stream.head-row;
+          if(age<0 || age>=stream.length || row<this.minRow || row>=this.rows || (cell.blank&&age>4))continue;
+          const sourceY=(row+.5)*this.lineHeight;
+          if(sourceY<viewport.minY-this.tileH || sourceY>viewport.maxY+this.tileH)continue;
+          const fracture=rupture?breachFragment(lane.x,sourceY,rupture):null;
+          const x=lane.x+(fracture?.dx||0),y=sourceY+(fracture?.dy||0);
+          const screen=worldToScreen(x,y);
+          const charge=rippleGlowCharge(screen.x,screen.y,now);
+          if(charge<=.01)continue;
+          const halo=this.tileW*2.1;
+          ctx.globalAlpha=Math.min(.8,rain.glow*c.alpha*GRADES[rain.grade].alpha*
+            (.45+.55*c.bloom)*(.3+charge*.15)*Math.min(1,charge/.3));
+          ctx.drawImage(glows.halo.canvas,x-halo,y-halo,halo*2,halo*2);
+        }
       }
     }
     ctx.globalAlpha = 1;
