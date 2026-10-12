@@ -51,7 +51,7 @@
     <div class="hud">
       <section id="panel" aria-label="Signal engine controls">
         <h1>DIGITAL RAIN</h1>
-        <p class="sub">Your window into the Matrix.</p>
+        <p class="sub">Your window into the Matrix. Watch, listen, learn.</p>
         <div class="rule"></div>
         <p class="tag">01 / SIGNAL PROFILES</p>
         <div class="triad quad" role="group" aria-label="Color profiles">
@@ -63,7 +63,7 @@
           <button data-grade="anomaly" aria-pressed="false">ANOMALY</button>
         </div>
         <p class="dsc" id="grade-help">
-          Classic emerald trails, steady fall, bright green heads.
+          Classic emerald trails with bright heads.
         </p>
         <div class="rule"></div>
         <p class="tag">02 / THE CODE</p>
@@ -106,10 +106,10 @@
         <p class="tag">03 / ANALOG DISPLAY</p>
         <div class="triad" role="group" aria-label="CRT display mode">
           <button data-crt="off" aria-pressed="false">FLAT</button>
-          <button data-crt="scan" aria-pressed="false">
-            SCANLINES
+          <button data-crt="scan" aria-pressed="false">SCANLINES</button>
+          <button data-crt="glass" class="active" aria-pressed="true">
+            CURVED CRT
           </button>
-          <button data-crt="glass" class="active" aria-pressed="true">CURVED CRT</button>
         </div>
         <div class="control">
           <div class="control-head">
@@ -228,9 +228,12 @@
         </svg>
       </button>
     </div>
-    <div class="mini">
+    <div class="mini" id="signal-indicator">
       SIGNAL: <strong id="status">ONLINE</strong>
-      <div id="beat-leds" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div id="beat-leds" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+        ><i></i><i></i>
+      </div>
     </div>
     <!-- Ordered classic scripts preserve direct-open startup. -->
     <script src="js/rain.js"></script>

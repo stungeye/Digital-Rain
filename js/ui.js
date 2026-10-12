@@ -170,10 +170,10 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
-    grade:{cinema:'Classic emerald trails, steady fall, bright green heads.',
-      abyss:'Sparse cyan drift, long soft trails, low glow.',
-      voltage:'Dense chartreuse streams, fast fall, short trails, intense bloom.',
-      anomaly:'Uneven magenta surges, flickering glyphs, dense broken trails.'},
+    grade:{cinema:'Classic emerald trails with bright heads.',
+      abyss:'Sparse cyan drift with long, soft trails.',
+      voltage:'Fast chartreuse streams with bold bloom.',
+      anomaly:'Uneven magenta surges and broken trails.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Analog scanlines with compensated phosphor brightness.',
       glass:'Adjustable barrel curve with a full-screen crop, and pronounced scanlines.'}
@@ -203,6 +203,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }
     setText('pause-btn',st.paused?'RESUME SIGNAL':'PAUSE SIGNAL');
     setText('status',st.paused?'OFFLINE':'ONLINE');
+    if($('signal-indicator'))$('signal-indicator').dataset.paused=String(st.paused);
     setText('audio-status',st.audio==='off'?'AUDIO // MUTED':
       st.audio==='score'?'AUDIO // SCORE + HUM':
       st.audio==='effects'?(window.signalSound()?.ctx?'AUDIO // SFX ONLY':'AUDIO // SFX ARMED'):'AUDIO // STATIC HUM');

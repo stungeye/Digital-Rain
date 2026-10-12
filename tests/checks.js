@@ -364,7 +364,7 @@ check('profile presets synchronize editable code sliders and preserve existing s
   assert.equal(Number(h.elements.get('speed').value),1);
   assert.equal(Number(h.elements.get('persistence').value),1.25);
   assert.equal(Number(h.elements.get('glow').value),1);
-  assert.equal(h.elements.get('grade-help').textContent,'Classic emerald trails, steady fall, bright green heads.');
+  assert.equal(h.elements.get('grade-help').textContent,'Classic emerald trails with bright heads.');
 });
 
 check('Canvas CRT pointer conversion agrees with actual strip draw destinations', () => {

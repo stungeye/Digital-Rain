@@ -77,6 +77,7 @@ h1{margin:7px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:va
 .triad button:hover,.duo button:hover{border-color:var(--ui-border-hot);background:var(--ui-hover);color:var(--ui-text)}
 .triad button.active:hover,.duo button.active:hover{background:var(--ui-selected);color:var(--ui-text)}
 .dsc{font-size:10px;color:var(--ui-muted);margin:10px 0 0;min-height:32px;line-height:1.55;letter-spacing:.01em}
+#grade-help{min-height:1.55em}
 .control{margin:14px 0 0}
 .control-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
 label{color:var(--ui-label);font-size:10px;letter-spacing:.09em}
@@ -95,7 +96,10 @@ input:disabled{opacity:.60}
 kbd{font:inherit;color:var(--ui-text)}
 .mini{position:fixed;z-index:3;right:clamp(12px,2vw,30px);bottom:max(0px,calc(clamp(12px,2.4vh,28px) - 13px));pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
 .mini strong{font-weight:400;color:var(--ui-text)}
-.mini:before{content:"";position:absolute;left:-13px;top:5.6px;width:5px;height:5px;border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
+/* Reserve OFFLINE's width so the dot and label stay anchored when pausing. */
+.mini #status{display:inline-block;width:calc(7ch + 1.26em);text-align:left}
+.mini:before{content:"";display:inline-block;vertical-align:calc(.05em + .5px);margin-left:-6.5px;margin-right:2.5px;width:4px;height:4px;border:1px solid var(--ui-led);border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
+.mini[data-paused="true"]:before{background:transparent;box-shadow:none}
 #beat-leds{height:26px;display:flex;justify-content:space-between;align-items:flex-end;margin-top:0}
 #beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
 /* Phones and coarse-pointer devices keep touch guidance, without advertising
