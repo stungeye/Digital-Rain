@@ -58,12 +58,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);out
 #toggle .panel-close{display:none}
 #toggle[aria-expanded="true"] .panel-close{display:block}
 #toggle[aria-expanded="true"] .panel-open{display:none}
-#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 2 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:24px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
+#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 2 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:12px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
 #panel.open{display:block}
 .hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:var(--ui-dim)}
 .live{color:var(--ui-accent)}
 .live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin:0 8px 1px 0;background:var(--ui-led);box-shadow:0 0 12px var(--ui-led)}
-h1{margin:14px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:var(--ui-text);text-shadow:0 0 24px var(--ui-glow)}
+h1{margin:7px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:var(--ui-text);text-shadow:0 0 24px var(--ui-glow)}
 .sub{font-size:10px;line-height:1.7;letter-spacing:.02em;color:var(--ui-muted);margin:0}
 .rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,var(--ui-rule),transparent)}
 .tag{font-size:9px;letter-spacing:.23em;color:var(--ui-accent);margin:0 0 10px}
@@ -103,7 +103,7 @@ kbd{font:inherit;color:var(--ui-text)}
 }
 @media(max-width:560px){
  /* Match the buttons' left inset even on phones wider than the desktop panel. */
- #panel{width:calc(100vw - 2 * var(--hud-left));padding:19px 16px 17px}
+ #panel{width:calc(100vw - 2 * var(--hud-left));padding:9.5px 16px 17px}
  .mini{display:none}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

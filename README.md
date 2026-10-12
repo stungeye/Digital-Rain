@@ -4,7 +4,7 @@ Matrix-inspired rain app, currently **Signal Engine 16**. Open `index.html` in a
 
 ## Current state
 
-Three visual depths of stationary, mutating glyph cells create falling streams, with phosphor bloom, grain, and white-hot heads. Four profiles (**Source, Deep, Overdrive, Anomaly**) theme both rain and controls. Display modes are flat, scanlines, and curved CRT. Curved CRT fills the viewport through slight overscan/cropping, with pointer mapping following the same transform.
+Three visual depths of stationary, mutating glyph cells create falling streams, with phosphor bloom, grain, and white-hot heads. Four profiles (**Source, Deep, Overdrive, Anomaly**) theme both rain and controls. Source keeps the classic cadence; Deep drifts slowly with quieter glyph mutation; Overdrive falls faster with restless glyphs; Anomaly surges unevenly with faster mutation and more broken trails. Profile motion multiplies the speed and mutation controls without changing their values or reseeding existing streams. Display modes are flat, scanlines, and curved CRT. Curved CRT fills the viewport through slight overscan/cropping, with pointer mapping following the same transform.
 
 Interactions include ripples, electric surge, system breach, and fullscreen. Wheel/pinch zooms (65–200%); mobile horizontal dragging pans.
 

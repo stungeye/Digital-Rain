@@ -144,7 +144,7 @@ check('ordered scripts initialize exactly once with desktop and mobile Canvas ru
   }
 });
 
-check('maximum density keeps lane ownership and at least two dark rows over repeated scheduling', () => {
+check('all profiles keep lane ownership and two dark rows at maximum density and speed', () => {
   const h=harness();h.run('setup(); setRainOption("density", 1.65); setRainOption("speed", 2.5)');
   const verify=()=>h.run(`(()=>{
     const xs=new Set();
@@ -160,10 +160,34 @@ check('maximum density keeps lane ownership and at least two dark rows over repe
     return true;
   })()`);
   assert.ok(verify());
-  for(let i=0;i<1800;i++){
-    h.run('updateSimulation(.055)');
-    assert.ok(verify());
+  for(const profile of ['cinema','abyss','voltage','anomaly']){
+    h.run(`setRainOption('grade','${profile}')`);
+    for(let i=0;i<1800;i++){
+      h.run('updateSimulation(.055)');
+      assert.ok(verify());
+    }
   }
+});
+
+check('profile motion distinguishes drift, overdrive and irregular surges without resetting streams or controls', () => {
+  const h=harness();h.run('setup()');
+  h.run('globalThis.originalLane=planes[1].lanes[0];globalThis.originalStream=originalLane.streams[0]');
+  const travel={};
+  for(const profile of ['cinema','abyss','voltage','anomaly']){
+    h.run(`setRainOption('grade','${profile}')`);
+    assert.ok(h.run('planes[1].lanes[0]===originalLane && originalLane.streams[0]===originalStream'));
+    assert.equal(h.run('rain.speed'),1);
+    assert.equal(h.run('rain.mutation'),1);
+    travel[profile]=h.run(`(()=>{
+      const lane=originalLane;lane.active=true;lane.progress=0;lane.phase=0;lane.rhythm=1;
+      lane.update(.001,0);const a=lane.progress;
+      lane.progress=0;lane.update(.001,770);return [a,lane.progress/a];
+    })()`);
+  }
+  assert.ok(travel.abyss[0]<travel.cinema[0]*.7,'Deep drifts slower');
+  assert.ok(travel.voltage[0]>travel.cinema[0]*1.3,'Overdrive falls faster');
+  assert.ok(travel.anomaly[1]>1.4,'Anomaly has a strong uneven cadence');
+  assert.ok(travel.abyss[1]<1.04,'Deep has a gentle cadence');
 });
 
 check('Canvas CRT pointer conversion agrees with actual strip draw destinations', () => {

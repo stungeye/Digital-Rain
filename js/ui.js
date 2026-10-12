@@ -164,10 +164,10 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
-    grade:{cinema:'Source: the iconic falling code, emerald trails and porcelain-white leading glyphs.',
-      abyss:'A submerged monitor feed: dark blue-green code, low glow and distant cyan heads.',
-      voltage:'An overdriven lime CRT: hot chartreuse code, bright tails and intense bloom.',
-      anomaly:'Anomaly: a corrupted transmission, crimson tails and magenta-white leading glyphs.'},
+    grade:{cinema:'Classic emerald trails, steady fall, white-hot heads.',
+      abyss:'Slow cyan drift, quiet glyphs, low glow.',
+      voltage:'Fast chartreuse streams, restless glyphs, intense bloom.',
+      anomaly:'Uneven magenta surges, flickering glyphs, broken trails.'},
     crt:{off:'Unprocessed, razor-sharp digital rain.',
       scan:'Analog scanlines with compensated phosphor brightness.',
       glass:'Adjustable barrel curve with a full-screen crop, and pronounced scanlines.'},

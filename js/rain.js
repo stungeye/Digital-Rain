@@ -119,6 +119,15 @@ const GRADES = {
 };
 const GRADE_NAMES = Object.keys(GRADES);
 
+// Motion is independent of the phosphor palettes and multiplies user controls.
+// Apply it to existing lanes without reseeding or changing their shared speed.
+const SIGNAL_MOTION = {
+  cinema: { speed: 1, mutation: 1, cadence: .075, rhythm: 1, blanks: .055 },
+  abyss: { speed: .64, mutation: .55, cadence: .035, rhythm: .6, blanks: .025 },
+  voltage: { speed: 1.42, mutation: 1.6, cadence: .12, rhythm: 1.7, blanks: .035 },
+  anomaly: { speed: 1.05, mutation: 1.85, cadence: .48, rhythm: 2.4, blanks: .14 },
+};
+
 // Exclusive 22px global lanes; each lane gets one of these treatments.
 // The size differences create visual depth without letting planes interpenetrate.
 const DEPTHS = [
@@ -558,7 +567,7 @@ class CodePlane {
         if(cell.blank&&age>4)continue;
         if(now>=cell.nextChange) {
           cell.glyph=randomGlyph();
-          cell.nextChange=now+between(380,3700)/rain.mutation;
+          cell.nextChange=now+between(380,3700)/(rain.mutation*SIGNAL_MOTION[rain.grade].mutation);
         }
         if(now>=cell.nextTwinkle) {
           cell.twinkleUntil=now+between(40,160);
@@ -776,7 +785,8 @@ class CodeLane {
 
   update(dt, now) {
     if (!this.active) return;
-    const cadence = 1 + .075*Math.sin(now*.00085*this.rhythm + this.phase);
+    const motion = SIGNAL_MOTION[rain.grade];
+    const cadence = 1 + motion.cadence*Math.sin(now*.00085*this.rhythm*motion.rhythm + this.phase);
     const surgeAge = now-signalAt;
     let chargeBoost = 1;
     if (surgeAge >= 0 && surgeAge < 1950) {
@@ -784,7 +794,7 @@ class CodeLane {
       const lead = this.streams.length ? this.streams[this.streams.length-1].head * this.plane.lineHeight : 0;
       chargeBoost += 1.65 * Math.max(0,1-Math.abs(lead-front)/360);
     }
-    this.progress += dt*this.speed*rain.speed*cadence*chargeBoost;
+    this.progress += dt*this.speed*rain.speed*motion.speed*cadence*chargeBoost;
     const steps = Math.min(12, Math.floor(this.progress));
     this.progress -= steps;
     for (let i=0; i<steps; i++) {
@@ -821,10 +831,11 @@ class CodeStream {
   }
 
   makeCell() {
+    const motion = SIGNAL_MOTION[rain.grade];
     return {
       glyph: randomGlyph(), energy: between(.74, 1.13),
-      blank: Math.random()<.055,
-      nextChange: simulationTime + between(160, 3500)/rain.mutation,
+      blank: Math.random()<motion.blanks,
+      nextChange: simulationTime + between(160, 3500)/(rain.mutation*motion.mutation),
       nextTwinkle: simulationTime + between(600, 5400),
       twinkleUntil: -Infinity, pulseIds: [], lastBreach: -1, lastSurge: -1,
     };
