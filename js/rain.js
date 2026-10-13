@@ -167,6 +167,7 @@ const SETTINGS = Object.freeze({
   scanStrength:numberSetting(.85,.15,1,.05,true),
   scanBrightness:numberSetting(1,.6,1.75,.05,true),
   showFPS:booleanSetting(false),
+  unlockMobileFPS:booleanSetting(false),
   audio:choiceSetting('effects',['off','effects','ambience','score'],true),
   volume:numberSetting(.5,0,1,.05),
   humVolume:numberSetting(.5,0,1,.05),
@@ -214,6 +215,9 @@ const mobileInput = () => {
   return !!(coarse || (!fine && navigator.maxTouchPoints > 0));
 };
 const ZOOM_MAX = SETTINGS.zoom.max;
+function updateFrameRate() {
+  frameRate(mobileInput() && !rain.unlockMobileFPS ? 30 : 60);
+}
 let hover = { x: -999, y: -999, at: -Infinity };
 let simulationTime = 0;
 let lastRealTime = 0;
@@ -381,7 +385,7 @@ function installRainGestures(target) {
 function setup() {
   const canvas = createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
-  frameRate(mobileInput() ? 30 : 60);
+  updateFrameRate();
   const mount = document.getElementById('rain');
   if (mount) canvas.parent(mount);
   installRainGestures(mount || canvas.elt);
@@ -1233,6 +1237,7 @@ function setRainOption(name, value, {userChoice=true}={}) {
     else if(value!=='off') lastAudibleMode=value;
   }
   rain[name] = value;
+  if (name === 'unlockMobileFPS') updateFrameRate();
   if (name === 'grade' && old !== value) {
     const preset = SIGNAL_MOTION[value];
     for (const key of ['density','persistence','speed','mutation','glow']) rain[key] = preset[key];
@@ -1272,6 +1277,7 @@ function resetRain() {
   for (const key of Object.keys(defaults)) rain[key] = defaults[key];
   pauseChosen=false;
   rain.paused=!!motionPreference?.matches;
+  updateFrameRate();
   lastAudibleMode = defaults.audio;
   visualBeat=0;
   buildScene();

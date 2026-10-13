@@ -555,6 +555,50 @@ check('fine-pointer desktops retain desktop rendering even with a touchscreen', 
   assert.equal(fallback.run('mobileInput()'),true,'touch detection remains a fallback without pointer media queries');
 });
 
+check('mobile FPS unlock is mobile-only and switches cadence immediately, including reset', () => {
+  for(const options of [
+    {coarse:true},
+    {coarse:false,fine:false,touchPoints:1},
+    {coarse:false,fine:true,touchPoints:2},
+  ])for(const hz of [60,120,144]) {
+    const h=harness(options);
+    h.sandbox.document.dispatchEvent({type:'DOMContentLoaded'});
+    const mobile=h.run('RainApp.mobileInput');
+    const row=h.elements.get('mobile-fps-setting'),control=h.elements.get('unlockMobileFPS');
+    const showFPSRow=h.elements.get('showFPS').parentElement;
+    assert.equal(row.parentElement.children[row.parentElement.children.indexOf(showFPSRow)+1],row,
+      'unlock sits immediately below Show FPS');
+    assert.equal(row.hidden,!mobile,'uses pointer policy, including touch fallback and touchscreen desktops');
+    assert.equal(control.checked,false);
+    assert.equal(control.getAttribute('aria-keyshortcuts'),'Enter');
+    h.run('globalThis.unlockFrames=0;window.draw=()=>unlockFrames++');
+    let timestamp=1000;
+    const tick=()=>h.animationFrames.splice(0).forEach(callback=>callback(timestamp));
+    tick();
+    const measure=expected=>{
+      const before=h.run('unlockFrames');
+      for(let i=0;i<hz*2;i++){timestamp+=1000/hz;tick();}
+      assert.ok(Math.abs(h.run('unlockFrames')-before-expected*2)<=1,
+        `targets ${expected} FPS on a ${hz} Hz display`);
+    };
+    measure(mobile?30:60);
+    control.click();
+    assert.equal(h.run('getRainOptions().unlockMobileFPS'),true);
+    measure(60);
+    pressShortcut(h,'Enter',{target:control});
+    assert.equal(control.checked,false);
+    measure(mobile?30:60);
+    h.run('setRainOption("paused",true)');
+    const frozen=h.snapshot();
+    h.run('setRainOption("unlockMobileFPS",true)');
+    assert.equal(control.checked,true,'public setter synchronizes the checkbox');
+    assert.equal(h.snapshot(),frozen,'changing the cap preserves the paused scene');
+    h.run('resetRain()');
+    assert.equal(control.checked,false);
+    measure(mobile?30:60);
+  }
+});
+
 check('FPS toggle reports rendered cadence, clears on pause and resets to hidden', () => {
   for(const coarse of [false,true]) {
     const h=harness({coarse,touchPoints:2});
@@ -572,6 +616,13 @@ check('FPS toggle reports rendered cadence, clears on pause and resets to hidden
     tick();pump(250);
     assert.ok(Math.abs(Number(h.elements.get('fps-value').textContent)-(coarse?30:60))<=1,
       'counts rendered frames instead of the 120 Hz UI refresh or target setting');
+    if(coarse){
+      h.elements.get('unlockMobileFPS').click();pump(260);
+      assert.ok(Math.abs(Number(h.elements.get('fps-value').textContent)-60)<=1,
+        'mobile readout reflects the unlocked rendered cadence');
+      h.elements.get('unlockMobileFPS').click();pump(260);
+      assert.ok(Math.abs(Number(h.elements.get('fps-value').textContent)-30)<=1);
+    }
     h.run('setRainOption("paused",true)');
     assert.equal(h.elements.get('fps-value').textContent,'0');
     const rendered=h.run('RainApp.renderedFrames');pump(130);

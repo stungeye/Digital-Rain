@@ -99,6 +99,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ui-accent);cursor
 input:disabled{opacity:.45;cursor:not-allowed}
 .control:has(input:disabled) label,.control:has(input:disabled) output{color:var(--ui-dim)}
 .switch{min-height:44px;margin:10px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.switch[hidden]{display:none}
 .switch label{display:flex;flex:1;align-items:center;min-height:44px;cursor:pointer}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px}
 .buttons button{display:flex;justify-content:space-between;align-items:center;gap:5px;min-height:44px;background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:2px;color:var(--ui-label);padding:9px 8px;font-size:9px;letter-spacing:.05em;text-align:left}
@@ -142,7 +143,6 @@ kbd,[data-shortcut-keys]{display:inline-block;flex-shrink:0;min-width:19px;borde
  .hud{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
  #panel{width:min(392px,calc(100vw - var(--hud-left) - max(12px,env(safe-area-inset-right))));max-height:calc(100dvh - var(--hud-top) - var(--hud-button) - var(--hud-gap) - 56px - max(12px,env(safe-area-inset-bottom)));padding:10px 16px 17px}
  .mini{padding:10px 12px;z-index:6}
- #beat-leds{display:none}
  .fps{top:calc(var(--hud-top) + 13px);right:max(12px,env(safe-area-inset-right))}
  .buttons button{justify-content:center;text-align:center}
 }

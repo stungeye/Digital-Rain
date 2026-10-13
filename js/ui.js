@@ -161,13 +161,13 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     // One soft landing when releasing a drag or finishing a keyboard adjustment.
     el.addEventListener('change',()=>feedback('slider-end',norm(),name));
   }
-  for(const name of ['beatReactive','showFPS','bloom'])
+  for(const name of ['beatReactive','showFPS','unlockMobileFPS','bloom'])
     $(name).addEventListener('change',()=>{
       const enabled=$(name).checked;
       setRainOption(name,enabled);
       feedback(enabled?'toggle-on':'toggle-off');
     });
-  for(const name of ['showFPS','beatReactive'])$(name).setAttribute('aria-keyshortcuts','Enter');
+  for(const name of ['showFPS','unlockMobileFPS','beatReactive'])$(name).setAttribute('aria-keyshortcuts','Enter');
   for(const selector of ['mode','grade','crt','audio']){
     document.querySelectorAll(`[data-${selector}]`).forEach(button=>button.addEventListener('click',()=>{
       const selected=button.dataset[selector];
@@ -204,7 +204,8 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
       setText(name+'-value',RainApp.settings[name].format(st[name]));
       $(name).setAttribute('aria-valuetext',RainApp.settings[name].format(st[name]));
     }
-    for(const name of ['beatReactive','showFPS','bloom'])$(name).checked=st[name];
+    for(const name of ['beatReactive','showFPS','unlockMobileFPS','bloom'])$(name).checked=st[name];
+    $('mobile-fps-setting').hidden=!RainApp.mobileInput;
     if(fpsIndicator)fpsIndicator.hidden=!st.showFPS;
     if(st.showFPS!==fpsEnabled || st.paused!==fpsPaused) {
       fpsEnabled=st.showFPS;fpsPaused=st.paused;
