@@ -59,6 +59,7 @@
     <button
       id="fullscreen-toggle"
       type="button"
+      data-shortcut="fullscreen"
       aria-label="Enter fullscreen"
       title="Toggle fullscreen (F)"
       aria-pressed="false"
@@ -71,8 +72,9 @@
     <button
       id="music-toggle"
       type="button"
+      data-shortcut="music"
       aria-label="Turn music on"
-      title="Turn music on"
+      title="Turn music on (M)"
       aria-pressed="false"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -83,19 +85,36 @@
       </svg>
     </button>
     <div class="hud">
-      <section id="panel" aria-label="Signal engine controls">
+      <section id="panel" aria-label="Digital rain settings">
         <h1>DIGITAL RAIN</h1>
         <p class="sub">Your window into the Matrix. Watch, listen, learn.</p>
         <div class="rule"></div>
-        <p class="tag">00 / REALITY</p>
-        <div class="duo" role="group" aria-label="Visual mode">
+        <p class="tag">00 / CONTROLS</p>
+        <details id="controls-help">
+          <summary>
+            <span class="desktop-only">Shortcuts &amp; gestures</span>
+            <span class="touch-only">Gestures</span>
+          </summary>
+          <div id="keyboard-help" class="keyhelp desktop-only"></div>
+          <p class="gesture-help desktop-only">
+            Click the rain for a ripple. <kbd>Shift</kbd> + click for a stronger ripple.
+            Scroll to zoom.
+          </p>
+          <p class="gesture-help touch-only">
+            Tap the rain for a ripple. Pinch to zoom. Swipe horizontally to pan.
+          </p>
+          <p class="gesture-help">Select the signal status to pause or resume.</p>
+        </details>
+        <div class="rule"></div>
+        <p class="tag">01 / VIEW</p>
+        <div class="duo" role="group" aria-label="Visual mode" data-shortcut="view">
           <button data-mode="rain" class="active" aria-pressed="true">MATRIX RAIN</button>
           <button data-mode="tunnel" aria-pressed="false">CODE TUNNEL</button>
         </div>
         <p class="dsc" id="mode-help">Your window into the Matrix.</p>
         <div class="rule"></div>
-        <p class="tag">01 / SIGNAL PROFILES</p>
-        <div class="triad quad" role="group" aria-label="Color profiles">
+        <p class="tag">02 / SIGNAL PROFILES</p>
+        <div class="triad quad" role="group" aria-label="Signal profiles" data-shortcut="color">
           <button data-grade="cinema" class="active" aria-pressed="true">
             SOURCE
           </button>
@@ -107,13 +126,13 @@
           Classic emerald trails with bright heads.
         </p>
         <div class="rule"></div>
-        <p class="tag">02 / THE CODE</p>
+        <p class="tag">03 / THE CODE</p>
         <div class="control">
           <div class="control-head">
             <label for="density">COLUMN DENSITY</label
             ><output id="density-value" for="density"></output>
           </div>
-          <input id="density" type="range" />
+          <input id="density" type="range" data-shortcut="densityUp densityDown" />
         </div>
         <div class="control">
           <div class="control-head">
@@ -136,6 +155,10 @@
           </div>
           <input id="persistence" type="range" />
         </div>
+        <div class="switch">
+          <label for="bloom">PHOSPHOR GLOW</label>
+          <input id="bloom" type="checkbox" data-shortcut="glow" checked />
+        </div>
         <div class="control">
           <div class="control-head">
             <label for="glow">PHOSPHOR HALO</label
@@ -144,14 +167,15 @@
           <input id="glow" type="range" />
         </div>
         <div class="rule"></div>
-        <p class="tag">03 / ANALOG DISPLAY</p>
+        <p class="tag">04 / ANALOG DISPLAY</p>
         <div class="triad" role="group" aria-label="CRT display mode">
-          <button data-crt="off" aria-pressed="false">FLAT</button>
-          <button data-crt="scan" aria-pressed="false">SCANLINES</button>
-          <button data-crt="glass" class="active" aria-pressed="true">
+          <button data-crt="off" data-shortcut="flat" aria-pressed="false">FLAT</button>
+          <button data-crt="scan" data-shortcut="scan" aria-pressed="false">SCANLINES</button>
+          <button data-crt="glass" data-shortcut="curved" class="active" aria-pressed="true">
             CURVED CRT
           </button>
         </div>
+        <p id="display-note" class="context-note"></p>
         <div class="control">
           <div class="control-head">
             <label for="curvature">CRT CURVATURE</label
@@ -171,22 +195,23 @@
             <label for="grain">FILM TEXTURE STRENGTH</label
             ><output id="grain-value" for="grain"></output>
           </div>
-          <input id="grain" type="range" />
+          <input id="grain" type="range" data-shortcut="texture" />
         </div>
         <div class="switch">
           <label for="showFPS">SHOW FPS</label>
           <input id="showFPS" type="checkbox" />
         </div>
         <div class="rule"></div>
-        <p class="tag">04 / AUDIO</p>
-        <div class="triad quad" role="group" aria-label="Original audio modes">
-          <button data-audio="off" aria-pressed="false">MUTED</button>
+        <p class="tag">05 / AUDIO</p>
+        <div class="triad quad" role="group" aria-label="Original audio modes" data-shortcut="mute">
+          <button data-audio="off" title="Mute all audio" aria-pressed="false">MUTED</button>
           <button data-audio="effects" class="active" aria-pressed="true">
             SFX ONLY
           </button>
           <button data-audio="ambience" aria-pressed="false">STATIC HUM</button>
           <button data-audio="score" aria-pressed="false">SCORE + HUM</button>
         </div>
+        <p id="audio-note" class="context-note"></p>
         <div class="control">
           <div class="control-head">
             <label for="interfaceLevel">UI SOUND LEVEL</label
@@ -227,40 +252,28 @@
           <input id="beatStrength" type="range" />
         </div>
         <div class="rule"></div>
-        <p class="tag">05 / SIGNAL INTERVENTION</p>
+        <p class="tag">06 / SIGNAL INTERVENTION</p>
         <div class="buttons">
-          <button id="surge-btn">
-            <span class="keyboard-only">E / </span>ELECTRIC SURGE
+          <button id="surge-btn" data-shortcut="surge">
+            <span>ELECTRIC SURGE</span><span class="keyboard-only" data-shortcut-keys="surge">E</span>
           </button>
-          <button id="breach-btn">
-            <span class="keyboard-only">B / </span>SYSTEM BREACH
+          <button id="breach-btn" data-shortcut="breach">
+            <span>SYSTEM BREACH</span><span class="keyboard-only" data-shortcut-keys="breach">B</span>
           </button>
-          <button id="pause-btn">PAUSE SIGNAL</button>
-          <button id="reseed-btn">RESEED FIELD</button>
+          <button id="pause-btn" data-shortcut="pause"><span id="pause-label">PAUSE SIGNAL</span><span class="keyboard-only" data-shortcut-keys="pause">Space</span></button>
+          <button id="reseed-btn" data-shortcut="reseed"><span>RESEED FIELD</span><span class="keyboard-only" data-shortcut-keys="reseed">R</span></button>
           <button id="defaults-btn" style="grid-column: 1/-1">
             RESTORE DEFAULTS
           </button>
         </div>
         <p id="notify" role="status" aria-live="polite"></p>
-        <div class="rule"></div>
-        <p class="keyhelp">
-          <kbd>CLICK</kbd> ripple · <kbd>SHIFT+CLICK</kbd> stronger<br />
-          <kbd>WHEEL</kbd> zoom · <kbd>PINCH</kbd> zoom ·
-          <kbd>SWIPE</kbd> mobile horizontal pan<br />
-          <kbd>E</kbd> surge · <kbd>B</kbd> breach<br />
-          <kbd>M</kbd> mute / restore audio · <kbd>SPACE</kbd> pause ·
-          <kbd>F</kbd> fullscreen<br />
-          <kbd>1/2/3</kbd> CRT modes · <kbd>C</kbd> color ·
-          <kbd>T</kbd> grain<br />
-          <kbd>H</kbd> panel · <kbd>V</kbd> rain / tunnel<br />
-          <kbd>R</kbd> reseed · <kbd>G</kbd> glow
-        </p>
       </section>
       <button
         id="toggle"
         type="button"
-        aria-label="Open system panel"
-        title="Open system panel (H)"
+        data-shortcut="settings"
+        aria-label="Open settings"
+        title="Open settings (S)"
         aria-expanded="false"
         aria-controls="panel"
       >
@@ -276,13 +289,13 @@
     <div class="fps" id="fps-indicator" hidden aria-hidden="true">
       FPS: <strong id="fps-value">—</strong>
     </div>
-    <div class="mini" id="signal-indicator">
+    <button class="mini" id="signal-indicator" type="button" aria-label="Pause signal" aria-pressed="false" data-shortcut="pause">
       SIGNAL: <strong id="status">ONLINE</strong>
-      <div id="beat-leds" aria-hidden="true">
+      <span id="beat-leds" aria-hidden="true">
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
         ><i></i><i></i>
-      </div>
-    </div>
+      </span>
+    </button>
     <!-- Ordered classic scripts preserve direct-open startup. -->
     <script src="js/rain.js"></script>
     <script src="js/crt.js"></script>

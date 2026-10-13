@@ -77,9 +77,9 @@ function installRainCanvasRuntime() {
   birth spacing prevents faster followers from catching slower trails.
 
   One global capture-phase shortcut dispatcher, independent of UI focus.
-  SPACE pause   F fullscreen   R reseed   G glow   C color grade
-  E surge   B breach   M mute/restore previous audio
-  T film texture   H panel   1/2/3 CRT
+  Space pause   F fullscreen   R reseed   G glow   C cycle signal profile
+  E surge   B breach   M music   Shift + M mute/restore all audio
+  T film texture   S settings   Esc close settings   V rain/tunnel   1/2/3 CRT
   + / - density   Wheel / pinch: zoom. Mobile swipe: horizontal pan.
   Click / touch to ripple (SHIFT + click: stronger)
 */

@@ -1,9 +1,9 @@
 /* The interface follows the signal's phosphor palette. Keep text nearly white
-   and the panel opaque: even Deep's muted code should remain easy to read. */
+   over a subtly translucent panel so glow bleeds through without obscuring controls. */
 :root{
- --hud-left:24px;--hud-top:24px;--hud-gap:10px;--hud-button:43px;
+ --hud-left:max(24px,env(safe-area-inset-left));--hud-top:max(24px,env(safe-area-inset-top));--hud-gap:10px;--hud-button:44px;
  color-scheme:dark;
- --ui-page:#000401;--ui-panel:rgba(2,19,10,.97);--ui-hud:rgba(1,16,8,.88);
+ --ui-page:#000401;--ui-panel:rgba(2,19,10,.90);--ui-hud:rgba(1,16,8,.88);
  --ui-base:36,94,53;--ui-surface:rgba(35,88,48,.24);--ui-hover:rgba(43,110,61,.34);
  --ui-selected:rgba(29,95,47,.55);--ui-border:#578D65;--ui-border-hot:#BCF8C9;
  --ui-text:#F1FFF2;--ui-label:#C9EED0;--ui-muted:#B4D3BC;--ui-dim:#A3C9AC;
@@ -12,7 +12,7 @@
  --ui-scroll-track:#071D0D;--ui-scroll-thumb:#39784C;
 }
 :root[data-signal="abyss"]{
- --ui-page:#00070C;--ui-panel:rgba(3,19,29,.97);--ui-hud:rgba(3,20,31,.88);
+ --ui-page:#00070C;--ui-panel:rgba(3,19,29,.90);--ui-hud:rgba(3,20,31,.88);
  --ui-base:27,73,105;--ui-surface:rgba(28,78,108,.28);--ui-hover:rgba(37,101,137,.39);
  --ui-selected:rgba(29,98,138,.55);--ui-border:#568FA9;--ui-border-hot:#A5EAF9;
  --ui-text:#EEFBFF;--ui-label:#D1EBF4;--ui-muted:#B4D5E3;--ui-dim:#A5CBDF;
@@ -21,7 +21,7 @@
  --ui-scroll-track:#081C29;--ui-scroll-thumb:#36718F;
 }
 :root[data-signal="voltage"]{
- --ui-page:#040600;--ui-panel:rgba(17,23,4,.98);--ui-hud:rgba(20,27,5,.90);
+ --ui-page:#040600;--ui-panel:rgba(17,23,4,.90);--ui-hud:rgba(20,27,5,.90);
  --ui-base:80,105,19;--ui-surface:rgba(88,108,22,.27);--ui-hover:rgba(111,139,23,.39);
  --ui-selected:rgba(95,120,20,.49);--ui-border:#9BAE50;--ui-border-hot:#F1FFAF;
  --ui-text:#FCFFE9;--ui-label:#EBF5D0;--ui-muted:#D6E4AF;--ui-dim:#C8D9A2;
@@ -30,7 +30,7 @@
  --ui-scroll-track:#1C2405;--ui-scroll-thumb:#859E32;
 }
 :root[data-signal="anomaly"]{
- --ui-page:#080108;--ui-panel:rgba(25,5,18,.98);--ui-hud:rgba(29,5,22,.90);
+ --ui-page:#080108;--ui-panel:rgba(25,5,18,.90);--ui-hud:rgba(29,5,22,.90);
  --ui-base:109,35,75;--ui-surface:rgba(110,34,73,.29);--ui-hover:rgba(145,45,94,.40);
  --ui-selected:rgba(128,31,79,.55);--ui-border:#B77296;--ui-border-hot:#FFC2DF;
  --ui-text:#FFF1F9;--ui-label:#F8D7E8;--ui-muted:#EBC1D9;--ui-dim:#E3B3D1;
@@ -45,12 +45,13 @@ html,body{padding:0;margin:0;width:100%;height:100%;overflow:hidden;background:v
 #crt-output{z-index:1}
 button,input{font:inherit;-webkit-tap-highlight-color:transparent}
 button{cursor:pointer}
-button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);outline-offset:2px}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--ui-outline);outline-offset:3px}
 #fullscreen-toggle,#music-toggle,#toggle{position:fixed;z-index:7;left:var(--hud-left);width:var(--hud-button);height:var(--hud-button);display:grid;place-items:center;border:1px solid var(--ui-border);border-radius:3px;background:var(--ui-hud);color:var(--ui-accent);backdrop-filter:blur(4px);transition:border-color .18s,background .18s,color .18s}
 #fullscreen-toggle{top:var(--hud-top)}
 #music-toggle{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
 #toggle{top:calc(var(--hud-top) + 2 * (var(--hud-button) + var(--hud-gap)))}
 #music-toggle[aria-pressed="true"]{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
+#toggle[aria-expanded="true"],#fullscreen-toggle.is-fullscreen{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
 #music-toggle[aria-pressed="true"] .music-off{display:none}
 #fullscreen-toggle:hover,#fullscreen-toggle:focus-visible,#music-toggle:hover,#music-toggle:focus-visible,#toggle:hover,#toggle:focus-visible{color:var(--ui-text);border-color:var(--ui-border-hot);background:var(--ui-selected)}
 #fullscreen-toggle svg,#music-toggle svg,#toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:square;stroke-linejoin:miter}
@@ -61,60 +62,91 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ui-outline);out
 #toggle .panel-close{display:none}
 #toggle[aria-expanded="true"] .panel-close{display:block}
 #toggle[aria-expanded="true"] .panel-open{display:none}
-#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - 12px));max-height:min(850px,calc(100dvh - var(--hud-top) - 3 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:12px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(18px)}
+#panel{display:none;position:absolute;top:0;left:0;width:min(392px,calc(100vw - var(--hud-left) - max(12px,env(safe-area-inset-right))));max-height:min(850px,calc(100dvh - var(--hud-top) - 3 * (var(--hud-button) + var(--hud-gap)) - max(12px,env(safe-area-inset-bottom))));overflow:auto;overscroll-behavior:contain;padding:12px 22px 21px;background:var(--ui-panel);border:1px solid var(--ui-border);border-radius:3px;box-shadow:0 25px 90px #000b,0 0 60px var(--ui-glow);scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);backdrop-filter:blur(6px)}
 #panel.open{display:block}
 .hdr{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.22em;color:var(--ui-dim)}
 .live{color:var(--ui-accent)}
 .live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;margin:0 8px 1px 0;background:var(--ui-led);box-shadow:0 0 12px var(--ui-led)}
 h1{margin:7px 0 3px;font-size:25px;letter-spacing:.17em;font-weight:400;color:var(--ui-text);text-shadow:0 0 24px var(--ui-glow)}
 .sub{font-size:10px;line-height:1.7;letter-spacing:.02em;color:var(--ui-muted);margin:0}
+#controls-help{border:1px solid var(--ui-rule);border-radius:3px;background:var(--ui-surface)}
+#controls-help summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;cursor:pointer;list-style:none;color:var(--ui-accent);font-size:10px;letter-spacing:.08em}
+#controls-help summary::-webkit-details-marker{display:none}
+#controls-help summary::after{content:"+";margin-left:auto;color:var(--ui-text);font-size:16px}
+#controls-help[open] summary::after{content:"−"}
+#controls-help summary:hover{background:var(--ui-hover)}
+.gesture-help{padding:0 12px;margin:10px 0 12px;color:var(--ui-muted);font-size:10px;line-height:1.7;letter-spacing:.01em}
+.touch-only{display:none}
 .rule{height:1px;margin:18px 0 14px;background:linear-gradient(90deg,var(--ui-rule),transparent)}
 .tag{font-size:9px;letter-spacing:.23em;color:var(--ui-accent);margin:0 0 10px}
 .triad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .triad.quad{grid-template-columns:repeat(4,minmax(0,1fr))}
-.triad button,.duo button{border:1px solid var(--ui-border);background:var(--ui-surface);color:var(--ui-label);padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
+.triad button,.duo button{min-height:44px;border:1px solid var(--ui-border);border-radius:2px;background:var(--ui-surface);color:var(--ui-label);padding:11px 3px 10px;letter-spacing:.075em;font-size:9px;text-align:center}
 .triad button.active,.duo button.active{background:var(--ui-selected);color:var(--ui-text);border-color:var(--ui-border-hot);box-shadow:inset 0 0 17px var(--ui-glow)}
 .triad button:hover,.duo button:hover{border-color:var(--ui-border-hot);background:var(--ui-hover);color:var(--ui-text)}
 .triad button.active:hover,.duo button.active:hover{background:var(--ui-selected);color:var(--ui-text)}
 .dsc{font-size:10px;color:var(--ui-muted);margin:10px 0 0;min-height:32px;line-height:1.55;letter-spacing:.01em}
 #grade-help{min-height:1.55em}
+.context-note{margin:10px 0 0;color:var(--ui-muted);font-size:10px;line-height:1.6;letter-spacing:.01em}
+.context-note:empty{display:none}
 .control{margin:14px 0 0}
 .control-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
 label{color:var(--ui-label);font-size:10px;letter-spacing:.09em}
 output{color:var(--ui-text);font-size:10px;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;height:12px;margin:0;accent-color:var(--ui-accent);cursor:pointer}
+input[type=range]{display:block;width:100%;height:24px;margin:0;accent-color:var(--ui-accent);cursor:pointer}
 input[type=checkbox]{width:16px;height:16px;accent-color:var(--ui-accent);cursor:pointer}
-input:disabled{opacity:.60}
-.switch{margin:14px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+input:disabled{opacity:.45;cursor:not-allowed}
+.control:has(input:disabled) label,.control:has(input:disabled) output{color:var(--ui-dim)}
+.switch{min-height:44px;margin:10px 0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.switch label{display:flex;flex:1;align-items:center;min-height:44px;cursor:pointer}
 .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:15px}
-.buttons button{background:var(--ui-surface);border:1px solid var(--ui-border);color:var(--ui-label);padding:11px 4px;font-size:9px;letter-spacing:.095em}
+.buttons button{display:flex;justify-content:space-between;align-items:center;gap:5px;min-height:44px;background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:2px;color:var(--ui-label);padding:9px 8px;font-size:9px;letter-spacing:.05em;text-align:left}
+#defaults-btn{justify-content:center}
 .buttons button:hover{border-color:var(--ui-border-hot);background:var(--ui-hover);color:var(--ui-text)}
 /* Action buttons are neutral until invoked. No permanently highlighted breach. */
 .buttons button.triggered{border-color:var(--ui-border-hot);color:var(--ui-text);background:var(--ui-selected);box-shadow:0 0 16px var(--ui-glow)}
 #notify{color:var(--ui-accent);font-size:9px;letter-spacing:.05em;min-height:20px;margin:12px 0 0;line-height:1.5}
-.keyhelp{font-size:9px;line-height:1.9;color:var(--ui-muted);letter-spacing:0}
-kbd{font:inherit;color:var(--ui-text)}
-.mini,.fps{position:fixed;z-index:3;right:clamp(12px,2vw,30px);pointer-events:none;text-align:right;color:var(--ui-dim);opacity:.72;font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
-.mini{bottom:max(0px,calc(clamp(12px,2.4vh,28px) - 13px))}
+.keyhelp{padding:0 12px 4px;font-size:10px;line-height:1.7;color:var(--ui-muted);letter-spacing:0}
+.shortcut-group{margin:12px 0}
+.shortcut-group h3{margin:0 0 7px;color:var(--ui-accent);font-size:9px;font-weight:400;letter-spacing:.12em;text-transform:uppercase}
+.shortcut-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:7px 0}
+.shortcut-keys{white-space:nowrap}
+kbd,[data-shortcut-keys]{display:inline-block;flex-shrink:0;min-width:19px;border:1px solid var(--ui-border);border-radius:3px;padding:1px 5px;background:var(--ui-hud);color:var(--ui-text);font:10px/1.6 Consolas,"Liberation Mono",monospace;letter-spacing:0;text-align:center;white-space:nowrap;box-shadow:0 1px 0 var(--ui-border)}
+[data-shortcut-keys] kbd{min-width:0;padding:0;border:0;box-shadow:none;background:none}
+.mini,.fps{position:fixed;z-index:3;right:max(clamp(12px,2vw,30px),env(safe-area-inset-right));text-align:right;color:var(--ui-dim);font:9px/1.8 Consolas,monospace;letter-spacing:.18em;white-space:nowrap}
+.mini{bottom:max(12px,env(safe-area-inset-bottom));min-height:44px;padding:8px 12px;border:1px solid transparent;border-radius:3px;background:var(--ui-hud);color:var(--ui-muted);transition:border-color .18s,background .18s}
+.mini:hover,.mini:focus-visible{border-color:var(--ui-border-hot);background:var(--ui-selected);color:var(--ui-text)}
+.fps{pointer-events:none;opacity:.72}
 .fps{top:max(var(--hud-top),env(safe-area-inset-top));font-variant-numeric:tabular-nums}
 .mini strong,.fps strong{font-weight:400;color:var(--ui-text)}
 #fps-value{display:inline-block;min-width:3ch}
 /* Reserve OFFLINE's width so the dot and label stay anchored when pausing. */
 .mini #status{display:inline-block;width:calc(7ch + 1.26em);text-align:left}
-.mini:before{content:"";display:inline-block;vertical-align:calc(.05em + .5px);margin-left:-6.5px;margin-right:2.5px;width:4px;height:4px;border:1px solid var(--ui-led);border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
+.mini:before{content:"";display:inline-block;vertical-align:middle;margin-right:7px;width:6px;height:6px;border:1px solid var(--ui-led);border-radius:50%;background:var(--ui-led);box-shadow:0 0 9px var(--ui-led)}
 .mini[data-paused="true"]:before{background:transparent;box-shadow:none}
 #beat-leds{height:26px;display:flex;justify-content:space-between;align-items:flex-end;margin-top:0}
 #beat-leds i{display:block;height:100%;width:3px;transform:scaleY(.12);transform-origin:bottom;background:var(--ui-led);opacity:.28;box-shadow:0 0 7px var(--ui-led)}
 /* Phones and coarse-pointer devices keep touch guidance, without advertising
    shortcuts that require a physical keyboard. */
 @media(max-width:560px),(pointer:coarse){
- :root{--hud-left:12px;--hud-top:12px}
- .keyhelp,.keyboard-only{display:none}
+ :root{--hud-left:max(12px,env(safe-area-inset-left));--hud-top:max(12px,env(safe-area-inset-top))}
+ .keyhelp,.keyboard-only,.desktop-only{display:none}
+ .touch-only{display:block}
+ input[type=range]{height:44px}
+}
+@media(max-width:560px),(pointer:coarse){
+ /* A compact toolbar also keeps settings usable on touch screens in landscape. */
+ #music-toggle{left:calc(var(--hud-left) + var(--hud-button) + var(--hud-gap));top:var(--hud-top)}
+ #toggle{left:calc(var(--hud-left) + 2 * (var(--hud-button) + var(--hud-gap)));top:var(--hud-top)}
+ .hud{top:calc(var(--hud-top) + var(--hud-button) + var(--hud-gap))}
+ #panel{width:min(392px,calc(100vw - var(--hud-left) - max(12px,env(safe-area-inset-right))));max-height:calc(100dvh - var(--hud-top) - var(--hud-button) - var(--hud-gap) - 56px - max(12px,env(safe-area-inset-bottom)));padding:10px 16px 17px}
+ .mini{padding:10px 12px;z-index:6}
+ #beat-leds{display:none}
+ .fps{top:calc(var(--hud-top) + 13px);right:max(12px,env(safe-area-inset-right))}
+ .buttons button{justify-content:center;text-align:center}
 }
 @media(max-width:560px){
- /* Match the buttons' left inset even on phones wider than the desktop panel. */
- #panel{width:calc(100vw - 2 * var(--hud-left));padding:9.5px 16px 17px}
- .mini{display:none}
+ #panel{width:calc(100vw - var(--hud-left) - max(12px,env(safe-area-inset-right)))}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

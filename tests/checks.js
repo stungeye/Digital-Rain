@@ -13,8 +13,7 @@ function harness({coarse = false, fine = !coarse, touchPoints = coarse ? 1 : 0, 
   let now = 1000, seed = 123456, renders = 0, randomCalls = 0, fontReady;
   const listeners = new Map(), elements = new Map(), canvasCalls = [], contextRequests = [], animationFrames = [];
   const markup=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  const markupIds=new Set([...markup.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]));
-  for(const id of omittedIds)markupIds.delete(id);
+  const markupElements=[];
   const math = Object.create(Math);
   math.random = () => { randomCalls++; return ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296); };
   function eventTarget(target = {}) {
@@ -33,10 +32,35 @@ function harness({coarse = false, fine = !coarse, touchPoints = coarse ? 1 : 0, 
   }
   function element(tag = 'div') {
     const el = eventTarget({tagName: tag.toUpperCase(), style: {}, dataset: {}, value: '1',
-      children: [], attributes: {}, checked: false, classList: (()=>{const classes=new Set();return {add(name){classes.add(name);},remove(name){classes.delete(name);},toggle(name){if(classes.has(name)){classes.delete(name);return false;}classes.add(name);return true;},contains(name){return classes.has(name);}};})(),
+      children: [], attributes: {}, checked: false, classList: (()=>{const classes=new Set();return {add(name){classes.add(name);},remove(name){classes.delete(name);},toggle(name,force){const enabled=force===undefined?!classes.has(name):!!force;if(enabled)classes.add(name);else classes.delete(name);return enabled;},contains(name){return classes.has(name);}};})(),
       appendChild(child){child.parentElement = this;this.children.push(child);},
       setAttribute(k,v){this.attributes[k] = String(v);},getAttribute(k){return this.attributes[k];},
-      closest(){return null;},contains(other){return other===this;},focus(){},
+      matches(selector){return selector.split(',').some(part=>{
+        part=part.trim();
+        if(part.startsWith('input:not('))return this.tagName==='INPUT'&&!['range','checkbox','radio','button','submit'].includes(this.type);
+        if(part.startsWith('#'))return this.id===part.slice(1);
+        const typed=part.match(/^([a-z]+)\[([\w-]+)=(?:"([^"]*)"|([^\]]+))\]$/);
+        if(typed)return this.tagName===typed[1].toUpperCase()&&String(this[typed[2]]??this.attributes[typed[2]])===(typed[3]??typed[4]);
+        const attr=part.match(/^\[([^\]=]+)(?:="([^"]+)")?\]$/);
+        if(attr)return this.attributes[attr[1]]!==undefined&&(attr[2]===undefined||this.attributes[attr[1]]===attr[2]);
+        return this.tagName===part.toUpperCase();
+      });},
+      closest(selector){for(let current=this;current;current=current.parentElement)if(current.matches(selector))return current;return null;},
+      contains(other){for(let current=other;current;current=current.parentElement)if(current===this)return true;return false;},
+      focus(){document.activeElement=this;},
+      click(){
+        if(this.disabled)return;
+        const checkbox=this.tagName==='INPUT'&&this.type==='checkbox',before=this.checked;
+        if(checkbox)this.checked=!before;
+        const event={type:'click',target:this,detail:0,defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
+        this.dispatchEvent(event);
+        if(checkbox){
+          if(event.defaultPrevented)this.checked=before;
+          else for(const type of ['input','change'])this.dispatchEvent({type,target:this});
+        }
+      },
+      querySelector(selector){return markupElements.find(candidate=>candidate!==this&&this.contains(candidate)&&candidate.matches(selector))||null;},
+      querySelectorAll(selector){return markupElements.filter(candidate=>candidate!==this&&this.contains(candidate)&&candidate.matches(selector));},
       getBoundingClientRect(){return {left:0,top:0,width:640,height:360};},
       setPointerCapture(){},releasePointerCapture(){},hasPointerCapture(){return false;},remove(){},
     });
@@ -53,30 +77,41 @@ function harness({coarse = false, fine = !coarse, touchPoints = coarse ? 1 : 0, 
     }
     return el;
   }
+  // Read tags and attributes so keyboard exclusions, semantic buttons and
+  // shortcut hints exercise the actual markup rather than anonymous divs.
+  const stack=[],voidTags=new Set(['meta','link','input','br','hr','img']);
+  for(const match of markup.matchAll(/<\/?([a-z][a-z0-9-]*)\b([^>]*)>/gi)){
+    const tag=match[1].toLowerCase();
+    if(match[0].startsWith('</')){
+      const index=stack.map(el=>el.tagName.toLowerCase()).lastIndexOf(tag);
+      if(index>=0)stack.length=index;
+      continue;
+    }
+    const el=element(tag);
+    for(const attr of match[2].matchAll(/([\w-]+)="([^"]*)"/g)){
+      el.setAttribute(attr[1],attr[2]);
+      if(attr[1].startsWith('data-'))el.dataset[attr[1].slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=attr[2];
+      else if(['id','type','title'].includes(attr[1]))el[attr[1]]=attr[2];
+      else if(attr[1]==='class')attr[2].split(/\s+/).filter(Boolean).forEach(name=>el.classList.add(name));
+    }
+    if(stack.length)stack.at(-1).appendChild(el);
+    if(!omittedIds.includes(el.id)){
+      markupElements.push(el);
+      if(el.id)elements.set(el.id,el);
+      for(const key of ['mode','grade','crt','audio'])if(el.dataset[key])elements.set(`data-${key}-${el.dataset[key]}`,el);
+    }
+    if(!voidTags.has(tag)&&!match[0].endsWith('/>'))stack.push(el);
+  }
   const document = eventTarget({readyState:ready,hidden:false,
-    createElement:element,getElementById(id){if(!markupIds.has(id))return null;if(!elements.has(id))elements.set(id,element());return elements.get(id);},
-    querySelector(){return null;},querySelectorAll(selector){
-      if(selector==='#beat-leds i'&&markupIds.has('beat-leds')) {
-        const bars=markup.match(/id="beat-leds"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
-        return [...bars.matchAll(/<i\b/g)].map((_,i)=>{
-          const id=`beat-led-${i}`;
-          if(!elements.has(id))elements.set(id,element('i'));
-          return elements.get(id);
-        });
-      }
-      const key=selector.match(/^\[data-(mode|grade|crt|audio)\]$/)?.[1];
-      if(!key)return [];
-      return [...markup.matchAll(new RegExp(`data-${key}="([^"]+)"`,'g'))].map(match=>{
-        const id=`data-${key}-${match[1]}`;
-        if(!elements.has(id)){
-          const button=element('button');button.dataset[key]=match[1];elements.set(id,button);
-        }
-        return elements.get(id);
-      });
+    createElement:element,getElementById(id){return elements.get(id)||null;},
+    querySelector(selector){return this.querySelectorAll(selector)[0]||null;},querySelectorAll(selector){
+      if(selector==='#beat-leds i')return markupElements.filter(el=>el.tagName==='I'&&el.closest('#beat-leds'));
+      return markupElements.filter(el=>el.matches(selector));
     },
     write(){throw Error('startup must not inject external scripts');},
-    documentElement:element(),body:element(),fonts:{ready:{then(fn){fontReady=fn;}}},
+    documentElement:markupElements.find(el=>el.tagName==='HTML'),body:markupElements.find(el=>el.tagName==='BODY'),fonts:{ready:{then(fn){fontReady=fn;}}},
   });
+  document.activeElement=document.body;
   const media = new Map();
   class Param {
     constructor(value=0){this.value=value;this.calls=[];}
@@ -125,6 +160,243 @@ function harness({coarse = false, fine = !coarse, touchPoints = coarse ? 1 : 0, 
 }
 
 function check(name, body){body();console.log('PASS '+name);}
+
+function pressShortcut(h,key,extra={}){
+  const event={type:'keydown',key,target:h.sandbox.document.body,
+    preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;},...extra};
+  h.sandbox.dispatchEvent(event);return event;
+}
+
+check('shortcut exclusions preserve text input and native Enter without activating audio',()=>{
+  const h=harness();h.run('setup()');
+  const text=h.sandbox.document.createElement('input');text.type='text';
+  const textarea=h.sandbox.document.createElement('textarea');
+  for(const extra of [
+    {repeat:true},{isComposing:true},{altKey:true},{ctrlKey:true},{metaKey:true},
+    {target:text},{target:textarea},{target:{isContentEditable:true}},
+  ]){
+    const event=pressShortcut(h,'m',extra);
+    assert.equal(event.prevented,undefined);assert.equal(event.stopped,undefined);
+    assert.equal(h.run('rain.audio'),'effects');assert.equal(h.run('soundEngine.ctx'),null);
+  }
+  for(const id of ['music-toggle','signal-indicator','density','showFPS']){
+    const target=h.elements.get(id);
+    const context=h.run('soundEngine.ctx');
+    const checked=target.checked,enter=pressShortcut(h,'Enter',{target});
+    if(target.type==='checkbox'){
+      assert.ok(enter.prevented&&enter.stopped,'Enter supplies one checkbox activation');
+      assert.equal(target.checked,!checked);
+    }else{
+      assert.equal(enter.prevented,undefined,'Enter stays native for buttons and range controls');
+      assert.ok(h.run('soundEngine.ctx')===context,'unhandled Enter leaves the existing audio context alone');
+    }
+    const previous=h.run('rain.paused'),event=pressShortcut(h,' ',{target});
+    assert.equal(h.run('rain.paused'),!previous);
+    assert.ok(event.prevented&&event.stopped,'a global pause event consumes browser activation');
+    assert.equal(h.run('rain.audio'),'effects','Space over the music button only pauses');
+  }
+});
+
+check('Enter activates enabled checkboxes once while exclusions and disabled controls preserve state',()=>{
+  const h=harness();h.run('setup();setRainOption("audio","score");setRainOption("paused",true)');
+  const context=h.run('soundEngine.ctx');
+  for(const id of ['showFPS','beatReactive','bloom']){
+    const checkbox=h.elements.get(id),events={click:0,input:0,change:0};
+    for(const type of Object.keys(events))checkbox.addEventListener(type,()=>events[type]++);
+    const before=checkbox.checked;
+    const event=pressShortcut(h,'Enter',{target:checkbox});
+    assert.ok(event.prevented&&event.stopped);
+    assert.equal(checkbox.checked,!before);assert.equal(h.run(`rain.${id}`),!before);
+    assert.deepEqual(events,{click:1,input:1,change:1},'one Enter produces one native checkbox change');
+    assert.equal(h.run('rain.paused'),true,'checkbox activation preserves paused playback');
+    assert.equal(h.run('rain.audio'),'score','checkbox activation preserves the selected music mode');
+    assert.ok(h.run('soundEngine.ctx')===context,'checkbox activation reuses the existing audio context');
+    for(const extra of [{repeat:true},{altKey:true},{ctrlKey:true},{metaKey:true},{isComposing:true}]){
+      const ignored=pressShortcut(h,'Enter',{target:checkbox,...extra});
+      assert.equal(ignored.prevented,undefined);assert.equal(checkbox.checked,!before);
+      assert.deepEqual(events,{click:1,input:1,change:1},'excluded key events never synthesize clicks');
+    }
+    checkbox.disabled=true;
+    assert.equal(pressShortcut(h,'Enter',{target:checkbox}).prevented,undefined);
+    checkbox.click();
+    assert.equal(checkbox.checked,!before);assert.deepEqual(events,{click:1,input:1,change:1},'disabled checkboxes cannot activate');
+    checkbox.disabled=false;
+    pressShortcut(h,'Enter',{target:checkbox});
+    assert.equal(h.run(`rain.${id}`),before);assert.deepEqual(events,{click:2,input:2,change:2});
+  }
+  for(const id of ['showFPS','beatReactive'])assert.equal(h.elements.get(id).getAttribute('aria-keyshortcuts'),'Enter');
+  assert.ok(!h.elements.get('keyboard-help').innerHTML.includes('activates a focused button or checkbox'));
+  h.run('setRainOption("audio","effects")');
+  const beat=h.elements.get('beatReactive');assert.equal(beat.disabled,true);
+  const before=beat.checked;pressShortcut(h,'Enter',{target:beat});assert.equal(beat.checked,before,'unavailable beat reaction stays unchanged');
+});
+
+check('music hotkey and shifted mute chord keep independent intent and synchronized controls',()=>{
+  const h=harness();h.run('setup()');
+  const button=h.elements.get('music-toggle');
+  assert.equal(h.run('soundEngine.ctx'),null,'shortcut hints do not activate audio');
+  assert.ok(pressShortcut(h,'m').prevented);
+  assert.equal(h.run('rain.audio'),'score');
+  assert.equal(button.getAttribute('aria-pressed'),'true');
+  assert.equal(button.getAttribute('aria-label'),'Turn music off');
+  pressShortcut(h,'M'); // Caps Lock produces an uppercase key without Shift.
+  assert.equal(h.run('rain.audio'),'effects');
+  pressShortcut(h,'M',{shiftKey:true});assert.equal(h.run('rain.audio'),'off');
+  pressShortcut(h,'m',{shiftKey:true});assert.equal(h.run('rain.audio'),'effects');
+  pressShortcut(h,'m');
+  const context=h.run('soundEngine.ctx');
+  pressShortcut(h,'M',{shiftKey:true});assert.equal(h.run('rain.audio'),'off');
+  assert.equal(button.getAttribute('aria-pressed'),'false');
+  pressShortcut(h,'M',{shiftKey:true});assert.equal(h.run('rain.audio'),'score');
+  assert.equal(button.getAttribute('aria-pressed'),'true');
+  assert.equal(h.run('soundEngine.ctx'),context,'the music and mute shortcuts reuse the same audio context');
+  button.dispatchEvent({type:'click'});assert.equal(h.run('rain.audio'),'effects');
+  pressShortcut(h,'m');assert.equal(h.run('rain.audio'),'score','click and hotkey share the same music toggle');
+});
+
+check('signal button and panel pause action synchronize without replacing their shortcut badges',()=>{
+  const h=harness();h.run('setup()');
+  const signal=h.elements.get('signal-indicator'),pause=h.elements.get('pause-btn');
+  assert.equal(signal.tagName,'BUTTON','text and decorative dot share a native keyboard/touch target');
+  assert.equal(signal.type,'button');
+  const badge=pause.querySelector('[data-shortcut-keys]'),originalBadge=badge?.innerHTML;
+  const assertState=paused=>{
+    assert.equal(h.run('rain.paused'),paused);
+    assert.equal(signal.dataset.paused,String(paused));
+    assert.equal(signal.getAttribute('aria-pressed'),String(paused));
+    assert.equal(signal.getAttribute('aria-label'),paused?'Resume signal':'Pause signal');
+    assert.equal(h.elements.get('status').textContent,paused?'OFFLINE':'ONLINE');
+    assert.equal(h.elements.get('pause-label').textContent,paused?'RESUME SIGNAL':'PAUSE SIGNAL');
+    assert.equal(badge?.innerHTML,originalBadge,'state changes preserve the pause badge');
+  };
+  assertState(false);signal.dispatchEvent({type:'click'});assertState(true);
+  pause.dispatchEvent({type:'click'});assertState(false);
+  const event=pressShortcut(h,' ',{target:signal});
+  assert.ok(event.prevented&&event.stopped,'Space consumes the global action before native button activation');
+  assertState(true);signal.dispatchEvent({type:'click'});assertState(false);
+  h.run('setRainOption("paused",true);resetRain()');assertState(false);
+});
+
+check('settings keyboard navigation restores focus and Escape closes without arming audio',()=>{
+  const h=harness();h.run('setup()');
+  const panel=h.elements.get('panel'),toggle=h.elements.get('toggle'),first=h.elements.get('data-mode-rain');
+  toggle.focus();
+  assert.equal(pressShortcut(h,'Enter',{target:toggle}).prevented,undefined,'Enter retains native button activation');
+  toggle.dispatchEvent({type:'click',detail:0});
+  assert.equal(h.sandbox.document.activeElement,first,'a native keyboard click opens settings at the first control');
+  assert.equal(h.run('soundEngine.ctx'),null);
+  const escape=pressShortcut(h,'Escape',{target:first});
+  assert.ok(escape.prevented);assert.equal(panel.classList.contains('open'),false);
+  assert.equal(h.sandbox.document.activeElement,toggle);
+  assert.equal(h.run('soundEngine.ctx'),null,'closing settings alone does not activate audio');
+  assert.equal(pressShortcut(h,'Escape').prevented,undefined,'closed settings leave Escape available to the browser');
+  assert.ok(pressShortcut(h,'s').prevented);assert.equal(panel.classList.contains('open'),true);
+  assert.equal(h.sandbox.document.activeElement,first,'keyboard opening lands on the first control');
+  assert.equal(toggle.getAttribute('aria-expanded'),'true');
+  pressShortcut(h,'s',{target:first});assert.equal(panel.classList.contains('open'),false);
+  assert.equal(h.sandbox.document.activeElement,toggle);
+});
+
+check('every advertised shortcut uses one key spelling in hover hints, badges and grouped help',()=>{
+  const h=harness();h.run('setup()');
+  const shortcuts=JSON.parse(h.run('JSON.stringify(window.RainShortcuts)'));
+  assert.equal(new Set(shortcuts.map(shortcut=>shortcut.id)).size,shortcuts.length);
+  const expected=['space','m','m','s','escape','f','v','c','g','t','r','e','b','1','2','3','+','-'];
+  assert.deepEqual(shortcuts.map(shortcut=>shortcut.key).sort(),expected.sort(),'the help covers the complete keyboard map');
+  const help=h.elements.get('keyboard-help').innerHTML;
+  const bindings=new Map(shortcuts.map(shortcut=>[shortcut.id,shortcut]));
+  assert.equal(bindings.get('densityUp').aria,'Plus','the literal plus key uses the special WAI-ARIA Plus token');
+  assert.equal(h.elements.get('density').getAttribute('aria-keyshortcuts'),'Plus -');
+  for(const shortcut of shortcuts){
+    assert.ok(shortcut.keys.length>0&&shortcut.group&&shortcut.label&&shortcut.aria);
+    if(shortcut.showInHelp===false){
+      assert.ok(!help.includes(shortcut.label),'unlisted shortcuts retain functionality without a help row');
+      continue;
+    }
+    assert.ok(help.includes(`<h3>${shortcut.group}</h3>`)&&help.includes(shortcut.label),'the guide groups and names every action');
+    for(const key of shortcut.keys)assert.ok(help.includes(`<kbd>${key}</kbd>`),`${shortcut.id} appears with individual keycaps in the help`);
+  }
+  for(const badge of h.sandbox.document.querySelectorAll('[data-shortcut-keys]')){
+    const shortcut=bindings.get(badge.dataset.shortcutKeys);assert.ok(shortcut,'every badge has a registered action');
+    assert.deepEqual([...badge.innerHTML.matchAll(/<kbd>(.*?)<\/kbd>/g)].map(match=>match[1]),shortcut.keys,'badges use the same individual keycaps as the guide');
+    assert.equal(badge.getAttribute('aria-hidden'),'true','decorative badges do not repeat accessible shortcut metadata');
+  }
+  const hints=h.sandbox.document.querySelectorAll('[data-shortcut]');
+  for(const control of hints){
+    const advertised=control.dataset.shortcut.split(' ').map(id=>bindings.get(id));
+    assert.ok(advertised.every(Boolean),'every hover hint has a registered action');
+    assert.equal(control.getAttribute('aria-keyshortcuts'),advertised.map(binding=>binding.aria).join(' '));
+    const keyNames=advertised.map(binding=>binding.keys.join('+')).join('/');
+    assert.ok(control.title.replace(/\s/g,'').endsWith(`(${keyNames})`),'hover text matches the keycaps, including paired density keys');
+  }
+  const desktopTitles=hints.map(el=>el.title);
+  const phone=[...h.media].find(([query])=>query.includes('max-width: 560px'))?.[1];
+  assert.ok(phone,'responsive shortcut help listens for narrow layouts');
+  phone.matches=true;phone.dispatchEvent({type:'change',matches:true});
+  for(const control of hints){
+    assert.ok(!control.title.includes('('),'touch hover labels omit unavailable keyboard hints');
+    assert.ok(control.getAttribute('aria-keyshortcuts'),'assistive shortcut metadata remains available');
+  }
+  phone.matches=false;phone.dispatchEvent({type:'change',matches:false});
+  assert.deepEqual(hints.map(el=>el.title),desktopTitles,'desktop hover hints return when the layout expands');
+});
+
+check('Phosphor Glow checkbox and G synchronize halo availability and restore defaults',()=>{
+  const h=harness();h.run('setup()');
+  const checkbox=h.elements.get('bloom'),halo=h.elements.get('glow');
+  const assertGlow=enabled=>{
+    assert.equal(h.run('rain.bloom'),enabled);
+    assert.equal(checkbox.checked,enabled);
+    assert.equal(halo.disabled,!enabled);
+  };
+  assert.equal(checkbox.tagName,'INPUT');assert.equal(checkbox.type,'checkbox');
+  assert.equal(checkbox.getAttribute('aria-keyshortcuts'),'G');
+  assertGlow(true);
+  // Browsers toggle checked before the click/change notification pair.
+  checkbox.checked=false;checkbox.dispatchEvent({type:'click'});checkbox.dispatchEvent({type:'change'});
+  assertGlow(false);assert.ok(halo.title.includes('Turn on Phosphor Glow'),'the unavailable slider explains how to enable it');
+  pressShortcut(h,'g');assertGlow(true);
+  pressShortcut(h,'G',{shiftKey:true});assertGlow(false);
+  checkbox.checked=true;checkbox.dispatchEvent({type:'change'});assertGlow(true);
+  h.run('setRainOption("glow",1.7);setRainOption("bloom",false);resetRain()');
+  assertGlow(true);assert.equal(h.run('rain.glow'),1);assert.equal(Number(halo.value),1);
+});
+
+check('Muted audio choice remains a direct selection while group hint describes the restore chord',()=>{
+  const h=harness();h.run('setup();setRainOption("audio","score")');
+  const muted=h.elements.get('data-audio-off'),group=h.sandbox.document.querySelector('[data-shortcut="mute"]');
+  assert.equal(muted.title,'Mute all audio');assert.ok(!muted.dataset.shortcut,'a direct mute choice does not advertise a restore toggle');
+  assert.ok(group.contains(muted));assert.equal(group.getAttribute('aria-keyshortcuts'),'Shift+M');
+  muted.dispatchEvent({type:'click'});assert.equal(h.run('rain.audio'),'off');
+  muted.dispatchEvent({type:'click'});assert.equal(h.run('rain.audio'),'off','selecting Muted repeatedly never restores audio');
+  pressShortcut(h,'M',{shiftKey:true});assert.equal(h.run('rain.audio'),'score','the group chord restores the remembered audio choice');
+});
+
+check('view, display, profile, effect, density and reseed shortcuts reach their advertised actions',()=>{
+  const h=harness();h.run('setup()');
+  pressShortcut(h,'v');assert.equal(h.run('rain.mode'),'tunnel');
+  pressShortcut(h,'V',{shiftKey:true});assert.equal(h.run('rain.mode'),'rain');
+  for(const [key,crt] of [['1','off'],['2','scan'],['3','glass']]){
+    assert.ok(pressShortcut(h,key).prevented);assert.equal(h.run('rain.crt'),crt);
+  }
+  const grade=h.run('rain.grade');pressShortcut(h,'c');assert.notEqual(h.run('rain.grade'),grade);
+  const bloom=h.run('rain.bloom');pressShortcut(h,'g');assert.equal(h.run('rain.bloom'),!bloom);
+  const grain=h.run('rain.grain');pressShortcut(h,'t');assert.equal(h.run('rain.grain'),0);
+  pressShortcut(h,'t');assert.equal(h.run('rain.grain'),grain);
+  for(const extra of [{key:'+'},{key:'='},{key:'Add',code:'NumpadAdd'}]){
+    h.run('setRainOption("density",1)');pressShortcut(h,extra.key,extra);assert.equal(h.run('rain.density'),1.1);
+  }
+  for(const extra of [{key:'-'},{key:'_'},{key:'Subtract',code:'NumpadSubtract'}]){
+    h.run('setRainOption("density",1)');pressShortcut(h,extra.key,extra);assert.equal(h.run('rain.density'),.9);
+  }
+  h.run('globalThis.beforeReseed=planes[0]');pressShortcut(h,'r');assert.ok(h.run('planes[0]!==beforeReseed'));
+  h.run('setRainOption("paused",true)');pressShortcut(h,'e');assert.equal(h.run('rain.paused'),false);
+  assert.equal(h.run('signalAt'),h.run('simulationTime'));
+  h.run('setRainOption("paused",true)');pressShortcut(h,'b');assert.equal(h.run('rain.paused'),false);
+  assert.equal(h.run('breachAt'),h.run('simulationTime'));
+  let fullscreen=0;h.sandbox.toggleRainFullscreen=()=>{fullscreen++;};
+  assert.ok(pressShortcut(h,'f').prevented);assert.equal(fullscreen,1);
+});
 
 check('music toggle and panel modes synchronize through clicks, mute and reset', () => {
   const h=harness();h.run('setup()');
@@ -204,7 +476,7 @@ check('panel text can be removed while controls keep synchronizing', () => {
   assert.equal(h.elements.get('density').attributes['aria-valuetext'],h.run('RainApp.settings.density.format(1.5)'));
   assert.equal(h.elements.get('curvature').disabled,false);
   assert.equal(h.elements.get('beatReactive').disabled,false);
-  assert.equal(h.elements.get('pause-btn').textContent,'RESUME SIGNAL');
+  assert.equal(h.elements.get('pause-label').textContent,'RESUME SIGNAL');
   h.elements.get('reseed-btn').dispatchEvent({type:'click'});
 });
 
@@ -588,12 +860,12 @@ check('polished defaults reset and canvas interaction closes the panel', () => {
   toggle.dispatchEvent({type:'click'});
   assert.equal(panel.classList.contains('open'),true);
   assert.equal(toggle.attributes['aria-expanded'],'true');
-  assert.equal(toggle.attributes['aria-label'],'Close system panel');
+  assert.equal(toggle.attributes['aria-label'],'Close settings');
   h.run('setRainOption("paused",true)');
   h.elements.get('rain').dispatchEvent({type:'pointerdown',pointerType:'mouse',button:0,clientX:10,clientY:10});
   assert.equal(panel.classList.contains('open'),false);
   assert.equal(toggle.attributes['aria-expanded'],'false');
-  assert.equal(toggle.attributes['aria-label'],'Open system panel');
+  assert.equal(toggle.attributes['aria-label'],'Open settings');
   h.run('setRainOption("curvature",2);setRainOption("grain",1);resetRain()');
   assert.equal(h.run('rain.curvature'),1);assert.equal(h.run('rain.grain'),.35);
 });
@@ -1148,18 +1420,18 @@ check('shortcuts activate audio once, respect exclusions, restore mute and reset
   key(' ',{isComposing:true});assert.equal(h.run('rain.paused'),true);
   key(' ',{target:{isContentEditable:true}});assert.equal(h.run('rain.paused'),true);
   key(' ',{target:{matches:()=>true}});assert.equal(h.run('rain.paused'),true);
-  for(const value of ['d','s']){
+  for(const value of ['d','h','Enter']){
     const before=h.snapshot(),event=key(value);
     assert.equal(event.prevented,undefined);assert.equal(h.snapshot(),before);
   }
-  h.run('setRainOption("audio","score")');key('m');assert.equal(engine.mode,'off');
-  key('m');assert.equal(engine.mode,'score');assert.equal(engine.ctx,context,'one audio context');
+  h.run('setRainOption("audio","score")');key('m',{shiftKey:true});assert.equal(engine.mode,'off');
+  key('m',{shiftKey:true});assert.equal(engine.mode,'score');assert.equal(engine.ctx,context,'one audio context');
   key('e');assert.equal(h.run('rain.paused'),false);assert.equal(engine.scorePaused,false);
   h.run('setRainOption("volume",.9);setRainOption("zoom",2);setRainOption("grade","anomaly");setRainOption("crt","glass");resetRain()');
   assert.equal(h.run('JSON.stringify(rain)'),h.run('JSON.stringify(defaults)'));
   assert.equal(engine.mode,'effects');assert.equal(engine.volume,.5);assert.equal(engine.scorePaused,false);
   assert.equal(h.run('displayEngine.mode'),'glass');assert.equal(h.elements.get('zoom').value,1);
-  key('m');key('m');assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
+  key('m',{shiftKey:true});key('m',{shiftKey:true});assert.equal(engine.mode,'effects','reset restores default audible-mode memory');
 });
 
 check('beat envelopes follow audible output time, preserve touch attacks and release between hits', () => {
