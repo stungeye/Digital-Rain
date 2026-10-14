@@ -181,7 +181,7 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     }));
   }
   const details={
-    mode:{rain:'Your window into the Matrix.',tunnel:'Fly through twisting walls of living code. Music drives speed, light and pressure waves; CRT curvature returns in rain.'},
+    mode:{rain:'Your window into the Matrix.',tunnel:'Fly through twisting walls of code.'},
     grade:{cinema:'Classic emerald trails with bright heads.',
       abyss:'Sparse cyan drift with long, soft trails.',
       voltage:'Fast chartreuse streams with bold bloom.',
