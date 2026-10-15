@@ -138,6 +138,9 @@ window.addEventListener('keydown', handleRainShortcut, {capture:true});
     activateOnGesture(event);
   },{capture:true});
   const feedback=(kind,value=.5,control='')=>window.signalSound()?.interfaceSound(kind,value,control);
+  $('controls-help').addEventListener('toggle',event=>{
+    feedback(event.target.open?'panel-open':'panel-close');
+  });
   window.toggleRainPanel=({keyboard=false}={})=>{
     const open=panel.classList.toggle('open');
     toggle.setAttribute('aria-expanded',String(open));
